@@ -22,10 +22,12 @@ export function Modal({
   title,
   children,
   onClose,
+  className = '',
 }: {
   title: string
   children: ReactNode
   onClose: () => void
+  className?: string
 }) {
   const ref = useRef<HTMLDialogElement>(null)
   useEffect(() => {
@@ -36,7 +38,7 @@ export function Modal({
       if (event.key !== 'Tab') return
       const controls = Array.from(
         dialog.querySelectorAll<HTMLElement>(
-          'button:not(:disabled), input:not(:disabled), a[href], [tabindex="0"]',
+          'button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), a[href], [tabindex="0"]',
         ),
       )
       const first = controls[0]
@@ -59,7 +61,7 @@ export function Modal({
   return (
     <dialog
       ref={ref}
-      className="modal"
+      className={`modal ${className}`}
       aria-labelledby="modal-title"
       onCancel={onClose}
       onClick={(event) => {

@@ -107,7 +107,13 @@ export function Dashboard({ navigate }: DashboardProps) {
                 aria-label={item.label}
                 aria-current={item.label === 'Dashboard' ? 'page' : undefined}
                 onClick={() =>
-                  item.label === 'Dashboard' ? setExpanded(false) : unavailable(item.label)
+                  item.label === 'Dashboard'
+                    ? setExpanded(false)
+                    : item.label === 'Messages'
+                      ? navigate('/chats')
+                      : item.label === 'Sessions'
+                        ? navigate('/sessions')
+                        : unavailable(item.label)
                 }
               >
                 <Icon name={item.icon} />
@@ -122,13 +128,13 @@ export function Dashboard({ navigate }: DashboardProps) {
             <div>
               <p>This week</p>
               <p>You have one client without assigned content for over a week.</p>
-              <button onClick={() => unavailable('Client review')}>Client review</button>
+              <button onClick={() => navigate('/sessions/upcoming')}>Client review</button>
             </div>
           </div>
           <button
             className="compact-reminder icon-button"
             aria-label="Client review"
-            onClick={() => unavailable('Client review')}
+            onClick={() => navigate('/sessions/upcoming')}
           >
             <Icon name="dashboard-imgStars.svg" />
             <i />
@@ -302,7 +308,7 @@ export function Dashboard({ navigate }: DashboardProps) {
           <div className="sessions-card">
             <header>
               <h2 id="sessions-heading">Upcoming Sessions</h2>
-              <button className="see-all" onClick={() => unavailable('All sessions')}>
+              <button className="see-all" onClick={() => navigate('/sessions')}>
                 See all
                 <Icon name="dashboard-imgIcon5.svg" />
               </button>
@@ -501,7 +507,7 @@ export function Dashboard({ navigate }: DashboardProps) {
   )
 }
 
-function Avatar({ patient }: { patient: Pick<Session, 'name' | 'image' | 'crop'> }) {
+export function Avatar({ patient }: { patient: Pick<Session, 'name' | 'image' | 'crop'> }) {
   return (
     <span className={`avatar ${patient.crop ?? ''}`}>
       <img src={asset(patient.image)} alt="" />

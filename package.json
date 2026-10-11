@@ -16,8 +16,10 @@
   },
   "dependencies": {
     "@fontsource/dm-sans": "5.2.6",
+    "@fontsource/ibm-plex-sans": "5.2.6",
     "@fontsource/ibm-plex-sans-arabic": "5.2.6",
     "@fontsource/inter": "5.2.6",
+    "@fontsource/tajawal": "5.2.6",
     "react": "19.1.1",
     "react-dom": "19.1.1"
   },
