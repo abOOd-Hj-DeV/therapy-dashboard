@@ -40,10 +40,6 @@
 .chat-workspace .nav-item.active {
   color: #657381;
 }
-.secondary-workspace textarea,
-.secondary-workspace select {
-  font: inherit;
-}
 .secondary-workspace textarea:focus-visible,
 .secondary-workspace select:focus-visible,
 .part2-modal textarea:focus-visible,
@@ -633,6 +629,10 @@
 }
 .part2-form input::placeholder,
 .part2-form textarea::placeholder {
+  color: #b0b8c4;
+}
+.part2-form select:invalid,
+.part2-form input[type='date']:invalid {
   color: #b0b8c4;
 }
 .part2-form textarea {
@@ -1762,5 +1762,15 @@
   .part2-modal .segmented-control button {
     padding: 6px 8px;
     font-size: 11px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .secondary-workspace.is-expanded .sidebar .profile-copy,
+  .secondary-workspace.is-expanded .sidebar .collapse-button {
+    display: flex;
+  }
+  .secondary-workspace.is-expanded .sidebar .client-reminder {
+    display: block;
   }
 }

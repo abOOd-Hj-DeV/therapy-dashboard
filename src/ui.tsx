@@ -33,7 +33,12 @@ export function Modal({
   useEffect(() => {
     const dialog = ref.current!
     const previousFocus = document.activeElement as HTMLElement | null
-    dialog.showModal()
+    let cancelled = false
+    const show = () => {
+      if (!cancelled) dialog.showModal()
+    }
+    if (document.fonts) void document.fonts.ready.then(show)
+    else show()
     function containFocus(event: KeyboardEvent) {
       if (event.key !== 'Tab') return
       const controls = Array.from(
@@ -53,6 +58,7 @@ export function Modal({
     }
     dialog.addEventListener('keydown', containFocus)
     return () => {
+      cancelled = true
       dialog.removeEventListener('keydown', containFocus)
       dialog.close()
       previousFocus?.focus()

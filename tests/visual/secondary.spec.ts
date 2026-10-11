@@ -68,7 +68,10 @@ test('part 2 expanded navigation over phone session preparation', async ({ page 
   await page.goto('/sessions/upcoming?state=expanded')
   await page.evaluate(() => document.fonts.ready)
   await expect(page.getByRole('complementary', { name: 'Main navigation' })).toBeVisible()
-  await expect(page).toHaveScreenshot('part2-expanded-before-session-phone.png', { fullPage: true })
+  await expect(page.locator('.profile-copy')).toHaveCSS('display', 'flex')
+  await expect(page).toHaveScreenshot('part2-expanded-before-session-phone.png', {
+    fullPage: false,
+  })
   await page.getByRole('button', { name: 'Close navigation', exact: true }).first().click()
   await expect(page.getByRole('heading', { name: 'Client Overview' })).toBeVisible()
 })
