@@ -1,16 +1,19 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { asset } from './assets'
-import { menu, notifications } from './data'
+import { menu, notifications as demoNotifications } from './data'
 import { Logo, Modal } from './ui'
+import { ApiClient } from './api'
+import { LiveNotifications } from './api-chat-and-notifications-live-notifications'
 
 type WorkspaceProps = {
   title: string
-  active: 'Messages' | 'Sessions' | 'Profile' | 'Wallet'
+  active: 'Dashboard' | 'Clients' | 'Messages' | 'Sessions' | 'Profile' | 'Wallet'
   navigate: (path: string) => void
   children: ReactNode
   offline?: boolean
   onSearch?: (value: string) => void
   mobileTitle?: string
+  api?: ApiClient
 }
 
 const navigationIcons = [
@@ -43,7 +46,10 @@ export function Workspace({
   offline = false,
   onSearch,
   mobileTitle,
+  api,
 }: WorkspaceProps) {
+  const user = api?.getUser()
+  const notifications = api ? [] : demoNotifications
   const params = new URLSearchParams(window.location.search)
   const initial = params.get('state')
   const [collapsed, setCollapsed] = useState(initial === 'collapsed')
@@ -87,11 +93,15 @@ export function Workspace({
               ? '/wallet'
               : label === 'Profile'
                 ? '/profile'
-                : null
+                : label === 'Clients' && api
+                  ? '/clients'
+                  : null
     if (route) navigate(route)
     else
       setNotice(
-        `${label}: this screen is not included in the supplied designs. No backend is connected.`,
+        api
+          ? `${label}: this feature is not available in the therapist API.`
+          : `${label}: this screen is not included in the supplied designs. No backend is connected.`,
       )
   }
 
@@ -143,7 +153,7 @@ export function Workspace({
                   }
                 />
                 <span className="nav-text">{item.label}</span>
-                {item.badge && <span className="nav-badge">{item.badge}</span>}
+                {!api && item.badge && <span className="nav-badge">{item.badge}</span>}
               </button>
             ))}
           </nav>
@@ -152,14 +162,20 @@ export function Workspace({
           <div className="client-reminder textured">
             <div>
               <p>This week</p>
-              <p>You have one client without assigned content for over a week.</p>
-              <button onClick={() => navigate('/sessions/upcoming')}>Client review</button>
+              <p>
+                {api
+                  ? 'Review your assigned clients and upcoming sessions.'
+                  : 'You have one client without assigned content for over a week.'}
+              </p>
+              <button onClick={() => navigate(api ? '/clients' : '/sessions/upcoming')}>
+                Client review
+              </button>
             </div>
           </div>
           <button
             className="compact-reminder icon-button"
             aria-label="Client review"
-            onClick={() => navigate('/sessions/upcoming')}
+            onClick={() => navigate(api ? '/clients' : '/sessions/upcoming')}
           >
             <DesignIcon name="part2-10-imgMaterialSymbolsLightEmergencyHome.svg" />
           </button>
@@ -168,10 +184,16 @@ export function Workspace({
             aria-label="Open profile"
             onClick={() => navigate('/profile')}
           >
-            <img src={asset('dashboard-imgContainer.png')} alt="Dr. Issa Alhadad" />
+            {api ? (
+              <span className="api-avatar" aria-hidden="true">
+                {user?.name?.slice(0, 1) || '?'}
+              </span>
+            ) : (
+              <img src={asset('dashboard-imgContainer.png')} alt="Dr. Issa Alhadad" />
+            )}
             <span className="profile-copy">
-              <strong>Dr. Issa Alhadad</strong>
-              <small>Certified Psychotherapist</small>
+              <strong>{api ? user?.name : 'Dr. Issa Alhadad'}</strong>
+              <small>{api ? 'Therapist' : 'Certified Psychotherapist'}</small>
             </span>
             <DesignIcon name="part2-03-imgIcon.svg" />
           </button>
@@ -256,6 +278,7 @@ export function Workspace({
             </button>
           </header>
           <div className="notifications-list">
+            {api && <LiveNotifications api={api} navigate={navigate} />}
             {notifications
               .filter((item) => !dismissed.includes(item.id))
               .map((item) => (
@@ -286,7 +309,11 @@ export function Workspace({
         </div>
       )}
       {notice && (
-        <Modal title="Frontend demo" className="part2-modal" onClose={() => setNotice('')}>
+        <Modal
+          title={api ? 'Feature unavailable' : 'Frontend demo'}
+          className="part2-modal"
+          onClose={() => setNotice('')}
+        >
           <p>{notice}</p>
         </Modal>
       )}

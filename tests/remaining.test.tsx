@@ -11,6 +11,7 @@ function dialog() {
   return within(screen.getByRole('dialog'))
 }
 beforeEach(() => {
+  vi.stubEnv('VITE_DEMO_MODE', 'true')
   window.history.replaceState({}, '', '/profile')
   vi.restoreAllMocks()
   vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)

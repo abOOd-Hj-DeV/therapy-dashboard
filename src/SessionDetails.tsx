@@ -3,6 +3,8 @@ import { asset } from './assets'
 import { Modal } from './ui'
 import { DesignIcon, Workspace } from './Workspace'
 import { ScheduleDialog } from './Sessions'
+import { ApiClient } from './api'
+import { LiveCarePage } from './api-sessions-and-clinical-live'
 
 type Assignment = { title: string; type: string; instructions?: string; link?: string }
 const library: Assignment[] = [
@@ -175,7 +177,21 @@ function HomeworkDialog({
   )
 }
 
-export function SessionDetails({ navigate }: { navigate: (path: string) => void }) {
+export function SessionDetails({
+  navigate,
+  api,
+}: {
+  navigate: (path: string) => void
+  api?: ApiClient
+}) {
+  return api ? (
+    <LiveCarePage page="detail" api={api} navigate={navigate} />
+  ) : (
+    <DemoSessionDetails navigate={navigate} />
+  )
+}
+
+function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) {
   const params = new URLSearchParams(window.location.search)
   const initial = params.get('state')
   const patient = params.get('patient')

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { asset } from './assets'
 import { DesignIcon, Workspace } from './Workspace'
+import { ApiClient } from './api'
+import { LiveChats } from './api-chat-and-notifications-live-chat'
 
 const clients = [
   {
@@ -59,7 +61,11 @@ const saraMessages: ChatMessage[] = [
   { text: 'Yeah for sure', time: '9:30 AM · Read', outgoing: true, today: true },
 ]
 
-export function Chats({ navigate }: { navigate: (path: string) => void }) {
+export function Chats({ navigate, api }: { navigate: (path: string) => void; api?: ApiClient }) {
+  return api ? <LiveChats api={api} navigate={navigate} /> : <DemoChats navigate={navigate} />
+}
+
+function DemoChats({ navigate }: { navigate: (path: string) => void }) {
   const initial = new URLSearchParams(window.location.search).get('state')
   const [selected, setSelected] = useState<string | null>(
     initial === 'empty' ||

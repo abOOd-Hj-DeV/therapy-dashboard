@@ -1,18 +1,38 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Icon, Logo, Modal } from './ui'
 import { asset } from './assets'
+import { type ApiClient } from './api'
+import { LiveAuthentication } from './api-authentication-live'
 
-type AuthPage = 'login' | 'signup' | 'verify'
-type AuthProps = {
+export type AuthPage =
+  | 'login'
+  | 'signup'
+  | 'activate'
+  | 'verify'
+  | 'forgot-password'
+  | 'reset-password'
+export type AuthProps = {
   page: AuthPage
   navigate: (path: string) => void
   verificationEmail: string
   onCreateAccount: (email: string) => void
+  api?: ApiClient
 }
 const legal =
   "By continuing, you agree to Langbase's Terms of Service and Privacy Policy, and to receive periodic emails with updates."
 
-export function Auth({ page, navigate, verificationEmail, onCreateAccount }: AuthProps) {
+export function Auth(props: AuthProps) {
+  if (!props.api) return <DemoAuth {...props} />
+  const path = window.location.pathname.replace(/\/$/, '')
+  const page =
+    props.page === 'login' &&
+    (path === '/activate' || path === '/forgot-password' || path === '/reset-password')
+      ? (path.slice(1) as AuthPage)
+      : props.page
+  return <LiveAuthentication key={page} api={props.api} page={page} navigate={props.navigate} />
+}
+
+function DemoAuth({ page, navigate, verificationEmail, onCreateAccount }: AuthProps) {
   const [email, setEmail] = useState(page === 'verify' ? verificationEmail : '')
   const [password, setPassword] = useState('')
   const [firstName, setFirstName] = useState('')

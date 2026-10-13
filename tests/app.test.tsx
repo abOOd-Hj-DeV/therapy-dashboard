@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from '../src/App'
 
 beforeEach(() => {
+  vi.stubEnv('VITE_DEMO_MODE', 'true')
   window.history.replaceState({}, '', '/login')
   vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
   vi.spyOn(HTMLDialogElement.prototype, 'showModal').mockImplementation(function (

@@ -2,11 +2,21 @@ import { useEffect, useRef, useState } from 'react'
 import { menu, metrics, notifications, sessions, type Session } from './data'
 import { Icon, Logo, Modal } from './ui'
 import { asset } from './assets'
+import { ApiClient } from './api'
+import { LiveCarePage } from './api-sessions-and-clinical-live'
 
-type DashboardProps = { navigate: (path: string) => void }
+type DashboardProps = { navigate: (path: string) => void; api?: ApiClient }
 type Overlay = 'meeting' | 'notifications' | 'unavailable' | 'profile' | 'patient' | null
 
-export function Dashboard({ navigate }: DashboardProps) {
+export function Dashboard({ navigate, api }: DashboardProps) {
+  return api ? (
+    <LiveCarePage page="dashboard" api={api} navigate={navigate} />
+  ) : (
+    <DemoDashboard navigate={navigate} />
+  )
+}
+
+function DemoDashboard({ navigate }: DashboardProps) {
   const params = new URLSearchParams(window.location.search)
   const initial = params.get('state')
   const [collapsed, setCollapsed] = useState(initial === 'collapsed')

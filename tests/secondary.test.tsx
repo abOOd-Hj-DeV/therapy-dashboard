@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from '../src/App'
 
 beforeEach(() => {
+  vi.stubEnv('VITE_DEMO_MODE', 'true')
   window.history.replaceState({}, '', '/chats')
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1440 })
   Object.defineProperty(navigator, 'onLine', { configurable: true, value: true })

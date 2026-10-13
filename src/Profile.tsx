@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Workspace } from './Workspace'
+import type { ApiClient } from './api'
+import { LiveProfile } from './api-profile-and-settings-live'
 import { Modal } from './ui'
 import { asset } from './assets'
 import { remainingAssets } from './remaining-assets'
@@ -69,7 +71,23 @@ const dialogTitles: Record<Exclude<Dialog, ''>, string> = {
   contact: 'Contact support',
 }
 
-export function Profile({ page, navigate }: { page: Page; navigate: (path: string) => void }) {
+export function Profile({
+  page,
+  navigate,
+  api,
+}: {
+  page: Page
+  navigate: (path: string) => void
+  api?: ApiClient
+}) {
+  return api ? (
+    <LiveProfile page={page} navigate={navigate} api={api} />
+  ) : (
+    <DemoProfile page={page} navigate={navigate} />
+  )
+}
+
+function DemoProfile({ page, navigate }: { page: Page; navigate: (path: string) => void }) {
   const state = new URLSearchParams(window.location.search).get('state')
   const [dialog, setDialog] = useState<Dialog>(() =>
     state && Object.hasOwn(dialogTitles, state) ? (state as Dialog) : '',
