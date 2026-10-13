@@ -23,11 +23,13 @@ export function Modal({
   children,
   onClose,
   className = '',
+  closeIcon,
 }: {
   title: string
   children: ReactNode
   onClose: () => void
   className?: string
+  closeIcon?: ReactNode
 }) {
   const ref = useRef<HTMLDialogElement>(null)
   useEffect(() => {
@@ -77,7 +79,7 @@ export function Modal({
       <div className="modal-heading">
         <h2 id="modal-title">{title}</h2>
         <button className="icon-button" aria-label="Close dialog" onClick={onClose}>
-          ×
+          {closeIcon ?? '×'}
         </button>
       </div>
       {children}

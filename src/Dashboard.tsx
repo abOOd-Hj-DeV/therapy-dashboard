@@ -113,7 +113,9 @@ export function Dashboard({ navigate }: DashboardProps) {
                       ? navigate('/chats')
                       : item.label === 'Sessions'
                         ? navigate('/sessions')
-                        : unavailable(item.label)
+                        : item.label === 'Wallet'
+                          ? navigate('/wallet')
+                          : unavailable(item.label)
                 }
               >
                 <Icon name={item.icon} />
@@ -142,7 +144,7 @@ export function Dashboard({ navigate }: DashboardProps) {
           <button
             className="profile-card textured"
             aria-label="Open profile"
-            onClick={() => setOverlay('profile')}
+            onClick={() => navigate('/profile')}
           >
             <img src={asset('dashboard-imgContainer.png')} alt="Dr. Issa Alhadad" />
             <span className="profile-copy">
