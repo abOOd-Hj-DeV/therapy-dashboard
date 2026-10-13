@@ -1,15 +1,16 @@
 # Sakina — Therapy Dashboard
 
-Responsive React + TypeScript implementation of the **three supplied** Sakina Figma files. Vite serves the app; fonts, illustrations, patient photos, and icons are local assets.
+Responsive React + TypeScript implementation of the **three supplied** Sakina Figma files, with a live Laravel API mode and a separate, development-only design-reference mode. Vite serves the app; fonts, illustrations, patient photos, and icons are local assets.
 
 ## Run
 
 Requires Node.js **22.12+** (Node 22 recommended) and npm.
 
 ```sh
-git clone --branch devin/1791879320-figma-remaining-screens https://github.com/abOOd-Hj-DeV/therapy-dashboard.git
+git clone --branch devin/1791894885-secure-backend-integration https://github.com/abOOd-Hj-DeV/therapy-dashboard.git
 cd therapy-dashboard
 npm ci
+cp .env.example .env.local
 npm run dev
 ```
 
@@ -22,7 +23,17 @@ npm run preview     # preview the production build
 
 Configure production hosting to rewrite unknown paths to `index.html` so direct links to all the routes below work.
 
-## Screens and design previews
+## Live API mode (default)
+
+Start Laravel separately on `http://127.0.0.1:8000`; the Vite development proxy forwards `/api` there. Configure `VITE_API_PROXY_TARGET` for a different local port. `VITE_API_BASE_URL` must end in `/api/v1`: use a same-origin reverse proxy in production, or an explicit HTTPS backend with correctly configured CORS. Only loopback API hosts allow HTTP. `VITE_*` variables are public build configuration, **never secrets**. PowerShell users can use `Copy-Item .env.example .env.local` instead of `cp`.
+
+Login uses international WhatsApp number + password and requires an active, verified therapist account. Therapists activate an invitation through `/activate`, not public signup. Reset uses `/forgot-password` and `/reset-password`. Google sign-in is unavailable. A browser reload deliberately signs out: access/refresh tokens are held in memory, not browser storage. `/clients`, sessions, records, profile, chat, notifications and wallet use server data; a failed request never falls back to fixtures.
+
+See [API integration, security boundaries and release gaps](API_INTEGRATION.md) for exact coverage and unsupported Figma controls. This frontend PR does **not** repair the documented backend security findings or prove production readiness.
+
+For design previews only, set `VITE_DEMO_MODE=true` in `.env.local` and restart Vite. Production builds always disable this bypass. Playwright snapshots explicitly enable the development reference mode; they do not validate live API layouts or 100% Figma parity.
+
+## Design-reference screens (explicit demo mode)
 
 | URL                                   | State                                                           |
 | ------------------------------------- | --------------------------------------------------------------- |
@@ -72,7 +83,7 @@ All screens respond to desktop, tablet, and phone widths. The tablet dashboard u
 
 ### Demo-only functionality
 
-**This is not a production authentication system.** Valid-looking login/signup inputs simulate navigation; any complete five-digit code opens the demo dashboard. No account is created, password stored, email sent, or OTP checked by a server. Google, password reset, meeting joining, notifications, patients, and statistics are not connected to APIs. Notification accept/deny updates local state only. Clipboard copying uses the browser's Clipboard API where permitted.
+**This section describes the development reference mode only, not live mode.** Valid-looking login/signup inputs simulate navigation; any complete five-digit code opens the demo dashboard. No account is created, password stored, email sent, or OTP checked by a server. Google, password reset, meeting joining, notifications, patients, and statistics are not connected to APIs in this mode. Notification accept/deny updates local state only. Clipboard copying uses the browser's Clipboard API where permitted.
 
 Sessions, Messages, and Client Review open the second file's screens; Wallet and Open Profile now open the third file's screens. Messages, attachments, scheduling, rescheduling, notes, homework and outcomes operate in component memory only; refreshing or leaving the page resets them. No message, file, calendar change, clinical record, supervisor alert or client notification is sent to a server. Delete requires confirmation and only exits the demo detail view. A full patient-management list and a standalone Additional Content page remain unavailable: some Figma frames are named “Manage Clients” but actually contain settings/support, not a client list.
 
@@ -92,7 +103,7 @@ npx playwright install chromium
 npm run test:visual
 ```
 
-- **52 component tests:** 32 existing tests plus 20 profile/settings/support/wallet tests covering routing, edits, password validation, preference save/cancel, working-hour validation, holidays, FAQ, demo support/logout, method-specific withdrawals and amount limits.
+- **Live security/integration tests plus 52 design-reference component tests:** bearer handling, refresh/logout races, actor isolation, protected routing, authentication, profile settings, care records, chat/polling and idempotent withdrawal recovery. Opt-in `tests/api-laravel-contract.test.ts` performs eight HTTP checks against synthetic, disposable Laravel fixtures; it is skipped in the ordinary offline run.
 - **119 browser tests:** 67 existing tests plus 52 third-file tests, including 48 new desktop/tablet/phone baselines. Checks cover missing assets, page errors, all new views/dialogs at 320px, cross-file navigation, withdrawal previews, offline events, mobile navigation and modal focus containment/restoration.
 - Baselines were generated on **Linux using the pinned Playwright Chromium**. Other operating systems may render fonts differently. Use Linux for consistent baseline comparisons.
 - `npm run test:visual:update` intentionally replaces the application baselines; review changes before committing them.

@@ -4,6 +4,8 @@ import { asset } from './assets'
 import { Modal } from './ui'
 import { DesignIcon, Workspace } from './Workspace'
 import { Avatar } from './Dashboard'
+import { ApiClient } from './api'
+import { LiveCarePage } from './api-sessions-and-clinical-live'
 
 type ListedSession = Session & {
   id: string
@@ -150,7 +152,15 @@ export function ScheduleDialog({
   )
 }
 
-export function Sessions({ navigate }: { navigate: (path: string) => void }) {
+export function Sessions({ navigate, api }: { navigate: (path: string) => void; api?: ApiClient }) {
+  return api ? (
+    <LiveCarePage page="sessions" api={api} navigate={navigate} />
+  ) : (
+    <DemoSessions navigate={navigate} />
+  )
+}
+
+function DemoSessions({ navigate }: { navigate: (path: string) => void }) {
   const initial = new URLSearchParams(window.location.search).get('state')
   const [tab, setTab] = useState('All')
   const [query, setQuery] = useState('')

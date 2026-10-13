@@ -11,5 +11,6 @@ export default defineConfig({
     command: 'npm run dev -- --port 4173 --strictPort',
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: !process.env.CI,
+    env: { VITE_DEMO_MODE: 'true' },
   },
 })

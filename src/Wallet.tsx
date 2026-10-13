@@ -4,6 +4,8 @@ import { Modal } from './ui'
 import { asset } from './assets'
 import { remainingAssets } from './remaining-assets'
 import { RemainingIcon } from './RemainingUI'
+import { ApiClient } from './api'
+import { ApiWalletAndWithdrawalsLive } from './api-wallet-and-withdrawals-live'
 
 type Tab = 'overview' | 'earnings' | 'withdrawals'
 type Method = '' | 'shamcash' | 'haram'
@@ -35,7 +37,15 @@ const metrics = [
   { icon: 'transactions', title: 'Transactions', mobile: 'Transactions', value: '8 Trans' },
 ] as const
 
-export function Wallet({ navigate }: { navigate: (path: string) => void }) {
+export function Wallet({ navigate, api }: { navigate: (path: string) => void; api?: ApiClient }) {
+  return api ? (
+    <ApiWalletAndWithdrawalsLive api={api} navigate={navigate} />
+  ) : (
+    <DemoWallet navigate={navigate} />
+  )
+}
+
+function DemoWallet({ navigate }: { navigate: (path: string) => void }) {
   const state = new URLSearchParams(window.location.search).get('state')
   const [tab, setTab] = useState<Tab>(
     state === 'earnings'

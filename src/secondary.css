@@ -1,3 +1,48 @@
+.api-avatar {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #f3eee7;
+  color: #745a41;
+  font-size: 22px;
+}
+.api-clients {
+  margin: 24px;
+  padding: 20px;
+  background: white;
+  border-radius: 16px;
+}
+.api-clients .part2-form {
+  max-width: 480px;
+}
+.api-table-scroll {
+  overflow-x: auto;
+}
+.api-clients table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.api-clients th,
+.api-clients td {
+  text-align: start;
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+}
+.api-clients nav,
+.notifications-list nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 16px;
+}
+@media (max-width: 600px) {
+  .api-clients {
+    margin: 12px;
+    padding: 14px;
+  }
+}
 .design-icon {
   display: block;
   flex-shrink: 0;

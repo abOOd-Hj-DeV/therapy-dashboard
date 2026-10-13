@@ -1,8 +1,9 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
-import { afterEach } from 'vitest'
+import { afterEach, vi } from 'vitest'
 
 afterEach(cleanup)
+afterEach(() => vi.unstubAllEnvs())
 
 Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
   configurable: true,
