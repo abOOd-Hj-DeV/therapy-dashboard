@@ -15,6 +15,7 @@ import '@fontsource/tajawal/500.css'
 import { App } from './App'
 import './styles.css'
 import './secondary.css'
+import './remaining.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

@@ -1,13 +1,13 @@
 # Sakina — Therapy Dashboard
 
-Responsive React + TypeScript implementation of the **two supplied** Sakina Figma files. Vite serves the app; fonts, illustrations, patient photos, and icons are local assets.
+Responsive React + TypeScript implementation of the **three supplied** Sakina Figma files. Vite serves the app; fonts, illustrations, patient photos, and icons are local assets.
 
 ## Run
 
 Requires Node.js **22.12+** (Node 22 recommended) and npm.
 
 ```sh
-git clone --branch devin/1791701771-figma-chats-sessions https://github.com/abOOd-Hj-DeV/therapy-dashboard.git
+git clone --branch devin/1791879320-figma-remaining-screens https://github.com/abOOd-Hj-DeV/therapy-dashboard.git
 cd therapy-dashboard
 npm ci
 npm run dev
@@ -24,32 +24,49 @@ Configure production hosting to rewrite unknown paths to `index.html` so direct 
 
 ## Screens and design previews
 
-| URL                                | State                                                           |
-| ---------------------------------- | --------------------------------------------------------------- |
-| `/` or `/login`                    | Sign in; disabled, filled, password visibility, loading         |
-| `/signup`                          | Create account; desktop names side by side, phone names stacked |
-| `/verify`                          | Five-digit verification; keyboard and paste support             |
-| `/dashboard`                       | Therapist dashboard; four metrics and seven upcoming sessions   |
-| `/dashboard?state=collapsed`       | Collapsed desktop sidebar                                       |
-| `/dashboard?state=expanded`        | Expanded phone navigation                                       |
-| `/dashboard?state=search`          | Open search with the design's `Fa` results                      |
-| `/dashboard?state=notifications`   | Notifications and invitation actions                            |
-| `/dashboard?state=offline`         | Offline preview; real online/offline browser events also work   |
-| `/dashboard?state=meeting`         | Meeting dialog and copy-link action                             |
-| `/chats`                           | Desktop/tablet conversation; phone conversation list            |
-| `/chats?state=empty`               | Arabic empty conversation state                                 |
-| `/chats?state=list`                | Conversation list                                               |
-| `/chats?state=thread`              | Sara's conversation, including the phone thread                 |
-| `/chats?state=offline`             | Offline warning and disabled outgoing messages                  |
-| `/chats?state=collapsed`           | Collapsed desktop chat navigation                               |
-| `/sessions`                        | All, Previous, Upcoming, Today filters and 16 demo fixtures     |
-| `/sessions?state=schedule`         | Schedule a new session                                          |
-| `/sessions/upcoming`               | Client overview, preparation, clinical summary and pathway      |
-| `/sessions/upcoming?state=actions` | Reschedule/delete menu                                          |
-| `/sessions/upcoming?state=record`  | Notes, exercises, outcome, continuity note and follow-up flags  |
-| `/sessions/upcoming?state=create`  | Create homework dialog                                          |
-| `/sessions/upcoming?state=library` | Homework library, search and content filters                    |
-| `/sessions?state=expanded`         | Expanded phone navigation drawer                                |
+| URL                                   | State                                                           |
+| ------------------------------------- | --------------------------------------------------------------- |
+| `/` or `/login`                       | Sign in; disabled, filled, password visibility, loading         |
+| `/signup`                             | Create account; desktop names side by side, phone names stacked |
+| `/verify`                             | Five-digit verification; keyboard and paste support             |
+| `/dashboard`                          | Therapist dashboard; four metrics and seven upcoming sessions   |
+| `/dashboard?state=collapsed`          | Collapsed desktop sidebar                                       |
+| `/dashboard?state=expanded`           | Expanded phone navigation                                       |
+| `/dashboard?state=search`             | Open search with the design's `Fa` results                      |
+| `/dashboard?state=notifications`      | Notifications and invitation actions                            |
+| `/dashboard?state=offline`            | Offline preview; real online/offline browser events also work   |
+| `/dashboard?state=meeting`            | Meeting dialog and copy-link action                             |
+| `/chats`                              | Desktop/tablet conversation; phone conversation list            |
+| `/chats?state=empty`                  | Arabic empty conversation state                                 |
+| `/chats?state=list`                   | Conversation list                                               |
+| `/chats?state=thread`                 | Sara's conversation, including the phone thread                 |
+| `/chats?state=offline`                | Offline warning and disabled outgoing messages                  |
+| `/chats?state=collapsed`              | Collapsed desktop chat navigation                               |
+| `/sessions`                           | All, Previous, Upcoming, Today filters and 16 demo fixtures     |
+| `/sessions?state=schedule`            | Schedule a new session                                          |
+| `/sessions/upcoming`                  | Client overview, preparation, clinical summary and pathway      |
+| `/sessions/upcoming?state=actions`    | Reschedule/delete menu                                          |
+| `/sessions/upcoming?state=record`     | Notes, exercises, outcome, continuity note and follow-up flags  |
+| `/sessions/upcoming?state=create`     | Create homework dialog                                          |
+| `/sessions/upcoming?state=library`    | Homework library, search and content filters                    |
+| `/sessions?state=expanded`            | Expanded phone navigation drawer                                |
+| `/profile`                            | Profile summary, professional credentials and contact details   |
+| `/profile/settings`                   | Account settings, availability and logout                       |
+| `/profile/help`                       | Support, FAQ, contact form and explicit demo call/chat feedback |
+| `/profile/settings?state=edit`        | Edit profile form                                               |
+| `/profile/settings?state=password`    | Change-password validation demo                                 |
+| `/profile/settings?state=preferences` | Notification switches                                           |
+| `/profile/settings?state=hours`       | Working days and time ranges                                    |
+| `/profile/settings?state=holidays`    | Add/remove local vacation dates                                 |
+| `/profile/settings?state=logout`      | Logout confirmation                                             |
+| `/profile/help?state=faq`             | Expandable FAQ                                                  |
+| `/profile/help?state=contact`         | Contact-support form                                            |
+| `/wallet`                             | Overview, metric cards and monthly chart                        |
+| `/wallet?state=earnings`              | Session earnings and transaction statuses                       |
+| `/wallet?state=withdrawals`           | Withdrawal history and request action                           |
+| `/wallet?state=withdraw`              | Payment-method selector                                         |
+| `/wallet?state=shamcash`              | Shamcash request form                                           |
+| `/wallet?state=haram`                 | Al-Haram request form                                           |
 
 All screens respond to desktop, tablet, and phone widths. The tablet dashboard uses an icon rail; phones use a navigation drawer. Dialogs support Escape, keyboard focus containment, and focus restoration. Motion respects `prefers-reduced-motion`.
 
@@ -57,7 +74,9 @@ All screens respond to desktop, tablet, and phone widths. The tablet dashboard u
 
 **This is not a production authentication system.** Valid-looking login/signup inputs simulate navigation; any complete five-digit code opens the demo dashboard. No account is created, password stored, email sent, or OTP checked by a server. Google, password reset, meeting joining, notifications, patients, and statistics are not connected to APIs. Notification accept/deny updates local state only. Clipboard copying uses the browser's Clipboard API where permitted.
 
-Sessions, Messages, and Client Review now open the second file's implemented screens. Messages, attachments, scheduling, rescheduling, notes, homework and outcomes operate in component memory only; refreshing or leaving the page resets them. No message, file, calendar change, clinical record, supervisor alert or client notification is sent to a server. Delete requires confirmation and only exits the demo detail view. Full patient profiles, Additional Content, Wallet and profile settings still show clearly marked placeholders because neither supplied file includes their destination screens.
+Sessions, Messages, and Client Review open the second file's screens; Wallet and Open Profile now open the third file's screens. Messages, attachments, scheduling, rescheduling, notes, homework and outcomes operate in component memory only; refreshing or leaving the page resets them. No message, file, calendar change, clinical record, supervisor alert or client notification is sent to a server. Delete requires confirmation and only exits the demo detail view. A full patient-management list and a standalone Additional Content page remain unavailable: some Figma frames are named “Manage Clients” but actually contain settings/support, not a client list.
+
+Profile edits, notification preferences, working days and vacations are local component state, preserved between the three profile tabs until leaving that area or reloading. Password validation never changes or stores a password. Support forms, sample phone numbers and live-chat actions never send a message or place a call. Logout only returns to the sign-in demo. Withdrawal submission validates the method-specific fields and the 500–12,500 SP range, then displays a **preview**; no financial request is sent, no balance is deducted, and no transaction is persisted. Payment details are not written to browser storage. On phones, tap Net Available Balance for withdrawals or Monthly earnings for earnings; the menu drawer also opens Wallet.
 
 The Figma fixtures inconsistently use Mark lory in the session header and Ahmed in the homework/response area. The default preview retains those labels; opening a patient from the session list uses the selected patient's name. The source's preparation view highlights “Session record”; this implementation highlights the tab whose content is actually displayed. SF Pro is not bundled; the locally hosted IBM Plex Sans/Inter fonts provide the fallback. Additional session fixtures complete the source's 16/6/8/2 filter totals.
 
@@ -73,8 +92,8 @@ npx playwright install chromium
 npm run test:visual
 ```
 
-- **32 component tests:** the original 16 authentication/dashboard tests plus chat selection, filtering, unread badges, local replies/attachments, offline events, navigation, session counts/scheduling, patient routes, notes, continuity, homework creation/library, rescheduling and demo deletion.
-- **67 browser tests:** the original 29 tests plus 38 second-file tests. There are 35 additional visual baselines, including desktop/tablet/phone chats, sessions, details and dialogs. Browser checks cover missing assets, page errors, 320px overflow, mobile navigation, scheduling, offline messaging and modal focus containment/restoration.
+- **52 component tests:** 32 existing tests plus 20 profile/settings/support/wallet tests covering routing, edits, password validation, preference save/cancel, working-hour validation, holidays, FAQ, demo support/logout, method-specific withdrawals and amount limits.
+- **119 browser tests:** 67 existing tests plus 52 third-file tests, including 48 new desktop/tablet/phone baselines. Checks cover missing assets, page errors, all new views/dialogs at 320px, cross-file navigation, withdrawal previews, offline events, mobile navigation and modal focus containment/restoration.
 - Baselines were generated on **Linux using the pinned Playwright Chromium**. Other operating systems may render fonts differently. Use Linux for consistent baseline comparisons.
 - `npm run test:visual:update` intentionally replaces the application baselines; review changes before committing them.
 
@@ -116,11 +135,32 @@ Source: [Figma file 2](https://www.figma.com/design/dbEbuybwc2dUDJ9QCwNjWL/Untit
 
 Direct export comparisons guide geometry and refinement; downscaled Figma exports, native form controls, focus indicators and the documented source inconsistencies prevent an honest claim of **100% pixel parity**. The app-owned baselines remain regression tests, not a Figma parity score.
 
+### Third-file evidence and limits
+
+Source: [Figma file 3](https://www.figma.com/design/RalEn8SStVMJf2KPmpePTk/Untitled), accessed through **figma33**. Twenty design-tool attempts were counted, including two oversized inventory failures and two Starter-plan-limit failures. Two compact inventories and fourteen design contexts/screenshots were cached; implementation and refinements made no further Figma calls. Only needed downloaded assets were copied locally; no Figma screenshot or temporary asset URL is used in production.
+
+| Screen/state               | Directly reviewed cached Figma reference                             | App coverage                                                                                            |
+| -------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Profile                    | Desktop context/export                                               | All three widths; phone layout adapted from mobile settings, **not** a successful mobile-profile export |
+| Settings                   | Desktop and mobile contexts/exports                                  | All three widths and settings navigation                                                                |
+| Support/help               | Desktop context/export, mobile background beneath FAQ                | All three widths and FAQ/contact actions                                                                |
+| FAQ                        | Mobile context/export                                                | All three widths and disclosure behavior                                                                |
+| Wallet overview            | Desktop and mobile contexts/exports                                  | All three widths and chart/metric snapshots                                                             |
+| Earnings/withdrawals       | Desktop content beneath the withdrawal dialogs and variant inventory | All three widths; adapted tablet/phone lists, not dedicated list exports                                |
+| Edit profile               | Desktop context/export                                               | All three widths and save/cancel validation                                                             |
+| Notification settings      | Desktop context/export                                               | All three widths; preference save/cancel                                                                |
+| Work hours/vacations       | Desktop contexts/exports                                             | All three widths; time/date validation and local updates                                                |
+| Contact support            | Desktop context/export                                               | All three widths; explicit unsent-message feedback                                                      |
+| Shamcash/Al-Haram requests | Desktop contexts/exports                                             | All three widths, method switching and amount limits                                                    |
+| Change password/logout     | Variant inventory and shared dialog conventions                      | All three widths and interactions; **no dedicated export comparison**                                   |
+
+The mobile-profile and change-password context requests failed at the account's Starter limit. The remaining responsive variants use cached shared geometry and metadata, not individually retrieved exports. Native time/date/select controls and accessible focus rings differ from drawn Figma controls. Costaline/SF Pro are not bundled: the count serif uses Georgia and other text uses the existing local fonts. Some source settings frames highlight Dashboard while showing Profile; the app consistently highlights Patients for the profile area. Source labels such as Upcoming/Completed on profile tabs, “Work Hours Management” on the vacation dialog, and mixed dollar/SP/Riyal fixture currencies are retained. Extra demo explanations and validation feedback are intentional additions. These are documented differences, not a **100% parity** claim.
+
 ## Structure
 
 - `src/Auth.tsx`: sign-in, signup, verification.
 - `src/Dashboard.tsx`: responsive workspace and overlays.
-- `src/Workspace.tsx`: shared second-file navigation, topbar, drawer and mobile navigation.
+- `src/Workspace.tsx`: shared navigation, topbar, drawer and mobile navigation.
 - `src/Chats.tsx`: conversation list, threads, composer and offline behavior.
 - `src/Sessions.tsx`: session fixtures, filters and scheduling dialog.
 - `src/SessionDetails.tsx`: preparation, records and homework dialog.
@@ -128,6 +168,10 @@ Direct export comparisons guide geometry and refinement; downscaled Figma export
 - `src/data.ts`: typed frontend fixtures.
 - `src/styles.css`: design tokens and responsive CSS.
 - `src/secondary.css`: scoped second-file responsive layouts.
+- `src/Profile.tsx`: third-file profile, settings, support and dialogs.
+- `src/Wallet.tsx`: wallet overview, transaction fixtures and withdrawal preview.
+- `src/RemainingUI.tsx`, `src/remaining-assets.ts`, `src/remaining.css`: third-file shared controls, local asset mapping and responsive styling.
+- `tests/remaining.test.tsx`: third-file component coverage.
 - `tests/app.test.tsx`: component behavior tests.
 - `tests/secondary.test.tsx`: chat/session component behavior tests.
 - `tests/visual/`: Playwright tests and visual baselines.

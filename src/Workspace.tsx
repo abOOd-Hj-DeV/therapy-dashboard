@@ -5,11 +5,12 @@ import { Logo, Modal } from './ui'
 
 type WorkspaceProps = {
   title: string
-  active: 'Messages' | 'Sessions'
+  active: 'Messages' | 'Sessions' | 'Profile' | 'Wallet'
   navigate: (path: string) => void
   children: ReactNode
   offline?: boolean
   onSearch?: (value: string) => void
+  mobileTitle?: string
 }
 
 const navigationIcons = [
@@ -41,6 +42,7 @@ export function Workspace({
   children,
   offline = false,
   onSearch,
+  mobileTitle,
 }: WorkspaceProps) {
   const params = new URLSearchParams(window.location.search)
   const initial = params.get('state')
@@ -81,7 +83,11 @@ export function Workspace({
           ? '/chats'
           : label === 'Sessions'
             ? '/sessions'
-            : null
+            : label === 'Wallet'
+              ? '/wallet'
+              : label === 'Profile'
+                ? '/profile'
+                : null
     if (route) navigate(route)
     else
       setNotice(
@@ -91,7 +97,7 @@ export function Workspace({
 
   return (
     <div
-      className={`workspace secondary-workspace ${active === 'Messages' ? 'chat-workspace' : ''} ${collapsed ? 'is-collapsed' : ''} ${expanded ? 'is-expanded' : ''} ${isOffline ? 'secondary-offline' : ''}`}
+      className={`workspace secondary-workspace ${active === 'Profile' || active === 'Wallet' ? 'remaining-workspace' : ''} ${active === 'Messages' ? 'chat-workspace' : ''} ${collapsed ? 'is-collapsed' : ''} ${expanded ? 'is-expanded' : ''} ${isOffline ? 'secondary-offline' : ''}`}
     >
       {expanded && (
         <button
@@ -123,7 +129,7 @@ export function Workspace({
             {menu.map((item, index) => (
               <button
                 key={item.label}
-                className={`nav-item ${item.label === (active === 'Messages' ? 'Patients' : 'Sessions') ? 'active' : ''}`}
+                className={`nav-item ${item.label === (active === 'Messages' || active === 'Profile' ? 'Patients' : active) ? 'active' : ''}`}
                 aria-label={item.label}
                 aria-current={item.label === active ? 'page' : undefined}
                 onClick={() => openPage(item.label)}
@@ -160,11 +166,7 @@ export function Workspace({
           <button
             className="profile-card textured"
             aria-label="Open profile"
-            onClick={() =>
-              setNotice(
-                'Dr. Issa Alhadad · Certified Psychotherapist. This is a frontend demo; no authenticated session is stored.',
-              )
-            }
+            onClick={() => navigate('/profile')}
           >
             <img src={asset('dashboard-imgContainer.png')} alt="Dr. Issa Alhadad" />
             <span className="profile-copy">
@@ -186,7 +188,8 @@ export function Workspace({
             >
               <DesignIcon name="part2-11-imgMenu.svg" />
             </button>
-            <h1>{title}</h1>
+            <h1 className={mobileTitle ? 'desktop-page-title' : undefined}>{title}</h1>
+            {mobileTitle && <h1 className="mobile-page-title">{mobileTitle}</h1>}
           </div>
           <div className="secondary-actions">
             <label className={`secondary-search ${searchOpen ? 'open' : ''}`}>
