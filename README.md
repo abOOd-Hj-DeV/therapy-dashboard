@@ -7,7 +7,7 @@ Responsive React + TypeScript implementation of the **three supplied** Sakina Fi
 Requires Node.js **22.12+** (Node 22 recommended) and npm.
 
 ```sh
-git clone --branch devin/1791894885-secure-backend-integration https://github.com/abOOd-Hj-DeV/therapy-dashboard.git
+git clone --branch devin/1792262325-figma-complete-pixel-audit https://github.com/abOOd-Hj-DeV/therapy-dashboard.git
 cd therapy-dashboard
 npm ci
 cp .env.example .env.local
@@ -47,6 +47,8 @@ For design previews only, set `VITE_DEMO_MODE=true` in `.env.local` and restart 
 | `/dashboard?state=notifications`      | Notifications and invitation actions                            |
 | `/dashboard?state=offline`            | Offline preview; real online/offline browser events also work   |
 | `/dashboard?state=meeting`            | Meeting dialog and copy-link action                             |
+| `/clients`                            | Design-reference client cards and status filters                |
+| `/clients/profile`                    | Client overview, sessions, notes and custom-content tabs         |
 | `/chats`                              | Desktop/tablet conversation; phone conversation list            |
 | `/chats?state=empty`                  | Arabic empty conversation state                                 |
 | `/chats?state=list`                   | Conversation list                                               |
@@ -85,7 +87,7 @@ All screens respond to desktop, tablet, and phone widths. The tablet dashboard u
 
 **This section describes the development reference mode only, not live mode.** Valid-looking login/signup inputs simulate navigation; any complete five-digit code opens the demo dashboard. No account is created, password stored, email sent, or OTP checked by a server. Google, password reset, meeting joining, notifications, patients, and statistics are not connected to APIs in this mode. Notification accept/deny updates local state only. Clipboard copying uses the browser's Clipboard API where permitted.
 
-Sessions, Messages, and Client Review open the second file's screens; Wallet and Open Profile now open the third file's screens. Messages, attachments, scheduling, rescheduling, notes, homework and outcomes operate in component memory only; refreshing or leaving the page resets them. No message, file, calendar change, clinical record, supervisor alert or client notification is sent to a server. Delete requires confirmation and only exits the demo detail view. A full patient-management list and a standalone Additional Content page remain unavailable: some Figma frames are named “Manage Clients” but actually contain settings/support, not a client list.
+Sessions and Messages open the second file's screens; Wallet and Open Profile open the third file's screens. Client Review and Patients open the consolidated file's client cards and profile tabs. Switch Overview, Sessions, Notes and Custom Content within the profile; these tab selections are local state, not query-string deep links. Messages, attachments, scheduling, rescheduling, notes, homework and outcomes operate in component memory only; refreshing or leaving the page resets them. No message, file, calendar change, clinical record, supervisor alert or client notification is sent to a server. Delete requires confirmation and only exits the demo detail view. A standalone Additional Content page remains unavailable; custom content is presented within the client profile. Some earlier frames named “Manage Clients” actually contain settings/support, not a client list.
 
 Profile edits, notification preferences, working days and vacations are local component state, preserved between the three profile tabs until leaving that area or reloading. Password validation never changes or stores a password. Support forms, sample phone numbers and live-chat actions never send a message or place a call. Logout only returns to the sign-in demo. Withdrawal submission validates the method-specific fields and the 500–12,500 SP range, then displays a **preview**; no financial request is sent, no balance is deducted, and no transaction is persisted. Payment details are not written to browser storage. On phones, tap Net Available Balance for withdrawals or Monthly earnings for earnings; the menu drawer also opens Wallet.
 
@@ -103,14 +105,26 @@ npx playwright install chromium
 npm run test:visual
 ```
 
-- **Live security/integration tests plus 52 design-reference component tests:** bearer handling, refresh/logout races, actor isolation, protected routing, authentication, profile settings, care records, chat/polling and idempotent withdrawal recovery. Opt-in `tests/api-laravel-contract.test.ts` performs eight HTTP checks against synthetic, disposable Laravel fixtures; it is skipped in the ordinary offline run.
-- **119 browser tests:** 67 existing tests plus 52 third-file tests, including 48 new desktop/tablet/phone baselines. Checks cover missing assets, page errors, all new views/dialogs at 320px, cross-file navigation, withdrawal previews, offline events, mobile navigation and modal focus containment/restoration.
+- **Component/security/contract tests:** bearer handling, refresh/logout races, actor isolation, protected routing, query-string navigation, client-profile authorization, authentication, profile settings, care records, chat/polling and idempotent withdrawal recovery. Opt-in `tests/api-laravel-contract.test.ts` performs eight HTTP checks against synthetic, disposable Laravel fixtures; it is skipped in the ordinary offline run.
+- **119 historical browser baselines:** 67 earlier tests plus 52 third-file tests. Visual repairs intentionally change their appearance; these old application snapshots are not current Figma acceptance criteria and were not automatically replaced. Current comparisons are documented below.
 - Baselines were generated on **Linux using the pinned Playwright Chromium**. Other operating systems may render fonts differently. Use Linux for consistent baseline comparisons.
 - `npm run test:visual:update` intentionally replaces the application baselines; review changes before committing them.
 
 ### Visual fidelity — what the tests prove
 
-The screenshot tests compare the implementation with **its own reviewed baselines**, not with Figma pixels. Passing them detects future visual regressions; it does **not** prove 100% Figma parity. Figma's cached dashboard exports are downscaled, so a pixel-perfect claim would be misleading.
+The screenshot tests compare the implementation with **its own reviewed baselines**, not with Figma pixels. Passing them detects future visual regressions; it does **not** prove 100% Figma parity. The later consolidated audit obtained some natural-size dashboard exports, but many other cached references remain downscaled.
+
+### Consolidated visual repair audit
+
+The open Figma file was inventoried as **164 frames**. Newly implemented client cards and client-profile Overview/Sessions/Notes/Custom Content routes have separate development-only fixtures and live API implementations. Both fixture entry points require `import.meta.env.DEV` and explicit `VITE_DEMO_MODE=true`; production builds retain live authentication even when that flag is set.
+
+The final R9 Chromium audit captured **44 canonical states**: **14 natural PNG comparisons, 26 downscaled-context comparisons, 2 metadata-only states and 2 states without a reference**. Seven assessments were fresh and 37 explicitly carried forward with changed-image review. It passed **74/74 responsive checks**, ten interaction groups, thirteen supplemental checks and a fresh true-flag production guard. These counts describe sampled states, not complete 164-frame parity or a similarity percentage. Final offline checks passed 287 tests (eight opt-in HTTP checks skipped in that run and passed separately with synthetic Laravel data), TypeScript, production build and dependency audit with zero vulnerabilities. ESLint has zero errors and seven development Fast Refresh warnings.
+
+Repairs cover auth geometry, scoped sidebars, dashboard/tablet cards, clients and profile tabs, chat composition, sessions at 320px, schedule/homework dialogs, clinical layouts and wallet chart proportions. Narrow layouts preserve reachable filters, internal dialog scrolling and keyboard focus restoration. Tests for CSS declarations assert implementation contracts only, never pixel accuracy.
+
+**Still not pixel-perfect:** dashboard vertical accumulation/header positioning, auth texture and its image-derived card-height estimate, some glass/artwork rasterization, FAQ geometry and approximately 2px homework-library placement. An attempted table-font change was reverted after direct comparisons showed worse glyph positioning. Desktop home is black while tablet/phone active home is teal, matching their different natural references. Costaline is unavailable; profile counts use a serif fallback. No unlicensed font was downloaded.
+
+Completing the exhaustive comparison requires natural-size PNGs or a PDF/export of the remaining frames, plus the licensed font/artwork where applicable. No further Figma requests were made after the Starter limit. Do not describe this implementation as 100% matched, and do not replace React DOM with reference screenshots.
 
 | Screen/state          | Figma evidence used                          | Browser coverage                                    |
 | --------------------- | -------------------------------------------- | --------------------------------------------------- |

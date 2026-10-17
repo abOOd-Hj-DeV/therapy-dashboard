@@ -1606,15 +1606,6 @@
   .mobile-bottom-nav button:last-child {
     position: relative;
   }
-  .mobile-bottom-nav button:last-child::after {
-    content: '';
-    position: absolute;
-    width: 16px;
-    height: 9px;
-    border: 2px solid black;
-    border-radius: 4px 4px 2px 2px;
-    bottom: 10px;
-  }
   .mobile-bottom-nav button.active {
     background: #1d919e1a;
   }

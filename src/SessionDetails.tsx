@@ -43,7 +43,7 @@ function HomeworkDialog({
   return (
     <Modal
       title={`Assign homework to ${client}`}
-      className="part2-modal homework-modal"
+      className={`part2-modal homework-modal demo-homework-modal ${tab === 'create' ? 'is-create' : 'is-library'}`}
       onClose={onClose}
     >
       <div className="segmented-control" role="tablist" aria-label="Homework source">

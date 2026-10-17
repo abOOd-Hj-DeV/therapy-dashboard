@@ -1,0 +1,299 @@
+/* Sessions/clinical-only repairs; imported by api-sessions-and-clinical-support.tsx. */
+.care-session-detail > .care-session-actions {
+  order: 2;
+  margin-bottom: 16px;
+}
+.care-session-detail > .detail-grid,
+.care-session-detail > .care-clinical-unavailable {
+  order: 3;
+}
+.care-session-detail > .care-session-history {
+  order: 4;
+  margin-top: 16px;
+}
+
+/* List portrait bounds in the original 1440/770/370 contexts are 40 by 42. */
+.all-sessions-table th {
+  font-family: 'Geist', sans-serif;
+}
+
+.demo-sessions-toolbar {
+  padding-bottom: 16px;
+}
+.demo-sessions-toolbar > .teal-button {
+  gap: 8px;
+  padding-right: 8px;
+}
+.demo-sessions-toolbar > .teal-button .design-icon {
+  width: 16px;
+  height: 16px;
+}
+.demo-sessions-toolbar .session-tabs {
+  background: #fff;
+  border: 1px solid #eff0f0;
+  border-radius: 12px;
+  padding: 4px;
+  gap: 16px;
+}
+.demo-sessions-toolbar .session-tabs button {
+  padding: 6px 12px;
+  gap: 4px;
+  color: #4a4e52;
+  font: 600 13px/normal 'IBM Plex Sans', sans-serif;
+}
+.demo-sessions-toolbar .session-tabs button.selected {
+  background: #1d8590;
+  color: #fff;
+  box-shadow: inset 0 -3px 3px #ffffff40, inset 0 3px 10px #ffffff4d;
+}
+.demo-all-sessions {
+  padding: 17px;
+  background: #fff;
+  border: 1px solid #eff0f0;
+  border-radius: 16px;
+}
+.demo-all-sessions > header {
+  padding: 0 0 11px;
+}
+.demo-all-sessions h2 {
+  font: 400 18px/24px 'IBM Plex Sans Arabic', sans-serif;
+  letter-spacing: -0.54px;
+  color: #101828;
+}
+.demo-all-sessions > header button {
+  display: none;
+}
+.demo-all-sessions .all-sessions-table {
+  border-collapse: separate;
+  border-spacing: 0 11px;
+  margin-block: -11px;
+}
+.demo-all-sessions .all-sessions-table th {
+  width: 33.333%;
+  height: 40px;
+  padding: 8px 12px;
+  background: #f8f8f8;
+  border-block: 1px solid #eff0f0;
+  font: 400 14px/21px 'Geist', sans-serif;
+}
+.demo-all-sessions .all-sessions-table th:first-child {
+  border-left: 1px solid #eff0f0;
+  border-radius: 8px 0 0 8px;
+}
+.demo-all-sessions .all-sessions-table th:last-child {
+  border-radius: 0 8px 8px 0;
+}
+.demo-all-sessions .all-sessions-table :is(th, td):not(:first-child) {
+  text-align: center;
+}
+.demo-all-sessions .all-sessions-table td {
+  height: 48px;
+  padding: 0 4px;
+  border: 0;
+}
+.demo-all-sessions .all-sessions-table tbody tr:hover {
+  background: #f8f8f8;
+}
+.demo-all-sessions .patient-name {
+  font: 400 14px/18.2px 'IBM Plex Sans Arabic', sans-serif;
+}
+@media (min-width: 601px) {
+  .demo-all-sessions .all-sessions-table .avatar {
+    width: 40px;
+    height: 42px;
+  }
+}
+.demo-all-sessions .patient-cell small {
+  letter-spacing: -0.36px;
+}
+.demo-all-sessions .session-status {
+  font: 500 12px/16px 'IBM Plex Sans Arabic', sans-serif;
+  padding: 2px 8px 2px 4px;
+  gap: 2px;
+}
+@media (max-width: 600px) {
+  .demo-sessions-toolbar .session-tabs {
+    gap: 4px;
+    border: 0;
+    background: transparent;
+    padding: 0;
+  }
+  .demo-sessions-toolbar .session-tabs button {
+    padding: 6px;
+  }
+  .demo-all-sessions {
+    margin-top: 0;
+    padding: 12px;
+  }
+  .demo-all-sessions .all-sessions-table :is(th, td) {
+    padding-inline: 4px;
+  }
+  .demo-all-sessions .all-sessions-table th:first-child {
+    width: 42%;
+  }
+  .demo-all-sessions .all-sessions-table th:nth-child(2) {
+    width: 28%;
+  }
+  .demo-all-sessions .all-sessions-table th {
+    font-size: 12px;
+  }
+  .demo-all-sessions .patient-name {
+    font-size: 11px;
+    line-height: 16px;
+  }
+  .demo-all-sessions .session-status {
+    font-size: 10px;
+    gap: 4px;
+    padding: 3px 4px;
+  }
+}
+
+.all-sessions-table .patient-cell .avatar {
+  width: 40px;
+  height: 42px;
+  border-radius: 12px;
+}
+
+.care-avatar.avatar,
+.care-avatar.detail-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  color: #364153;
+  font: 600 14px/20px 'IBM Plex Sans Arabic', sans-serif;
+}
+
+.homework-check.care-module-status {
+  cursor: default;
+}
+.homework-check.care-module-status > span:first-of-type {
+  flex-shrink: 0;
+}
+.homework-check.care-module-status input:not(:checked) + span {
+  background: #fff;
+  border: 0.8px solid #e5e7eb;
+  box-shadow: none;
+}
+
+/* Original file dbEbuybwc2dUDJ9QCwNjWL, nodes 2:6579 and 2:5406. */
+.part2-modal.homework-modal.is-create {
+  width: min(500px, calc(100vw - 32px));
+}
+.part2-modal.homework-modal .modal-heading h2 {
+  font-size: 20px;
+  line-height: 32px;
+  letter-spacing: -0.3px;
+}
+.part2-modal.homework-modal .part2-form {
+  gap: 8px;
+}
+.part2-modal.homework-modal .part2-form label {
+  font-size: 14px;
+  line-height: 16px;
+}
+.part2-modal.homework-modal .part2-form :is(input, select, textarea) {
+  border: 0.8px solid #e5e7eb;
+  border-radius: 14px;
+  background: #f8fafc;
+  font-size: 14px;
+  line-height: 1.3;
+}
+.part2-modal.homework-modal.demo-homework-modal.is-create textarea {
+  height: 91px;
+}
+.part2-modal.demo-homework-modal .modal-heading {
+  margin-bottom: 8px;
+}
+.part2-modal.demo-homework-modal .segmented-control {
+  margin-bottom: 8px;
+}
+.part2-modal.demo-homework-modal .part2-form :is(input, select) {
+  height: 41.6px;
+}
+.part2-modal.demo-homework-modal.is-create .part2-form label {
+  gap: 10px;
+}
+.part2-modal.demo-homework-modal.is-create .form-footer {
+  margin-top: 4px;
+}
+.part2-modal.demo-homework-modal.is-library {
+  width: min(508px, calc(100vw - 32px));
+}
+@media (max-width: 369px) {
+  .demo-sessions-toolbar .session-tabs {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 2px;
+  }
+  .demo-sessions-toolbar .session-tabs button {
+    padding-inline: 4px;
+    font-size: 12px;
+  }
+}
+
+/* Original schedule dialog 2:2343, width 415 and heading 20/32. */
+.part2-modal.schedule-modal {
+  width: min(415px, calc(100vw - 48px));
+}
+.part2-modal.schedule-modal .modal-heading {
+  margin-bottom: 16px;
+}
+.part2-modal.schedule-modal .modal-heading h2 {
+  line-height: 32px;
+  letter-spacing: -0.3px;
+}
+.part2-modal.schedule-modal .part2-form label {
+  line-height: 16px;
+  gap: 10px;
+}
+.part2-modal.schedule-modal .part2-form :is(input, select) {
+  height: 41.6px;
+  border: 0.8px solid #e5e7eb;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+.part2-modal.schedule-modal .form-footer {
+  margin-top: 0;
+}
+.part2-modal.schedule-modal .form-footer button {
+  font: 600 14px/16px 'IBM Plex Sans Arabic', sans-serif;
+  padding: 10px 16px;
+}
+
+/* Quick Clinical Summary 2:3865: a 10% teal wash with the cached 2% grain layer. */
+.session-detail .clinical-summary {
+  position: relative;
+  overflow: hidden;
+  background: rgba(35, 148, 161, 0.1);
+}
+.session-detail .clinical-summary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: url('/assets/dashboard-imgFrame2147234885.png') left top / 475px 475px;
+  opacity: 0.02;
+  pointer-events: none;
+}
+.session-detail .clinical-summary > * {
+  position: relative;
+}
+
+/* Original action dropdown 2:3934; keep its responsive anchor from secondary.css. */
+.session-detail .session-actions-menu {
+  width: 199px;
+  box-shadow: 0 24px 24px -12px rgba(41, 41, 41, 0.04),
+    0 48px 48px -24px rgba(41, 41, 41, 0.04);
+}
+.session-detail .session-actions-menu button {
+  letter-spacing: -0.42px;
+}
+
+@media (max-width: 600px) {
+  .part2-modal.homework-modal .modal-heading h2 {
+    font-size: 18px;
+    line-height: 24px;
+    letter-spacing: -0.27px;
+  }
+}

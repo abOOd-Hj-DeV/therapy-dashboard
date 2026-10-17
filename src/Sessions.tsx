@@ -174,7 +174,7 @@ function DemoSessions({ navigate }: { navigate: (path: string) => void }) {
   )
   return (
     <Workspace title="Sessions" active="Sessions" navigate={navigate} onSearch={setQuery}>
-      <div className="sessions-toolbar">
+      <div className="sessions-toolbar demo-sessions-toolbar">
         <div className="session-tabs" role="tablist" aria-label="Session filters">
           {['All', 'Previous', 'Upcoming', 'Today'].map((label) => (
             <button
@@ -192,10 +192,10 @@ function DemoSessions({ navigate }: { navigate: (path: string) => void }) {
           ))}
         </div>
         <button className="teal-button" onClick={() => setSchedule(true)}>
-          Schedule New
+          Schedule New <DesignIcon name="part2-07-imgArrowLeft.svg" />
         </button>
       </div>
-      <section className="all-sessions" aria-label="All Sessions">
+      <section className="all-sessions demo-all-sessions" aria-label="All Sessions">
         <header>
           <h2>{tab === 'All' ? 'All Sessions' : `${tab} Sessions`}</h2>
           <button

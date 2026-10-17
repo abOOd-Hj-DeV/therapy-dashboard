@@ -93,7 +93,7 @@ export function Workspace({
               ? '/wallet'
               : label === 'Profile'
                 ? '/profile'
-                : label === 'Clients' && api
+                : (label === 'Patients' || label === 'Clients') && (api || (import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === 'true'))
                   ? '/clients'
                   : null
     if (route) navigate(route)
@@ -105,9 +105,11 @@ export function Workspace({
       )
   }
 
+  const activeLabel = active === 'Clients' ? 'Patients' : active
+
   return (
     <div
-      className={`workspace secondary-workspace ${active === 'Profile' || active === 'Wallet' ? 'remaining-workspace' : ''} ${active === 'Messages' ? 'chat-workspace' : ''} ${collapsed ? 'is-collapsed' : ''} ${expanded ? 'is-expanded' : ''} ${isOffline ? 'secondary-offline' : ''}`}
+      className={`workspace secondary-workspace visual-auth-shell ${active === 'Profile' || active === 'Wallet' ? 'remaining-workspace' : ''} ${active === 'Messages' ? 'chat-workspace' : ''} ${collapsed ? 'is-collapsed' : ''} ${expanded ? 'is-expanded' : ''} ${isOffline ? 'secondary-offline' : ''}`}
     >
       {expanded && (
         <button
@@ -139,9 +141,9 @@ export function Workspace({
             {menu.map((item, index) => (
               <button
                 key={item.label}
-                className={`nav-item ${item.label === (active === 'Messages' || active === 'Profile' ? 'Patients' : active) ? 'active' : ''}`}
+                className={`nav-item ${item.label === activeLabel ? 'active' : ''}`}
                 aria-label={item.label}
-                aria-current={item.label === active ? 'page' : undefined}
+                aria-current={item.label === activeLabel ? 'page' : undefined}
                 onClick={() => openPage(item.label)}
                 title={item.label}
               >
@@ -167,7 +169,7 @@ export function Workspace({
                   ? 'Review your assigned clients and upcoming sessions.'
                   : 'You have one client without assigned content for over a week.'}
               </p>
-              <button onClick={() => navigate(api ? '/clients' : '/sessions/upcoming')}>
+              <button onClick={() => navigate('/clients')}>
                 Client review
               </button>
             </div>
@@ -175,13 +177,14 @@ export function Workspace({
           <button
             className="compact-reminder icon-button"
             aria-label="Client review"
-            onClick={() => navigate(api ? '/clients' : '/sessions/upcoming')}
+            onClick={() => navigate('/clients')}
           >
             <DesignIcon name="part2-10-imgMaterialSymbolsLightEmergencyHome.svg" />
           </button>
           <button
-            className="profile-card textured"
+            className={`profile-card textured ${active === 'Profile' ? 'active' : ''}`}
             aria-label="Open profile"
+            aria-current={active === 'Profile' ? 'page' : undefined}
             onClick={() => navigate('/profile')}
           >
             {api ? (
@@ -217,7 +220,9 @@ export function Workspace({
             <label className={`secondary-search ${searchOpen ? 'open' : ''}`}>
               <DesignIcon name="part2-03-imgSearch.svg" />
               <input
-                aria-label="Search patients"
+                aria-label={onSearch ? 'Search patients' : 'Search unavailable'}
+                title={onSearch ? undefined : 'Search is not available on this page.'}
+                disabled={!onSearch}
                 placeholder="Search..."
                 onChange={(event) => onSearch?.(event.target.value)}
               />
@@ -226,6 +231,8 @@ export function Workspace({
               className="icon-button secondary-mobile-search"
               aria-label="Open search"
               aria-expanded={searchOpen}
+              disabled={!onSearch}
+              title={onSearch ? undefined : 'Search is not available on this page.'}
               onClick={() => setSearchOpen(!searchOpen)}
             >
               <DesignIcon name="part2-03-imgSearch.svg" />
@@ -252,8 +259,9 @@ export function Workspace({
           {[...menu.map((item) => item.label), 'Profile'].map((label, index) => (
             <button
               key={label}
-              className={label === active ? 'active' : ''}
+              className={label === activeLabel ? 'active' : ''}
               aria-label={label}
+              aria-current={label === activeLabel ? 'page' : undefined}
               onClick={() => openPage(label)}
             >
               <DesignIcon name={mobileIcons[index]} />

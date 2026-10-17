@@ -1,0 +1,200 @@
+/* Original dashboard contexts only; do not restyle live care or shared Workspace pages. */
+.visual-demo-dashboard .search-results {
+  width: 199px;
+  background: #fff;
+  border: 0;
+  border-radius: 20px;
+  gap: 0;
+  box-shadow: 0 24px 24px -12px #2929290a, 0 48px 48px -24px #2929290a;
+}
+.visual-demo-dashboard .search-results button {
+  border: 1px solid transparent;
+  background: transparent;
+}
+.visual-demo-dashboard .search-results button:is(:hover, :focus-visible, .design-preview-hover) {
+  background: #f6f6f6;
+  border-color: #eaeaea;
+  box-shadow: inset 0 .75px .75px #ffffffa6;
+}
+.visual-demo-dashboard .hero-rating { font-family: 'Inter Tight', sans-serif; }
+.visual-demo-dashboard .hero-rating > span { display: inline-flex; align-items: center; gap: 6px; border: 0; }
+@media (min-width: 601px) {
+  .visual-demo-dashboard .hero-rating > span {
+    box-shadow: inset 0 0 0 1px #ffffff26;
+  }
+}
+.visual-demo-dashboard .dashboard-rating-stars {
+  width: 76px;
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding-top: 2px;
+  font-size: inherit;
+  letter-spacing: normal;
+}
+.visual-demo-dashboard .nav-label {
+  font: 500 12px/16px 'Inter', sans-serif;
+  letter-spacing: .48px;
+  color: #9da3a9;
+}
+.visual-demo-dashboard .nav-item { font-weight: 500; }
+.visual-demo-dashboard .dashboard-active-icon {
+  background: #1d919e;
+  mask: url('/assets/dashboard-imgDashboardIcon.svg') center / contain no-repeat;
+}
+@media (min-width: 1101px) {
+  .visual-demo-dashboard .dashboard-active-icon { background: #0a0a0a; }
+}
+.visual-demo-dashboard .next-session .eyebrow {
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+  font-weight: 600;
+  color: #fff9;
+}
+.visual-demo-dashboard .next-patient h3 { font-weight: 700; line-height: 24px; }
+.visual-demo-dashboard .next-patient p { line-height: 20px; }
+.visual-demo-dashboard .next-session .initials {
+  font-family: 'Tajawal', sans-serif;
+  font-weight: 700;
+  background: #ffffff26;
+  border: 0;
+}
+.visual-demo-dashboard .next-session > button { font-weight: 700; color: #0e3a40; }
+.visual-demo-dashboard .metric-change { color: #01b0a1; }
+.visual-demo-dashboard .metric-change.negative { color: #ff5a00; }
+.visual-demo-dashboard .metric-change.negative .icon { transform: scaleY(-1); }
+.visual-demo-dashboard .featured-icon::before {
+  inset: auto;
+  left: 6px;
+  top: -6px;
+  width: 40px;
+  height: 40px;
+}
+.visual-demo-dashboard .featured-icon.has-glass > span {
+  backdrop-filter: blur(8px);
+}
+.visual-demo-dashboard .featured-icon img[src$='dashboard-imgIcon3.svg'] {
+  width: 20px;
+  height: 20px;
+  transform: translateX(-.2px);
+}
+.visual-demo-dashboard .featured-icon img[src$='dashboard-imgIcon4.svg'] {
+  width: 17.5px;
+  height: 19.5px;
+  transform: translateX(.25px);
+}
+@media (min-width: 601px) and (max-width: 1100px) {
+  .visual-demo-dashboard .dashboard-hero {
+    min-height: 0;
+    align-items: flex-start;
+    gap: 46px;
+  }
+  .visual-demo-dashboard .next-session {
+    width: 283px;
+    flex-shrink: 0;
+    margin: 0;
+    border: 0;
+    box-shadow: inset 0 0 0 1px #ffffff40;
+  }
+  .visual-demo-dashboard .metric {
+    min-height: 0;
+    justify-content: center;
+  }
+  .visual-demo-dashboard .metric-data {
+    flex: initial;
+  }
+  .visual-demo-dashboard .metric-data h2 {
+    min-height: 0;
+  }
+  .visual-demo-dashboard .sessions-card th {
+    width: 33.333%;
+  }
+}
+@media (min-width: 740px) and (max-width: 1100px) {
+  .visual-demo-dashboard .next-session {
+    max-width: none;
+  }
+}
+.visual-demo-dashboard .session-status.unsure {
+  background: #fff6e0;
+  border-color: #faedcc;
+  color: #966422;
+}
+.visual-demo-dashboard .offline-banner {
+  background: #fef3c7;
+  border-color: #f59e0b;
+  color: #d97706;
+  padding-block: 12px;
+  align-items: flex-start;
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+  line-height: 1.3;
+}
+.visual-demo-dashboard.is-offline :is(.sidebar, .hero-section, .metrics, .sessions-section, .topbar) { opacity: .5; }
+
+.visual-demo-dashboard .demo-notification-2 { background: #f6f6f6; }
+.visual-demo-dashboard .demo-notification-2 .notification-avatar > span { background: #2a85ff; }
+.visual-demo-dashboard .demo-notification-3 .notification-avatar > span { background: #ffd88d; }
+.visual-demo-dashboard .demo-notification-4 .notification-avatar > span { background: #ff632a; }
+.visual-demo-dashboard .demo-notification-5 .notification-avatar > span { background: #cc977b; }
+.visual-demo-dashboard .demo-notification-6 .notification-avatar > span { background: #91b6a2; }
+.visual-demo-dashboard .notification-body > p {
+  font: 400 14px/1.3 'IBM Plex Sans Arabic', sans-serif;
+  color: #a9a9a9;
+}
+.visual-demo-dashboard .notification-title time { line-height: 16px; }
+.visual-demo-dashboard .notification-mention {
+  font: italic 700 14px/20px 'DM Sans', sans-serif;
+  letter-spacing: -.42px;
+  color: #2a85ff;
+}
+.visual-demo-dashboard .demo-unread-dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  align-self: center;
+  border-radius: 50%;
+  background: #1d919e;
+}
+.visual-demo-dashboard .notification-actions {
+  gap: 8px;
+  margin-top: 0;
+  padding-block: 12px;
+}
+.visual-demo-dashboard .notification-actions button {
+  background: #eaeaea;
+  border: 0;
+  padding: 4px 6px;
+  font: 700 14px/20px 'DM Sans', sans-serif;
+  letter-spacing: -.42px;
+  box-shadow: 0 0 0 1px #0000001a, inset 0 .75px .75px #ffffffa6;
+}
+.visual-demo-dashboard .demo-notification-3 .notification-actions button { width: 131px; }
+.visual-demo-dashboard .demo-notification-5 .notification-actions button { width: 78px; }
+.visual-demo-dashboard .demo-notification-5 .notification-actions button:first-child {
+  width: 77px;
+  background: #1d919e;
+  color: #fff;
+}
+.visual-demo-dashboard .demo-notification-6 .notification-actions button { width: 78px; }
+
+.visual-demo-dashboard .dashboard-meeting-modal { width: 463px; box-shadow: none; }
+.visual-demo-dashboard .dashboard-meeting-modal::backdrop { backdrop-filter: blur(6px); }
+.visual-demo-dashboard .dashboard-meeting-modal .modal-heading { margin-bottom: 12px; }
+.visual-demo-dashboard .dashboard-meeting-modal h2 { font-size: 20px; line-height: 32px; letter-spacing: -.3px; }
+.visual-demo-dashboard .dashboard-meeting-modal .meeting-label { font-weight: 600; line-height: 16px; }
+.visual-demo-dashboard .dashboard-meeting-modal .meeting-url {
+  margin-top: 10px;
+  padding: 8px 10px;
+  gap: 6px;
+  background: #f6f6f6;
+}
+.visual-demo-dashboard .dashboard-meeting-modal .meeting-url input {
+  font: 400 14px/1.3 'IBM Plex Sans Arabic', sans-serif;
+  padding: 0;
+  color: #2f2f2f;
+}
+.visual-demo-dashboard .dashboard-meeting-modal .meeting-url .icon-button { width: 24px; height: 24px; flex-shrink: 0; }
+.visual-demo-dashboard .dashboard-meeting-modal > .primary-button {
+  padding: 8px 10px;
+  font: 700 14px/20px 'DM Sans', sans-serif;
+  letter-spacing: -.42px;
+}

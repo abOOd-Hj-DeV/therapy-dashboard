@@ -103,6 +103,18 @@ function LiveCareOverview({ api, navigate, dashboard }: Props & { dashboard: boo
       /* Malformed server IDs never become routes. */
     }
   }
+  const listHeader = (
+    <header>
+      <h2>
+        {dashboard ? 'Upcoming Sessions' : tab === 'All' ? 'All Sessions' : `${tab} Sessions`}
+      </h2>
+      {dashboard && (
+        <button className="see-all" onClick={() => navigate('/sessions')}>
+          See all
+        </button>
+      )}
+    </header>
+  )
   return (
     <Workspace
       title={dashboard ? 'Dashboard' : 'Sessions'}
@@ -136,7 +148,7 @@ function LiveCareOverview({ api, navigate, dashboard }: Props & { dashboard: boo
                     {complete && next ? (
                       <>
                         <div className="next-patient">
-                          <CareAvatar name={nameFor(next)} />
+                          <CareAvatar name={nameFor(next)} hero />
                           <div>
                             <h3>{nameFor(next)}</h3>
                             <p>
@@ -244,21 +256,9 @@ function LiveCareOverview({ api, navigate, dashboard }: Props & { dashboard: boo
           className={dashboard ? 'sessions-section' : 'all-sessions'}
           aria-label={dashboard ? 'Upcoming Sessions' : 'All Sessions'}
         >
+          {!dashboard && listHeader}
           <div className={dashboard ? 'sessions-card' : 'sessions-list-scroll'}>
-            <header>
-              <h2>
-                {dashboard
-                  ? 'Upcoming Sessions'
-                  : tab === 'All'
-                    ? 'All Sessions'
-                    : `${tab} Sessions`}
-              </h2>
-              {dashboard && (
-                <button className="see-all" onClick={() => navigate('/sessions')}>
-                  See all
-                </button>
-              )}
-            </header>
+            {dashboard && listHeader}
             <table className="all-sessions-table">
               <thead>
                 <tr>

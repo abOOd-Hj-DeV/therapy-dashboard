@@ -5,7 +5,7 @@ import { LiveProfile } from './api-profile-and-settings-live'
 import { Modal } from './ui'
 import { asset } from './assets'
 import { remainingAssets } from './remaining-assets'
-import { FormActions, RemainingIcon, SettingRow, type RemainingIconName } from './RemainingUI'
+import { FaqSummary, FormActions, RemainingIcon, SettingRow, type RemainingIconName } from './RemainingUI'
 
 type Page = 'profile' | 'settings' | 'help'
 type Dialog =
@@ -334,15 +334,7 @@ function DemoProfile({ page, navigate }: { page: Page; navigate: (path: string) 
             <div className="faq-list">
               {faqQuestions.map((question, index) => (
                 <details key={question} open={index === 0}>
-                  <summary>
-                    {question}
-                    <span className="faq-open-arrow">
-                      <RemainingIcon name="faqOpen" />
-                    </span>
-                    <span className="faq-closed-arrow">
-                      <RemainingIcon name="faqClosed" />
-                    </span>
-                  </summary>
+                  <FaqSummary>{question}</FaqSummary>
                   <p>{faqAnswers[index]}</p>
                 </details>
               ))}
@@ -696,7 +688,8 @@ function HolidaysForm({
       <div className="holiday-list">
         {values.map((holiday) => (
           <article key={holiday.id}>
-            <div>
+            <span className="holiday-clock"><RemainingIcon name="pendingMobile" /></span>
+            <div className="holiday-copy">
               <strong>{holiday.reason}</strong>
               <p>
                 {holiday.from} ← {holiday.to}
@@ -704,11 +697,11 @@ function HolidaysForm({
             </div>
             <button
               type="button"
-              className="icon-button"
+              className="icon-button holiday-remove"
               aria-label={`Remove ${holiday.reason}`}
               onClick={() => onChange(values.filter((item) => item.id !== holiday.id))}
             >
-              ×
+              <RemainingIcon name="close" />
             </button>
           </article>
         ))}

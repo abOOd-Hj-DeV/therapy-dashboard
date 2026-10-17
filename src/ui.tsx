@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { asset } from './assets'
+import './visual-auth-shell.css'
 
 export function Icon({ name, className = '' }: { name: string; className?: string }) {
   return <img className={`icon ${className}`} src={asset(name)} alt="" aria-hidden="true" />

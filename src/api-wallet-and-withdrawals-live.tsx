@@ -246,7 +246,7 @@ function LiveWallet({ api, navigate }: LiveProps) {
         if (flow.canLeave()) navigate(path)
       }}
     >
-      <div className={`wallet-layout wallet-${tab}`}>
+      <div className={`wallet-layout wallet-live wallet-${tab}`}>
         <p className="wallet-phone-heading">Therapist Overview</p>
         {resource.loading && <p role="status">Loading wallet…</p>}
         {!!error && (
@@ -363,7 +363,7 @@ function LiveWallet({ api, navigate }: LiveProps) {
                       </div>
                       <div className="wallet-transaction-status">
                         <strong>{money(item.amount, wallet.currency)}</strong>
-                        <span className={item.status === 'paid' ? 'completed' : 'processing'}>
+                        <span className={item.status === 'paid' ? 'completed' : `withdrawal-${item.status}`}>
                           {item.status[0].toUpperCase() + item.status.slice(1)}
                         </span>
                       </div>
@@ -371,7 +371,7 @@ function LiveWallet({ api, navigate }: LiveProps) {
                   ))}
                 </div>
               ) : (
-                <div className="wallet-chart">
+                <div className="wallet-summary">
                   <header>
                     <h2>{tab === 'earnings' ? 'Net earnings summary' : 'Wallet overview'}</h2>
                   </header>
