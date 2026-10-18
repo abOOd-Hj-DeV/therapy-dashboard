@@ -16,9 +16,6 @@
   height: 52px;
   padding: 16px 16px 0;
 }
-.demo-client-list .secondary-main {
-  overflow: clip;
-}
 .demo-client-list .demo-client-list-add-row {
   display: none;
 }
@@ -350,6 +347,10 @@
     gap: 16px;
     align-items: stretch;
   }
+  .demo-client-list[data-compliance-open='true'],
+  .demo-client-list .secondary-workspace.is-collapsed {
+    --demo-client-list-card-gap: 16px;
+  }
   /* 1:7517 keeps the date beneath the session count even when both pills fit. */
   .demo-client-list .secondary-workspace.is-collapsed .demo-client-list-card-footer {
     flex-direction: column;
@@ -378,6 +379,15 @@
   .demo-client-list {
     --demo-client-list-card-gap: 16px;
   }
+  .demo-client-list .demo-client-list-filters {
+    flex: 1;
+    min-width: 0;
+    justify-content: space-between;
+    gap: 0;
+  }
+  .demo-client-list .demo-client-list-filters button {
+    padding-inline: 8px;
+  }
   .demo-client-list .demo-client-list-compliance {
     left: auto;
     right: 0;
@@ -394,5 +404,36 @@
   .demo-client-list .demo-client-list-wide-card {
     flex: 0 0 100%;
     min-width: 0;
+  }
+}
+@media (max-width: 359px) {
+  .demo-client-list .demo-client-list-card-header {
+    height: auto;
+    min-height: 42px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .demo-client-list .demo-client-list-identity {
+    width: auto;
+    min-width: 0;
+    flex: 1 1 150px;
+  }
+  .demo-client-list .demo-client-list-person {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .demo-client-list .demo-client-list-status {
+    max-width: 100%;
+    white-space: normal;
+  }
+  .demo-client-list .demo-client-list-pill {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+  .demo-client-list .demo-client-list-change {
+    max-width: 100%;
+    height: auto;
+    white-space: normal;
   }
 }
