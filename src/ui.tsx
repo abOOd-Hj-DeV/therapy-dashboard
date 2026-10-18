@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, type MouseEvent, type ReactNode } from 'react'
 import { asset } from './assets'
 import './visual-auth-shell.css'
 
@@ -19,6 +19,17 @@ export function Logo({ wordmark = false }: { wordmark?: boolean }) {
   )
 }
 
+function isInsideDialog(event: MouseEvent<HTMLDialogElement>) {
+  if (event.target !== event.currentTarget) return true
+  const rect = event.currentTarget.getBoundingClientRect()
+  return (
+    event.clientX >= rect.left &&
+    event.clientX < rect.right &&
+    event.clientY >= rect.top &&
+    event.clientY < rect.bottom
+  )
+}
+
 export function Modal({
   title,
   children,
@@ -33,7 +44,7 @@ export function Modal({
   closeIcon?: ReactNode
 }) {
   const ref = useRef<HTMLDialogElement>(null)
-  const pointerOrigin = useRef<EventTarget | null>(null)
+  const pointerOrigin = useRef<{ startedInside: boolean; endedInside: boolean } | null>(null)
   useEffect(() => {
     const dialog = ref.current!
     const previousFocus = document.activeElement as HTMLElement | null
@@ -75,12 +86,18 @@ export function Modal({
       aria-labelledby="modal-title"
       onCancel={onClose}
       onPointerDownCapture={(event) => {
-        pointerOrigin.current = event.target
+        pointerOrigin.current = { startedInside: isInsideDialog(event), endedInside: false }
+      }}
+      onPointerUpCapture={(event) => {
+        if (pointerOrigin.current) pointerOrigin.current.endedInside = isInsideDialog(event)
+      }}
+      onPointerCancelCapture={() => {
+        pointerOrigin.current = null
       }}
       onClick={(event) => {
-        const startedInside = pointerOrigin.current !== null && pointerOrigin.current !== event.currentTarget
+        const origin = pointerOrigin.current
         pointerOrigin.current = null
-        if (event.target === event.currentTarget && !startedInside) onClose()
+        if (!isInsideDialog(event) && !origin?.startedInside && !origin?.endedInside) onClose()
       }}
     >
       <div className="modal-heading">
