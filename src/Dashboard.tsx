@@ -325,7 +325,10 @@ function DemoDashboard({ navigate }: DashboardProps) {
                 </span>
               </span>
               <div className="metric-data">
-                <h2>{metric.label}</h2>
+                <h2>
+                  {metric.label}
+                  {metric.label === 'Active users' && <span className="metric-current"> now</span>}
+                </h2>
                 <div>
                   <strong>{metric.value}</strong>
                   <span className={`metric-change ${metric.negative ? 'negative' : ''}`}>
