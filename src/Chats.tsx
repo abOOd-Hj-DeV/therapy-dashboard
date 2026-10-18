@@ -3,6 +3,8 @@ import { asset } from './assets'
 import { DesignIcon, Workspace } from './Workspace'
 import { ApiClient } from './api'
 import { LiveChats } from './api-chat-and-notifications-live-chat'
+import '@fontsource/ibm-plex-sans/700.css'
+import './visual-chats.css'
 
 const clients = [
   {
@@ -42,20 +44,29 @@ const clients = [
     unread: 0,
   },
 ]
-type ChatMessage = { text: string; time: string; outgoing?: boolean; today?: boolean }
+type ChatMessage = {
+  text: string
+  time: string
+  outgoing?: boolean
+  today?: boolean
+  expandOnPhone?: boolean
+}
 const saraMessages: ChatMessage[] = [
   {
     text: 'I feel better after applying the breathing exercises you recommended.',
     time: '9:20 AM',
+    expandOnPhone: true,
   },
   {
     text: "That's great! Did you run into any difficulties applying it?",
     time: '9:30 AM · Read',
     outgoing: true,
+    expandOnPhone: true,
   },
   {
     text: 'At first it was hard to concentrate, but it got easier with practice.',
     time: '10:00 AM',
+    expandOnPhone: true,
   },
   { text: 'Can I start the new unit?', time: '10:30 AM' },
   { text: 'Yeah for sure', time: '9:30 AM · Read', outgoing: true, today: true },
@@ -80,15 +91,19 @@ function DemoChats({ navigate }: { navigate: (path: string) => void }) {
   const [read, setRead] = useState<string[]>([])
   const [feedback, setFeedback] = useState('')
   const [online, setOnline] = useState(navigator.onLine)
+  const [compact, setCompact] = useState(window.innerWidth <= 600)
   const fileRef = useRef<HTMLInputElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const offline = !online || initial === 'offline'
   const client = clients.find((item) => item.id === selected)
   useEffect(() => {
     const update = () => setOnline(navigator.onLine)
+    const resize = () => setCompact(window.innerWidth <= 600)
+    window.addEventListener('resize', resize)
     window.addEventListener('online', update)
     window.addEventListener('offline', update)
     return () => {
+      window.removeEventListener('resize', resize)
       window.removeEventListener('online', update)
       window.removeEventListener('offline', update)
     }
@@ -116,7 +131,9 @@ function DemoChats({ navigate }: { navigate: (path: string) => void }) {
       offline={offline}
       onSearch={setQuery}
     >
-      <div className={`chat-layout ${client ? 'has-conversation' : 'no-conversation'}`}>
+      <div
+        className={`chat-layout demo-chat-layout ${offline ? 'is-offline' : ''} ${client ? 'has-conversation' : 'no-conversation'}`}
+      >
         <section className="chat-list" aria-label="Conversations">
           <label className="chat-search">
             <DesignIcon name="part2-03-imgSearch.svg" />
@@ -127,17 +144,23 @@ function DemoChats({ navigate }: { navigate: (path: string) => void }) {
               onChange={(event) => setQuery(event.target.value)}
             />
           </label>
-          <div className="response-promise list-promise">
-            <DesignIcon name="part2-03-imgIcon1.svg" />
-            <span>Committed to responding within 8 hours</span>
-          </div>
+          {(!offline || client) && (
+            <div className="response-promise list-promise">
+              <DesignIcon name="part2-03-imgIcon1.svg" />
+              <span>Committed to responding within 8 hours</span>
+            </div>
+          )}
           <div className="conversation-list">
             {clients
               .filter((item) => item.name.toLowerCase().includes(query.trim().toLowerCase()))
               .map((item) => (
                 <button
                   key={item.id}
-                  className={`conversation ${selected === item.id || (!selected && item.id === 'sara') ? 'selected' : ''}`}
+                  className={`conversation ${
+                    selected === item.id || (!selected && compact && item.id === 'sara')
+                      ? 'selected'
+                      : ''
+                  }`}
                   onClick={() => {
                     setSelected(item.id)
                     setDraft('')
@@ -198,18 +221,17 @@ function DemoChats({ navigate }: { navigate: (path: string) => void }) {
               {messages.map((message, index) => (
                 <div
                   key={`${index}-${message.text}`}
-                  className={`message-group ${message.outgoing ? 'outgoing' : ''}`}
+                  className={`message-group ${message.outgoing ? 'outgoing' : ''} ${message.expandOnPhone ? 'reference-phone-wide' : ''}`}
                 >
                   {message.today && <p className="message-date">Today</p>}
                   <p className="message-bubble">{message.text}</p>
                   <time>{message.time}</time>
                 </div>
               ))}
-              <div className="reply-reminder">
+              <div className="reply-reminder" ref={bottomRef}>
                 <DesignIcon name="part2-03-imgIcon2.svg" />
                 <span>New message from client · 2 hours ago — reply required within 6 hours</span>
               </div>
-              <div ref={bottomRef} />
             </div>
             <form className="message-composer" onSubmit={send}>
               <button
@@ -233,11 +255,18 @@ function DemoChats({ navigate }: { navigate: (path: string) => void }) {
                   )
                 }
               />
-              <input
+              <textarea
                 aria-label="Message"
-                placeholder="Type your message to the client..."
+                rows={1}
+                placeholder={compact ? 'Type your message' : 'Type your message to the client...'}
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+                    event.preventDefault()
+                    event.currentTarget.form?.requestSubmit()
+                  }
+                }}
                 disabled={offline}
               />
               <button type="submit" aria-label="Send message" disabled={!draft.trim() || offline}>

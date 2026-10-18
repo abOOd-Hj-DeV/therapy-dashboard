@@ -387,7 +387,9 @@ export function LiveAuthentication({
   }
 
   function fieldError(name: string) {
-    return Object.hasOwn(fields, name) ? <span role="status">Please check this field.</span> : null
+    return Object.hasOwn(fields, name) ? (
+      <span className="live-auth-field-error" role="status">Please check this field.</span>
+    ) : null
   }
 
   const title =
@@ -412,7 +414,7 @@ export function LiveAuthentication({
             : 'Login'
 
   return (
-    <main className={`auth-page ${phase === 'activate' ? 'signup-page' : ''}`}>
+    <main className="auth-page visual-auth live-auth">
       <img className="auth-glow" src={asset('auth-imgEllipse1559.svg')} alt="" />
       <div className="auth-stack">
         <div className="auth-glass">
@@ -433,14 +435,14 @@ export function LiveAuthentication({
               </div>
             </header>
             {phase === 'activate' && (
-              <p>
+              <p className="live-auth-help">
                 Invitations expire after 24 hours. If your invitation is missing or expired, contact
                 authorized management for a replacement. Activation does not imply clinical
                 approval.
               </p>
             )}
             {phase === 'otp' && challenge && (
-              <div className="auth-notice">
+              <div className="auth-notice live-auth-request">
                 <p>{challenge.phone}</p>
                 <p>Request reference: {challenge.request_reference}</p>
                 <p>
@@ -469,7 +471,7 @@ export function LiveAuthentication({
                     disabled={busy}
                     required
                   />
-                  <span id="auth-phone-help">
+                  <span id="auth-phone-help" className="live-auth-help">
                     Include + or 00 and the country code; local numbers cannot be inferred.
                   </span>
                   {fieldError('whatsapp_number')}
@@ -572,15 +574,15 @@ export function LiveAuthentication({
                 {busy ? 'Please wait…' : action}
               </button>
             </form>
-            {error && <p role="alert">{error}</p>}
-            {retrySeconds > 0 && <p role="status">Try again in {retrySeconds} seconds.</p>}
+            {error && <p className="live-auth-feedback" role="alert">{error}</p>}
+            {retrySeconds > 0 && <p className="live-auth-feedback" role="status">Try again in {retrySeconds} seconds.</p>}
             {notice && (
               <p className="auth-notice" role="status">
                 {notice}
               </p>
             )}
             {phase === 'reset' && (
-              <p>Reset codes expire after five minutes. Request another if needed.</p>
+              <p className="live-auth-help">Reset codes expire after five minutes. Request another if needed.</p>
             )}
           </section>
         </div>

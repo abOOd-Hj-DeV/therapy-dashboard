@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { Workspace } from './Workspace'
 import { Modal } from './ui'
 import { asset } from './assets'
@@ -6,6 +6,8 @@ import { remainingAssets } from './remaining-assets'
 import { RemainingIcon } from './RemainingUI'
 import { ApiClient } from './api'
 import { ApiWalletAndWithdrawalsLive } from './api-wallet-and-withdrawals-live'
+import { closurePortraitAssets } from './closure-portrait-assets'
+import './visual-wallet-closure.css'
 
 type Tab = 'overview' | 'earnings' | 'withdrawals'
 type Method = '' | 'shamcash' | 'haram'
@@ -17,11 +19,68 @@ const monthly = [
   { month: 'January', short: 'Jan', value: 6200, height: 165, phoneHeight: 70 },
 ]
 const earnings = [
-  { name: 'Sarah Ali', date: '2024-05-20', amount: 300, status: 'Completed' },
-  { name: 'Ahmed Mohammed', date: '2024-05-20', amount: 200, status: 'Completed' },
-  { name: 'Sarah Khalid', date: '2024-05-17', amount: 100, status: 'Processing' },
-  { name: 'Omar Youssef', date: '2024-05-16', amount: 400, status: 'Completed' },
-]
+  {
+    name: 'Sarah Ali',
+    date: '2024-05-20',
+    amount: 300,
+    status: 'Completed',
+  },
+  {
+    name: 'Ahmed Mohammed',
+    date: '2024-05-20',
+    amount: 200,
+    status: 'Completed',
+  },
+  {
+    name: 'Sarah Khalid',
+    date: '2024-05-17',
+    amount: 100,
+    status: 'Processing',
+  },
+  {
+    name: 'Omar Youssef',
+    date: '2024-05-16',
+    amount: 200,
+    status: 'Completed',
+  },
+  {
+    name: 'Omar Youssef',
+    date: '2024-05-16',
+    amount: 400,
+    status: 'Completed',
+  },
+].map((item) => {
+  const portrait = closurePortraitAssets.wallet.earnings.find(
+    ({ target }) =>
+      target.name === item.name && target.date === item.date && target.amount === item.amount,
+  )
+  return {
+    ...item,
+    portrait: portrait?.image ?? remainingAssets.walletAvatar,
+    artwork: portrait?.artwork ?? 'photo',
+  }
+})
+// Reference-only fixtures: never used by ApiWalletAndWithdrawalsLive.
+const responsiveWithdrawals = [
+  { date: '2024-05-20', amount: 300, status: 'Completed' },
+  { date: '2024-05-20', amount: 200, status: 'Completed' },
+  { date: '2024-05-17', amount: 100, status: 'Processing' },
+  { date: '2024-05-16', amount: 200, status: 'Completed' },
+  { date: '2024-05-16', amount: 400, status: 'Completed' },
+].map((item) => {
+  const portrait = closurePortraitAssets.wallet.responsiveWithdrawals.find(
+    ({ target }) => target.date === item.date && target.amount === item.amount,
+  )
+  return {
+    ...item,
+    portrait: portrait?.image ?? remainingAssets.walletAvatar,
+    artwork: portrait?.artwork ?? 'photo',
+  }
+})
+const withdrawals = Array.from({ length: 6 }, (_, index) => ({
+  id: `demo-withdrawal-${index + 1}`,
+  responsive: responsiveWithdrawals[index],
+}))
 const metrics = [
   { icon: 'withdrawn', title: 'Withdrawn', mobile: 'Withdrawn', value: '$30.0k' },
   { icon: 'available', title: 'Available Now', mobile: 'Available', value: '$12.5k' },
@@ -50,11 +109,9 @@ function DemoWallet({ navigate }: { navigate: (path: string) => void }) {
   const [tab, setTab] = useState<Tab>(
     state === 'earnings'
       ? 'earnings'
-      : state === 'withdrawals'
+      : state === 'withdrawals' || ['withdraw', 'shamcash', 'haram'].includes(state ?? '')
         ? 'withdrawals'
-        : ['withdraw', 'shamcash', 'haram'].includes(state ?? '')
-          ? 'earnings'
-          : 'overview',
+        : 'overview',
   )
   const [requestOpen, setRequestOpen] = useState(
     ['withdraw', 'shamcash', 'haram'].includes(state ?? ''),
@@ -62,14 +119,15 @@ function DemoWallet({ navigate }: { navigate: (path: string) => void }) {
   const [notice, setNotice] = useState('')
   return (
     <Workspace title="Dashboard" mobileTitle="Wallet" active="Wallet" navigate={navigate}>
-      <div className={`wallet-layout wallet-${tab}`}>
+      <div className={`wallet-layout wallet-demo wallet-${tab}`}>
         <p className="wallet-phone-heading">Therapist Overview</p>
         <div className="wallet-metrics">
           <article className="wallet-total textured">
             <div>
               <header>
-                <span>Overview</span>
-                <h2>Total in all time</h2>
+                <span className="wallet-desktop-hero-heading">Overview</span>
+                <h2 className="wallet-desktop-hero-heading">Total in all time</h2>
+                <h2 className="wallet-tablet-hero-heading">All time Overview</h2>
               </header>
               <div className="wallet-total-numbers">
                 <div>
@@ -164,6 +222,18 @@ function DemoWallet({ navigate }: { navigate: (path: string) => void }) {
                     </div>
                   ))}
                 </div>
+                <div className="tablet-wallet-bars">
+                  {[...monthly].reverse().map((item, index) => (
+                    <div className="wallet-bar-column" key={item.month}>
+                      <strong>{item.value}</strong>
+                      <div
+                        className="wallet-bar textured"
+                        style={{ height: [124, 156, 170, 184, 168][index] }}
+                      />
+                      <small>{item.short}</small>
+                    </div>
+                  ))}
+                </div>
                 <div className="phone-wallet-bars">
                   {[...monthly].reverse().map((item) => (
                     <div className="wallet-bar-column" key={item.month}>
@@ -181,18 +251,21 @@ function DemoWallet({ navigate }: { navigate: (path: string) => void }) {
                 <button onClick={() => setTab('overview')}>← Overview</button>
                 <h2>{tab === 'earnings' ? 'Earnings' : 'Withdrawals'}</h2>
                 {tab === 'withdrawals' && (
-                  <button className="remaining-primary" onClick={() => setRequestOpen(true)}>
+                  <button
+                    className="remaining-primary wallet-phone-withdraw"
+                    onClick={() => setRequestOpen(true)}
+                  >
                     Withdraw
                   </button>
                 )}
               </div>
-              {earnings.map((item, index) => (
-                <article key={item.name}>
-                  {tab === 'earnings' ? (
-                    <>
+              {tab === 'earnings'
+                ? earnings.map((item, index) => (
+                    <article key={`demo-earning-${index}`}>
                       <img
                         className="wallet-transaction-avatar"
-                        src={asset(remainingAssets.walletAvatar)}
+                        data-artwork={item.artwork}
+                        src={asset(item.portrait)}
                         alt=""
                       />
                       <div className="wallet-transaction-copy">
@@ -205,36 +278,71 @@ function DemoWallet({ navigate }: { navigate: (path: string) => void }) {
                           {item.status}
                         </span>
                       </div>
-                    </>
-                  ) : (
-                    <>
-                      <span className="wallet-withdrawal-icon">
-                        <RemainingIcon name="withdrawalsActive" />
-                      </span>
+                    </article>
+                  ))
+                : withdrawals.map((item) => (
+                    <article
+                      key={item.id}
+                      className={
+                        item.responsive
+                          ? 'wallet-withdrawal-row'
+                          : 'wallet-withdrawal-row wallet-desktop-only'
+                      }
+                    >
+                      <picture className="wallet-transaction-portrait">
+                        <source
+                          media="(max-width: 1100px)"
+                          srcSet={asset(item.responsive?.portrait ?? remainingAssets.walletAvatar)}
+                        />
+                        <img
+                          className="wallet-transaction-avatar"
+                          data-responsive-artwork={item.responsive?.artwork}
+                          src={asset(remainingAssets.walletAvatar)}
+                          alt=""
+                        />
+                      </picture>
                       <div className="wallet-transaction-copy">
-                        <strong>Withdraw</strong>
-                        <small>SA** **** **** 1234 · 2024-05-01</small>
+                        <strong>
+                          <span className="wallet-desktop-detail">Sarah Ali</span>
+                          <span className="wallet-responsive-detail">ATM Withdrawal</span>
+                        </strong>
+                        <small>
+                          <span className="wallet-desktop-detail">
+                            SA** **** **** 1234 · 2024-05-01
+                          </span>
+                          <span className="wallet-responsive-detail">
+                            ATM · {item.responsive?.date}
+                          </span>
+                        </small>
                       </div>
                       <div className="wallet-transaction-status">
-                        <strong>-7,500 ريال</strong>
-                        <span className={index === 2 ? 'processing' : 'completed'}>
-                          {index === 2 ? 'Processing' : 'Completed'}
+                        <strong className="wallet-income">
+                          <span className="wallet-desktop-detail">-7,500 ريال</span>
+                          <span className="wallet-responsive-detail">
+                            -{item.responsive?.amount} SP
+                          </span>
+                        </strong>
+                        <span className="completed wallet-desktop-detail">Completed</span>
+                        <span
+                          className={`wallet-responsive-detail ${item.responsive?.status === 'Processing' ? 'processing' : 'completed'}`}
+                        >
+                          {item.responsive?.status}
                         </span>
                       </div>
-                    </>
-                  )}
-                </article>
-              ))}
+                    </article>
+                  ))}
             </div>
           )}
           <div className="wallet-advisory">
             <RemainingIcon name="withdrawalInfo" />
             <p className="desktop-wallet-advisory">
-              Withdrawals are processed within 3-5 business days, minimum withdrawal is 500 Riyals —
-              same terms as above the withdraw button.
+              Withdrawals are processed within 3-5 business days, with a minimum withdrawal amount
+              of 500 Riyals — same terms apply as stated above the withdraw button.
             </p>
             <p className="phone-wallet-advisory">
-              Withdrawals are processed in 3-5 business days. Min 500 Riyals.
+              {tab === 'overview'
+                ? 'Withdrawals are processed in 3-5 business days. Min 500 Riyals.'
+                : 'Withdrawals are processed within 3-5 business days, with a minimum withdrawal amount of 500 Riyals — same terms apply as stated above the withdraw button.'}
             </p>
           </div>
         </section>
@@ -249,7 +357,7 @@ function DemoWallet({ navigate }: { navigate: (path: string) => void }) {
         {requestOpen && (
           <Modal
             title="Withdrawal Request"
-            className="remaining-modal withdrawal-modal"
+            className="remaining-modal withdrawal-modal wallet-demo-modal"
             closeIcon={<RemainingIcon name="close" />}
             onClose={() => setRequestOpen(false)}
           >
@@ -266,6 +374,164 @@ function DemoWallet({ navigate }: { navigate: (path: string) => void }) {
         )}
       </div>
     </Workspace>
+  )
+}
+
+const paymentMethods = [
+  { value: 'haram', label: 'Al-Haram transfer', selectedLabel: 'Al-Haram Transfer' },
+  { value: 'shamcash', label: 'Shamcash Transfer', selectedLabel: 'Shamcash Transfer' },
+] as const
+
+function PaymentMethodMenu({
+  method,
+  onChange,
+}: {
+  method: Method
+  onChange: (method: Method) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [active, setActive] = useState(0)
+  const root = useRef<HTMLDivElement>(null)
+  const trigger = useRef<HTMLButtonElement>(null)
+  const id = useId()
+  useEffect(() => {
+    if (!open) return
+    const dismiss = (event: PointerEvent) => {
+      if (!root.current?.contains(event.target as Node)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', dismiss)
+    return () => document.removeEventListener('pointerdown', dismiss)
+  }, [open])
+  function choose(value: Method) {
+    onChange(value)
+    setOpen(false)
+    trigger.current?.focus()
+  }
+  return (
+    <div
+      ref={root}
+      className={`wallet-method-menu ${open ? 'is-open' : ''}`}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node)) setOpen(false)
+      }}
+    >
+      {/* Retain native select/form compatibility without a second focus or accessibility target. */}
+      <select
+        className="wallet-native-method"
+        aria-label="Select payment method"
+        aria-hidden="true"
+        tabIndex={-1}
+        name="method"
+        value={method}
+        onChange={(event) => choose(event.target.value as Method)}
+      >
+        <option value="">Select payment method</option>
+        {paymentMethods.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
+        ref={trigger}
+        role="combobox"
+        aria-label="Payment method"
+        aria-describedby={`${id}-value`}
+        aria-required="true"
+        aria-expanded={open}
+        aria-controls={`${id}-options`}
+        aria-haspopup="listbox"
+        aria-activedescendant={open ? `${id}-${paymentMethods[active].value}` : undefined}
+        className="wallet-method-trigger"
+        onClick={() => {
+          setActive(
+            Math.max(
+              0,
+              paymentMethods.findIndex((option) => option.value === method),
+            ),
+          )
+          setOpen(!open)
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape' && open) {
+            event.preventDefault()
+            event.stopPropagation()
+            setOpen(false)
+          } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault()
+            setActive(
+              open
+                ? (active + (event.key === 'ArrowDown' ? 1 : -1) + 2) % 2
+                : event.key === 'ArrowUp'
+                  ? 1
+                  : Math.max(
+                      0,
+                      paymentMethods.findIndex((option) => option.value === method),
+                    ),
+            )
+            setOpen(true)
+          } else if (event.key === 'Home' || event.key === 'End') {
+            event.preventDefault()
+            setActive(event.key === 'Home' ? 0 : 1)
+            setOpen(true)
+          } else if ((event.key === 'Enter' || event.key === ' ') && open) {
+            event.preventDefault()
+            choose(paymentMethods[active].value)
+          } else if (event.key === 'Tab') setOpen(false)
+          else if (!event.ctrlKey && !event.metaKey && !event.altKey && /^[as]$/i.test(event.key)) {
+            event.preventDefault()
+            setActive(event.key.toLowerCase() === 'a' ? 0 : 1)
+            setOpen(true)
+          }
+        }}
+      >
+        {method ? (
+          <span className={`payment-logo ${method}`}>
+            <img src={asset(remainingAssets[method])} alt="" />
+          </span>
+        ) : (
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <rect x="1" y="3" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="2" />
+            <path d="M2 7h16M5 12h3" stroke="currentColor" strokeWidth="2" />
+          </svg>
+        )}
+        <span id={`${id}-value`}>
+          {paymentMethods.find((option) => option.value === method)?.selectedLabel ??
+            'Select payment method'}
+        </span>
+        <svg
+          className="wallet-method-chevron"
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          aria-hidden="true"
+        >
+          <path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" strokeWidth="2" />
+        </svg>
+      </button>
+      {open && (
+        <div id={`${id}-options`} role="listbox" aria-label="Payment methods">
+          {paymentMethods.map((option, index) => (
+            <div
+              id={`${id}-${option.value}`}
+              key={option.value}
+              role="option"
+              aria-selected={method === option.value}
+              className={active === index ? 'active' : ''}
+              onPointerDown={(event) => event.preventDefault()}
+              onMouseMove={() => setActive(index)}
+              onClick={() => choose(option.value)}
+            >
+              <span className={`payment-logo ${option.value}`}>
+                <img src={asset(remainingAssets[option.value])} alt="" />
+              </span>
+              {option.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -296,26 +562,13 @@ function WithdrawalForm({
   return (
     <form className="withdrawal-form" onSubmit={submit}>
       <p className="withdrawal-balance">Available Balance: 12,500 SP</p>
-      <label className="withdrawal-method">
-        {method && (
-          <span className={`payment-logo ${method}`}>
-            <img src={asset(remainingAssets[method])} alt="" />
-          </span>
-        )}
-        <select
-          aria-label="Select payment method"
-          required
-          value={method}
-          onChange={(event) => {
-            setMethod(event.target.value as Method)
-            setError('')
-          }}
-        >
-          <option value="">Select payment method</option>
-          <option value="haram">Al-Haram transfer</option>
-          <option value="shamcash">Shamcash Transfer</option>
-        </select>
-      </label>
+      <PaymentMethodMenu
+        method={method}
+        onChange={(value) => {
+          setMethod(value)
+          setError('')
+        }}
+      />
       {method === 'haram' && (
         <div className="withdrawal-inputs" key="haram">
           <input name="name" aria-label="Full name" placeholder="Enter Your Full Name" required />

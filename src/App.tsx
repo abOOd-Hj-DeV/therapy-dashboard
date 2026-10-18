@@ -9,21 +9,25 @@ import { Wallet } from './Wallet'
 import { api } from './api'
 import { useApiUser } from './api-hooks'
 import { Clients } from './Clients'
+import { ClientProfile } from './ClientProfile'
+import { DemoClients } from './DemoClients'
+import { DemoClientProfile } from './DemoClientProfile'
 
 export function App() {
   const user = useApiUser(api)
   const demo = import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === 'true'
   const client = demo ? undefined : api
-  const [path, setPath] = useState(window.location.pathname)
+  const [location, setLocation] = useState(window.location.pathname + window.location.search)
+  const path = location.split('?')[0]
   const [verificationEmail, setVerificationEmail] = useState('henryford@Sakina.com')
   useEffect(() => {
-    const onPopState = () => setPath(window.location.pathname)
+    const onPopState = () => setLocation(window.location.pathname + window.location.search)
     window.addEventListener('popstate', onPopState)
     return () => window.removeEventListener('popstate', onPopState)
   }, [])
   function navigate(next: string) {
     window.history.pushState({}, '', next)
-    setPath(window.location.pathname)
+    setLocation(window.location.pathname + window.location.search)
     window.scrollTo({ top: 0 })
   }
   const protectedPage = ![
@@ -61,7 +65,11 @@ export function App() {
       />
     )
   if (path === '/wallet') return <Wallet navigate={navigate} api={client} />
+  if (demo && path === '/clients') return <DemoClients navigate={navigate} />
+  if (demo && path === '/clients/profile') return <DemoClientProfile navigate={navigate} />
   if (path === '/clients' && client) return <Clients api={client} navigate={navigate} />
+  if (path === '/clients/profile' && client)
+    return <ClientProfile api={client} navigate={navigate} />
   const authPages: Record<string, AuthPage> = {
     '/signup': 'signup',
     '/activate': 'activate',

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiClient, ApiError, apiErrorMessage, safeExternalUrl } from './api'
+import './visual-sessions-clinical.css'
 
 export type CareSession = {
   id: string
@@ -376,9 +377,20 @@ export function careMeetingUrl(session: CareSession): string | null {
     ? url
     : null
 }
-export function CareAvatar({ name }: { name: string }) {
+export function CareAvatar({
+  name,
+  detail = false,
+  hero = false,
+}: {
+  name: string
+  detail?: boolean
+  hero?: boolean
+}) {
   return (
-    <span className="initials" aria-hidden="true">
+    <span
+      className={hero ? 'initials' : `care-avatar ${detail ? 'detail-avatar' : 'avatar'}`}
+      aria-hidden="true"
+    >
       {name
         .trim()
         .split(/\s+/)

@@ -3,7 +3,7 @@ import { ApiClient, ApiError, apiErrorMessage, apiId, type ApiUser } from './api
 import { useApiResource, useApiUser } from './api-hooks'
 import { Workspace } from './Workspace'
 import { Modal } from './ui'
-import { RemainingIcon, SettingRow } from './RemainingUI'
+import { FaqSummary, RemainingIcon, SettingRow, type RemainingIconName } from './RemainingUI'
 
 type Page = 'profile' | 'settings' | 'help'
 type Props = { page: Page; navigate: (path: string) => void; api?: ApiClient }
@@ -201,7 +201,7 @@ function ProfileActor({
       <div className={`profile-layout profile-${page}`}>
         <aside className="profile-summary" aria-label="Profile overview">
           <div className="profile-identity">
-            <span className="profile-avatar" aria-label="Profile initials">
+            <span className="profile-avatar profile-avatar-initials" aria-label="Profile initials">
               {name
                 .split(/\s+/)
                 .map((part) => part[0])
@@ -295,9 +295,10 @@ function ProfileActor({
                 <section>
                   <h3>Professional Information</h3>
                   <div className="profile-info-rows">
-                    <Info label="Specialty" value={therapist?.specialty} />
-                    <Info label="Country" value={therapist?.country} />
+                    <Info icon="briefcase" label="Specialty" value={therapist?.specialty} />
+                    <Info icon="location" label="Country" value={therapist?.country} />
                     <Info
+                      icon="user"
                       label="Languages"
                       value={
                         therapist?.languages
@@ -306,6 +307,7 @@ function ProfileActor({
                       }
                     />
                     <Info
+                      icon="award"
                       label="License file"
                       value={
                         therapist
@@ -315,19 +317,28 @@ function ProfileActor({
                           : undefined
                       }
                     />
-                    <Info label="Approval status" value={therapist?.approval_status ?? undefined} />
+                    <Info
+                      icon="user"
+                      label="Approval status"
+                      value={therapist?.approval_status ?? undefined}
+                    />
                   </div>
                 </section>
                 <section>
                   <h3>Account Information</h3>
                   <div className="profile-info-rows">
-                    <Info label="Account name" value={identity.data?.user.name || user.name} />
-                    <Info label="Email" value={identity.data?.user.email ?? user.email} />
                     <Info
+                      icon="user"
+                      label="Account name"
+                      value={identity.data?.user.name || user.name}
+                    />
+                    <Info icon="mail" label="Email" value={identity.data?.user.email ?? user.email} />
+                    <Info
+                      icon="phone"
                       label="Mobile Number"
                       value={identity.data?.user.whatsapp_number || user.whatsapp_number}
                     />
-                    <Info label="Scheduling timezone" value={timezone} />
+                    <Info icon="clock" label="Scheduling timezone" value={timezone} />
                   </div>
                 </section>
               </div>
@@ -373,15 +384,17 @@ function ProfileActor({
           {page === 'help' && (
             <div className="profile-help-grid">
               <section className="help-live">
-                <h3>Support availability</h3>
-                <p>
-                  Therapist support requests, live chat and callbacks are not supported by the
-                  current API. Contact your platform management through your established support
-                  channel.
-                </p>
-                <button className="remaining-cancel" disabled>
-                  Request a callback (unavailable)
-                </button>
+                <div>
+                  <h3>Support availability</h3>
+                  <p>
+                    Therapist support requests, live chat and callbacks are not supported by the
+                    current API. Contact your platform management through your established support
+                    channel.
+                  </p>
+                  <button className="remaining-cancel" disabled>
+                    Request a callback (unavailable)
+                  </button>
+                </div>
               </section>
               <section className="help-links">
                 <h3>Support &amp; Help</h3>
@@ -500,6 +513,14 @@ function ProfileActor({
                 support-management routes are not therapist capabilities. Contact platform
                 management through your established channel; no ticket, email or call has been sent.
               </p>
+              <fieldset disabled className="live-contact-fields">
+                <Field label="Subject">
+                  <input placeholder="Subject (unavailable)" />
+                </Field>
+                <Field label="Message">
+                  <textarea placeholder="Message (unavailable)" />
+                </Field>
+              </fieldset>
               <button className="remaining-primary" disabled>
                 Send Message (unavailable)
               </button>
@@ -511,9 +532,18 @@ function ProfileActor({
     </Workspace>
   )
 }
-function Info({ label, value }: { label: string; value?: string | null }) {
+function Info({
+  icon,
+  label,
+  value,
+}: {
+  icon: RemainingIconName
+  label: string
+  value?: string | null
+}) {
   return (
     <div className="profile-info-row">
+      <RemainingIcon name={icon} />
       <div>
         <small>{label}</small>
         <p>{value || 'Not provided'}</p>
@@ -731,13 +761,13 @@ function WorkingHours({
       <p className="remaining-muted">
         Updates change future bookability; existing appointments are not cancelled or rescheduled.
       </p>
-      <fieldset disabled={mutation.pending} className="hours-list">
+      <fieldset disabled={mutation.pending} className="hours-list live-hours-list">
         {days.map((day) => (
-          <section key={day}>
+          <section className="live-hours-day" key={day}>
             <h3>{day[0].toUpperCase() + day.slice(1)}</h3>
             {!draft[day].length && <p>Off</p>}
             {draft[day].map((window, index) => (
-              <div className="remaining-field-grid" key={index}>
+              <div className="live-hours-window" key={index}>
                 <Field label={`${day} start ${index + 1}`}>
                   <input
                     type="time"
@@ -936,20 +966,21 @@ function BlockedPeriods({
         Refresh blocked periods
       </button>
       {!periods.loading && periods.data?.data.length === 0 && <p>No blocked periods.</p>}
-      <div className="holidays-list">
+      <div className="holiday-list">
         {periods.data?.data.map((period) => (
           <article key={period.id}>
-            <p>
-              {period.start_date} – {period.end_date}
-            </p>
-            <p>{period.reason || 'No reason provided'}</p>
+            <span className="holiday-clock"><RemainingIcon name="pendingMobile" /></span>
+            <div className="holiday-copy">
+              <strong>{period.reason || 'No reason provided'}</strong>
+              <p>{period.start_date} – {period.end_date}</p>
+            </div>
             <button
-              className="remaining-danger"
+              className="icon-button holiday-remove"
               disabled={busy || locked}
               aria-label={`Remove blocked period ${period.start_date}`}
               onClick={() => remove(period.id)}
             >
-              Remove
+              <RemainingIcon name="close" />
             </button>
           </article>
         ))}
@@ -1179,7 +1210,7 @@ function Faqs({ api }: { api: ApiClient }) {
       {state?.data.length === 0 && <p>No published FAQs.</p>}
       {state?.data.map((faq, index) => (
         <details key={faq.id} open={index === 0}>
-          <summary>{faq.question}</summary>
+          <FaqSummary>{faq.question}</FaqSummary>
           <p>{faq.answer}</p>
         </details>
       ))}

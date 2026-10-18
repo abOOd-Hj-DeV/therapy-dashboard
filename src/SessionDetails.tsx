@@ -43,7 +43,7 @@ function HomeworkDialog({
   return (
     <Modal
       title={`Assign homework to ${client}`}
-      className="part2-modal homework-modal"
+      className={`part2-modal homework-modal demo-homework-modal ${tab === 'create' ? 'is-create' : 'is-library'}`}
       onClose={onClose}
     >
       <div className="segmented-control" role="tablist" aria-label="Homework source">
@@ -220,7 +220,7 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
 
   return (
     <Workspace title="Sessions / Upcoming Session" active="Sessions" navigate={navigate}>
-      <div className={`session-detail ${tab === 'record' ? 'show-record' : ''}`}>
+      <div className={`session-detail demo-session-detail ${tab === 'record' ? 'show-record' : ''}`}>
         <div className="detail-tabs segmented-control" role="tablist" aria-label="Session view">
           <button
             role="tab"
@@ -429,13 +429,15 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
                       }
                     }}
                   >
-                    ＋ Add Note
+                    <span aria-hidden="true" className="note-add-icon">+</span> Add Note
                   </button>
                   <p className="section-caption">Previous Notes</p>
                   <button className="previous-note" onClick={() => setModal('notes')}>
                     <span>
-                      <strong>Therapy: One-on-One Session</strong>
-                      <small>Date: May 15, 2024, 10 AM</small>
+                      <span className="previous-note-heading">
+                        <strong>Therapy: One-on-One Session</strong>
+                        <small>Date: May 15, 2024, 10 AM</small>
+                      </span>
                       <p>Noticed clear progress in managing anxiety.</p>
                     </span>
                     <span>›</span>
@@ -530,7 +532,20 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
                         checked={clinicalFlag}
                         onChange={(event) => setClinicalFlag(event.target.checked)}
                       />
-                      🚩 Clinical Follow-up Flag
+                      <span className="clinical-flag-label">
+                        <svg
+                          className="clinical-flag-icon"
+                          width="12"
+                          height="12"
+                          viewBox="0 0 12 12"
+                          aria-hidden="true"
+                          focusable="false"
+                        >
+                          <path d="M2 1v10" stroke="currentColor" />
+                          <path d="m2 1 9 2.5L2 7Z" fill="currentColor" />
+                        </svg>
+                        Clinical Follow-up Flag
+                      </span>
                     </label>
                     <p>
                       When activated, the clinical supervisor is alerted to review this case — used

@@ -96,7 +96,7 @@ export const notifications = [
   {
     id: 1,
     title: 'Dr. Harper scheduled',
-    detail: 'a new appointment: “Mindfulness Check-in.”',
+    detail: 'a new appointment: "Mindfulness Check-in."',
     time: '20 min ago',
     description: 'Added to your calendar for Tuesday 2:00 PM.',
     image: 'notification-imgImage.png',
@@ -105,7 +105,7 @@ export const notifications = [
   {
     id: 2,
     title: 'Client shared a progress note',
-    detail: 'of “Anxiety Management.”',
+    detail: 'of "Cognitive Behavioral Therapy."',
     time: '35 min ago',
     description: 'Notes and feedback are now available.',
     image: 'notification-imgImage1.png',
@@ -114,7 +114,7 @@ export const notifications = [
   {
     id: 3,
     title: 'Session transcript',
-    detail: 'for “Weekly Reflection” is ready.',
+    detail: 'for "Anxiety Management Session #3" is ready.',
     time: '10 min ago',
     description: 'You can review or highlight key insights.',
     action: 'Open Transcript',
@@ -124,16 +124,16 @@ export const notifications = [
   {
     id: 4,
     title: 'Client mentioned you',
-    detail: 'in “Progress Notes.”',
+    detail: 'in "Weekly Therapy Review."',
     time: '15 min ago',
-    description: '@harper',
+    description: '@harper please confirm the treatment plan updates.',
     image: 'notification-imgImage3.png',
     icon: 'notification-imgHeroiconsMiniChatBubbleOvalLeft.svg',
   },
   {
     id: 5,
     title: 'Alex invited you',
-    detail: 'to “Shared Client Files.”',
+    detail: 'to collaborate on client notes in folder "Session Summaries."',
     time: '25 min ago',
     description: 'You can now view and edit shared client files.',
     action: 'Accept',
@@ -143,7 +143,7 @@ export const notifications = [
   {
     id: 6,
     title: 'Dr. Lee assigned you',
-    detail: 'a new task: “Review client goals.”',
+    detail: 'a new task: "Review client progress reports."',
     time: '40 min ago',
     description: 'Due Monday, Nov 6th.',
     action: 'View Task',

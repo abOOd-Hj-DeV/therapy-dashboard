@@ -104,8 +104,8 @@ export function LiveCareRecord({ api, navigate }: Props) {
     owned
   return (
     <Workspace
-      title={sessionId ? 'Sessions / Session record' : 'Clients / Clinical record'}
-      active="Sessions"
+      title={sessionId ? 'Sessions / Session record' : 'Patients / Clinical record'}
+      active={sessionId ? 'Sessions' : 'Clients'}
       api={api}
       navigate={navigate}
     >
@@ -118,7 +118,9 @@ export function LiveCareRecord({ api, navigate }: Props) {
       <ResourceStatus resource={clients} label="clients" />
       {!owned && <p role="alert">This session is not owned by the signed-in therapist.</p>}
       {validRoute && owned && patientId && (
-        <div className={`session-detail ${tab === 'record' ? 'show-record' : ''}`}>
+        <div
+          className={`session-detail care-session-detail ${tab === 'record' ? 'show-record' : ''}`}
+        >
           <div className="detail-tabs segmented-control" role="tablist" aria-label="Session view">
             {['before', 'record'].map((value) => (
               <button
@@ -134,7 +136,7 @@ export function LiveCareRecord({ api, navigate }: Props) {
           </div>
           <header className="detail-header">
             <div className="detail-client">
-              <CareAvatar name={client?.full_name || 'Client'} />
+              <CareAvatar name={client?.full_name || 'Client'} detail />
               <div>
                 <h2>{client?.full_name || 'Client identity unavailable'}</h2>
                 <p>
@@ -181,7 +183,7 @@ export function LiveCareRecord({ api, navigate }: Props) {
             />
           ) : (
             ready && (
-              <section className="detail-card">
+              <section className="detail-card care-clinical-unavailable">
                 <h3>Clinical record unavailable</h3>
                 <p>
                   {client?.status === 'past'
@@ -192,7 +194,7 @@ export function LiveCareRecord({ api, navigate }: Props) {
             )
           )}
           {sessions.data?.status_log.length ? (
-            <section className="detail-card clinical-pathway">
+            <section className="detail-card clinical-pathway care-session-history">
               <h3>Session status history</h3>
               {sessions.data.status_log.map((entry) => (
                 <div key={entry.id}>
@@ -300,7 +302,7 @@ function SessionEditor({
     )
   }
   return (
-    <section className="detail-card outcome-card">
+    <section className="detail-card outcome-card care-session-actions">
       <h3>Session actions</h3>
       <div className="detail-actions">
         {session.status === 'pending' && (
@@ -826,14 +828,15 @@ function ClinicalEditor({
                 {program.modules.map((module) => (
                   <article className="assigned-homework" key={module.id}>
                     <strong>{module.title}</strong>
-                    <label className="homework-check">
+                    <label className="homework-check care-module-status">
                       <input
                         type="checkbox"
                         checked={module.status === 'completed'}
                         disabled
                         readOnly
                       />
-                      {module.status}
+                      <span aria-hidden="true">{module.status === 'completed' ? '✓' : ''}</span>
+                      <strong>{module.status}</strong>
                     </label>
                     <small>
                       {module.is_hidden
@@ -1050,7 +1053,7 @@ function ContentDialog({
   return (
     <Modal
       title={`Assign homework to ${name}`}
-      className="part2-modal homework-modal"
+      className={`part2-modal homework-modal ${tab === 'create' ? 'is-create' : 'is-library'}`}
       onClose={() => {
         if (!mutation.busy) onClose()
       }}
@@ -1139,7 +1142,12 @@ function ContentDialog({
           />
           <div className="library-filters" role="group" aria-label="Content type filters">
             {['All', 'text', 'video', 'link'].map((value) => (
-              <button key={value} aria-pressed={filter === value} onClick={() => setFilter(value)}>
+              <button
+                key={value}
+                aria-pressed={filter === value}
+                className={filter === value ? 'selected' : ''}
+                onClick={() => setFilter(value)}
+              >
                 {value}
               </button>
             ))}
@@ -1153,6 +1161,7 @@ function ContentDialog({
                     <ContentText item={item} />
                   </div>
                   <button
+                    className={added ? 'added' : ''}
                     disabled={!canWrite || added}
                     aria-label={`${added ? 'Added' : 'Add'} ${item.title}`}
                     onClick={() =>

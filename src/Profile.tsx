@@ -5,7 +5,8 @@ import { LiveProfile } from './api-profile-and-settings-live'
 import { Modal } from './ui'
 import { asset } from './assets'
 import { remainingAssets } from './remaining-assets'
-import { FormActions, RemainingIcon, SettingRow, type RemainingIconName } from './RemainingUI'
+import { FaqSummary, FormActions, RemainingIcon, SettingRow, type RemainingIconName } from './RemainingUI'
+import './visual-profile-closure.css'
 
 type Page = 'profile' | 'settings' | 'help'
 type Dialog =
@@ -42,7 +43,7 @@ const initialProfile: ProfileData = {
 const notificationLabels = [
   'New client messages',
   'Client progress updates',
-  'Payment and withdrawal notifications',
+  'Payment & withdrawal notifications',
   'Platform news and offers',
   'Session reminders',
 ]
@@ -220,7 +221,8 @@ function DemoProfile({ page, navigate }: { page: Page; navigate: (path: string) 
                       setNotice('Demo only: live chat and phone support are not connected.')
                     }
                   >
-                    Give Me A Call
+                    <span className="help-desktop-call">Give Me A Call</span>
+                    <span className="help-compact-chat">Start Live Chat</span>
                   </button>
                 </div>
                 <small>App version v1.0.0</small>
@@ -334,15 +336,7 @@ function DemoProfile({ page, navigate }: { page: Page; navigate: (path: string) 
             <div className="faq-list">
               {faqQuestions.map((question, index) => (
                 <details key={question} open={index === 0}>
-                  <summary>
-                    {question}
-                    <span className="faq-open-arrow">
-                      <RemainingIcon name="faqOpen" />
-                    </span>
-                    <span className="faq-closed-arrow">
-                      <RemainingIcon name="faqClosed" />
-                    </span>
-                  </summary>
+                  <FaqSummary>{question}</FaqSummary>
                   <p>{faqAnswers[index]}</p>
                 </details>
               ))}
@@ -441,7 +435,7 @@ function EditProfile({
   const [error, setError] = useState('')
   function field(label: string, key: keyof ProfileData, type = 'text') {
     return (
-      <label className="remaining-field">
+      <label className={`remaining-field profile-field-${key}`}>
         {label}
         <span
           className={key === 'phone' || key === 'location' ? 'editable-profile-field' : undefined}
@@ -560,7 +554,7 @@ function PreferencesForm({
       <div className="preferences-list">
         {notificationLabels.map((label, index) => (
           <label key={label}>
-            {label}
+            <span>{label}</span>
             <input
               type="checkbox"
               role="switch"
@@ -603,7 +597,7 @@ function HoursForm({
   }
   return (
     <form onSubmit={submit}>
-      <div className="hours-list">
+      <div className="hours-list demo-hours-list">
         {draft.map((day, index) => (
           <div key={day.day} className={day.enabled ? '' : 'day-off'}>
             <label>
@@ -696,7 +690,8 @@ function HolidaysForm({
       <div className="holiday-list">
         {values.map((holiday) => (
           <article key={holiday.id}>
-            <div>
+            <span className="holiday-clock"><RemainingIcon name="pendingMobile" /></span>
+            <div className="holiday-copy">
               <strong>{holiday.reason}</strong>
               <p>
                 {holiday.from} ← {holiday.to}
@@ -704,11 +699,11 @@ function HolidaysForm({
             </div>
             <button
               type="button"
-              className="icon-button"
+              className="icon-button holiday-remove"
               aria-label={`Remove ${holiday.reason}`}
               onClick={() => onChange(values.filter((item) => item.id !== holiday.id))}
             >
-              ×
+              <RemainingIcon name="close" />
             </button>
           </article>
         ))}

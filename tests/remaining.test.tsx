@@ -148,7 +148,7 @@ describe('wallet and integration', () => {
     await user.click(screen.getByRole('button', { name: 'Earnings' }))
     expect(screen.getByText('Sarah Ali')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Withdrawals' }))
-    expect(screen.getAllByText('SA** **** **** 1234 · 2024-05-01')).toHaveLength(4)
+    expect(screen.getAllByText('SA** **** **** 1234 · 2024-05-01')).toHaveLength(6)
   })
   it('previews Shamcash without moving money', async () => {
     const user = userEvent.setup()

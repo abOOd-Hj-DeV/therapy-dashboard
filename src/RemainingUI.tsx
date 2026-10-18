@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import { asset } from './assets'
 import { remainingAssets } from './remaining-assets'
+import './visual-profile-wallet.css'
+import './visual-help-final.css'
 
 export type RemainingIconName = keyof typeof remainingAssets
 
@@ -17,6 +19,16 @@ export function RemainingIcon({ name }: { name: RemainingIconName }) {
         <img src={asset(remainingAssets[name])} alt="" />
       </picture>
     </span>
+  )
+}
+
+export function FaqSummary({ children }: { children: ReactNode }) {
+  return (
+    <summary>
+      <span>{children}</span>
+      <span className="faq-open-arrow"><RemainingIcon name="faqOpen" /></span>
+      <span className="faq-closed-arrow"><RemainingIcon name="faqClosed" /></span>
+    </summary>
   )
 }
 

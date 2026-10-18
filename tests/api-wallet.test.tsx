@@ -254,7 +254,7 @@ describe('manual withdrawal request', () => {
     expect(init.signal).toBeInstanceOf(AbortSignal)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     await ready()
-    expect(screen.getAllByText('74.50 EUR')).toHaveLength(3)
+    await waitFor(() => expect(screen.getAllByText('74.50 EUR')).toHaveLength(3))
     expect(
       screen.queryByText(/Successfully transferred|Withdrawal successful/i),
     ).not.toBeInTheDocument()

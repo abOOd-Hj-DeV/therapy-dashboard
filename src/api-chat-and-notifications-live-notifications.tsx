@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ApiClient, apiErrorMessage, apiId } from './api'
 import { useApiUser } from './api-hooks'
+import { asset } from './assets'
 import {
   useChatConnectivity,
   useChatLifetime,
@@ -161,7 +162,7 @@ function ActorNotifications({ api, navigate, onUnreadCount }: Props & { api: Api
     }
   }
   return (
-    <>
+    <div className="live-notifications">
       {resource.loading && <p role="status">Loading notifications…</p>}
       {(error || resource.error) && (
         <p role="alert">
@@ -174,8 +175,9 @@ function ActorNotifications({ api, navigate, onUnreadCount }: Props & { api: Api
       {!!resource.retryAt && <p role="status">Waiting before retrying the server.</p>}
       {resource.data && (
         <>
-          <p>{resource.data.unread_count} unread notifications</p>
+          <p className="notification-count">{resource.data.unread_count} unread notifications</p>
           <button
+            className="soft-button notification-mark-all"
             disabled={busy || !online || !!resource.retryAt || !resource.data.unread_count}
             onClick={() => void read()}
           >
@@ -193,29 +195,53 @@ function ActorNotifications({ api, navigate, onUnreadCount }: Props & { api: Api
                 key={item.id}
                 className={`notification-item ${item.read_at ? 'is-read' : 'is-unread'}`}
               >
+                <span className="notification-kind-icon" aria-hidden="true">
+                  <img
+                    src={asset(
+                      notificationKind(item) === 'chat_message_received'
+                        ? 'part2-03-imgMessageCircleLinesAlt.svg'
+                        : 'dashboard-imgNotification.svg',
+                    )}
+                    alt=""
+                  />
+                </span>
                 <div className="notification-body">
-                  <strong>
-                    {Object.hasOwn(LABELS, notificationKind(item))
-                      ? LABELS[notificationKind(item)]
-                      : 'Account update'}
-                  </strong>
+                  <div className="notification-title">
+                    <strong>
+                      {Object.hasOwn(LABELS, notificationKind(item))
+                        ? LABELS[notificationKind(item)]
+                        : 'Account update'}
+                    </strong>
+                    <time dateTime={item.created_at && created ? item.created_at : undefined}>
+                      {created}
+                    </time>
+                  </div>
                   <p>Open the relevant page to view currently authorized information.</p>
-                  <time>{created}</time>
-                  <span>{item.read_at ? 'Read' : 'Unread'}</span>
-                  <button
-                    disabled={busy || !online || !!resource.retryAt || !!item.read_at}
-                    onClick={() => void read(item.id)}
-                  >
-                    {item.read_at ? 'Read' : 'Mark read'}
-                  </button>
-                  {route && navigate && (
-                    <button onClick={() => navigate(route)}>
-                      {notificationKind(item) === 'chat_message_received'
-                        ? 'Open conversation'
-                        : 'Open relevant page'}
+                  <span className="notification-read-state">{item.read_at ? 'Read' : 'Unread'}</span>
+                  <div className="notification-actions">
+                    <button
+                      disabled={busy || !online || !!resource.retryAt || !!item.read_at}
+                      onClick={() => void read(item.id)}
+                    >
+                      {item.read_at ? 'Read' : 'Mark read'}
                     </button>
-                  )}
+                    {route && navigate && (
+                      <button
+                        onClick={() => {
+                          navigate(route)
+                          // pushState alone does not notify an already mounted chat page.
+                          if (route.startsWith('/chats?'))
+                            window.dispatchEvent(new PopStateEvent('popstate'))
+                        }}
+                      >
+                        {notificationKind(item) === 'chat_message_received'
+                          ? 'Open conversation'
+                          : 'Open relevant page'}
+                      </button>
+                    )}
+                  </div>
                 </div>
+                {!item.read_at && <span className="notification-unread-dot" aria-hidden="true" />}
               </article>
             )
           })}
@@ -243,6 +269,6 @@ function ActorNotifications({ api, navigate, onUnreadCount }: Props & { api: Api
           </nav>
         </>
       )}
-    </>
+    </div>
   )
 }

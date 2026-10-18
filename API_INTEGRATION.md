@@ -18,7 +18,9 @@ Reviewed the supplied endpoint workbook against backend branch [`devin/179170416
 | Wallet            | Server totals and recent requests only. Supported bank transfer/PayPal/Wise/other payout instructions; success means **pending manual review**, never an instant transfer. No invented monthly chart, session ledger or Shamcash/Al-Haram provider integration.                          |
 | Help/support      | Backend FAQs/contact routes where supported. No fabricated phone calls/live support connection.                                                                                                                                                                                          |
 
-The remaining source/demo Figma views are preserved for development reference, not presented as working server capabilities. Live views have not received a new comprehensive Figma comparison; previously missing mobile-profile/password references remain unverified.
+Client-profile routes validate UUIDs and the active therapist/client relationship before loading current clinical information. Private notes and assigned content load on demand; a mismatched profile identity is not displayed. The frontend blocks current clinical access for former clients, but this does **not** fix the backend relationship finding below. Scheduling, calling, missing contact/subscription fields and unsupported progress calculations remain disabled or explicitly unavailable.
+
+The source/demo Figma views are preserved for development reference, not presented as working server capabilities. Comprehensive live-mode Figma parity remains unverified. The current audit separates natural-size, downscaled, metadata-only and missing references; see README.md. Missing mobile-profile/password references remain unverified.
 
 ## Frontend safeguards
 
@@ -48,7 +50,7 @@ These are verified static code boundaries, not reproduced exploits or claims of 
 ## Verification scope
 
 - TypeScript, ESLint, production build, dependency audit and synthetic component/API tests run locally. ESLint currently has seven non-blocking development Fast Refresh warnings in the care-support module; no errors.
-- 119 unchanged Playwright **demo/reference** tests passed on pinned Linux Chromium. These are regression baselines, not a live backend browser test or Figma parity score.
+- The earlier integration revision passed 119 Playwright **demo/reference** tests on pinned Linux Chromium. They are historical application baselines, not a live backend browser test or Figma parity score, and were not silently replaced after visual repairs. The final R9 audit passed 74 responsive cases, captured 44 canonical states and verified the production demo guard; original-reference coverage remains incomplete. The current offline suite passes 287 tests with eight opt-in HTTP tests skipped.
 - Backend PHPUnit: **512 passed, 39 skipped, 4,446 assertions**; Pint passed. Skips require disposable PostgreSQL/independent row-lock processes.
 - Eight HTTP contract tests passed using the actual frontend `ApiClient` against the inspected Laravel branch, an isolated SQLite database and synthetic therapist/client data: login/identity, dashboard/client/session response shapes, settings write, clinical/private notes, idempotent chat, content/notifications, idempotent manual-review withdrawal and logout. No real clinical data or external WhatsApp delivery was involved.
 

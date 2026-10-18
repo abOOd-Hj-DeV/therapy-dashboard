@@ -61,7 +61,9 @@ function DemoAuth({ page, navigate, verificationEmail, onCreateAccount }: AuthPr
   }
 
   return (
-    <main className={`auth-page ${signup ? 'signup-page' : ''}`}>
+    <main
+      className={`auth-page visual-auth demo-auth ${page === 'verify' ? 'demo-verify' : signup ? 'signup-page' : 'demo-login'}`}
+    >
       <img className="auth-glow" src={asset('auth-imgEllipse1559.svg')} alt="" />
       <div className="auth-stack">
         <div className="auth-glass">
@@ -70,24 +72,27 @@ function DemoAuth({ page, navigate, verificationEmail, onCreateAccount }: AuthPr
               <Verification email={email} onVerified={() => navigate('/dashboard')} />
             ) : (
               <>
-                <header className="auth-heading">
-                  <Logo />
-                  <div>
-                    <h1 id="auth-heading">{signup ? 'Create Your Account' : 'log in to Sakina'}</h1>
-                    <p>Welcome back! Please sign in to continue</p>
+                <div className="auth-card-content">
+                  <div className="auth-intro">
+                    <header className="auth-heading">
+                      <Logo />
+                      <div>
+                        <h1 id="auth-heading">{signup ? 'Create Your Account' : 'log in to Sakina'}</h1>
+                        <p>Welcome back! Please sign in to continue</p>
+                      </div>
+                    </header>
+                    <button className="google-button" onClick={() => setModal('google')}>
+                      <Icon name="auth-imgGoogle.svg" />
+                      Continue with Google
+                      <span />
+                    </button>
                   </div>
-                </header>
-                <button className="google-button" onClick={() => setModal('google')}>
-                  <Icon name="auth-imgGoogle.svg" />
-                  Continue with Google
-                  <span />
-                </button>
-                <div className="divider">
-                  <span />
-                  OR
-                  <span />
-                </div>
-                <form onSubmit={submit} className="auth-form">
+                  <div className="divider">
+                    <span />
+                    OR
+                    <span />
+                  </div>
+                  <form id="demo-auth-form" onSubmit={submit} className="auth-form">
                   {signup && (
                     <div className="name-fields">
                       <label>
@@ -159,19 +164,25 @@ function DemoAuth({ page, navigate, verificationEmail, onCreateAccount }: AuthPr
                       Forgot Password
                     </button>
                   )}
-                  <button type="submit" className="primary-button" disabled={!valid || busy}>
-                    {busy ? (
-                      <>
-                        <span className="spinner" />
-                        {signup ? 'Creating…' : 'Logging in…'}
-                      </>
-                    ) : signup ? (
-                      'Create'
-                    ) : (
-                      'Login'
-                    )}
-                  </button>
-                </form>
+                  </form>
+                </div>
+                <button
+                  type="submit"
+                  form="demo-auth-form"
+                  className="primary-button"
+                  disabled={!valid || busy}
+                >
+                  {busy ? (
+                    <>
+                      <span className="spinner" />
+                      {signup ? 'Creating…' : 'Logging in…'}
+                    </>
+                  ) : signup ? (
+                    'Create'
+                  ) : (
+                    'Login'
+                  )}
+                </button>
               </>
             )}
           </section>

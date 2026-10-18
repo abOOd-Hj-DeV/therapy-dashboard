@@ -102,6 +102,18 @@ function ActorChats({
   const [page, setPage] = useState(1)
   const [chooser, setChooser] = useState(false)
   const online = useChatConnectivity()
+  useEffect(() => {
+    // Same-path notification destinations do not remount the pathname-keyed page.
+    // Re-read only the validated counterpart; the keyed thread still owns cancellation.
+    const syncDestination = () => {
+      if (!['/chats', '/messages'].includes(window.location.pathname)) return
+      setSelected(initialCounterpart())
+      setSelectedName('Client')
+      setChooser(false)
+    }
+    window.addEventListener('popstate', syncDestination)
+    return () => window.removeEventListener('popstate', syncDestination)
+  }, [])
   const list = useChatPolling<{ data: Conversation[]; pagination: Pagination }>(
     api,
     `/chat?page=${page}&per_page=15`,
@@ -129,7 +141,7 @@ function ActorChats({
       offline={!online}
       onSearch={setQuery}
     >
-      <div className={`chat-layout ${selected ? 'has-conversation' : 'no-conversation'}`}>
+      <div className={`chat-layout live-chat-layout ${selected ? 'has-conversation' : 'no-conversation'}`}>
         <section className="chat-list" aria-label="Conversations">
           <label className="chat-search">
             <DesignIcon name="part2-03-imgSearch.svg" />
@@ -144,6 +156,8 @@ function ActorChats({
             Search only this loaded conversation page.
           </p>
           <button
+            className="soft-button new-conversation"
+            aria-expanded={chooser}
             disabled={!online || list.error?.status === 403}
             onClick={() => setChooser(!chooser)}
           >
@@ -223,6 +237,9 @@ function ActorChats({
         ) : (
           <section className="empty-conversation" aria-label="Select a conversation">
             <div>
+              <span>
+                <DesignIcon name="part2-20-imgMessageCircleLinesAlt1.svg" />
+              </span>
               <h2>Select a conversation</h2>
               <p>Open a conversation or choose an assigned client to start one.</p>
             </div>
@@ -246,7 +263,7 @@ function OwnedClients({
     pagination: Pagination
   }>(api, `/therapists/clients?status=active&page=${page}&per_page=20`, 30000)
   return (
-    <section aria-label="Assigned clients">
+    <section className="assigned-clients" aria-label="Assigned clients">
       <p>Start a conversation with a currently assigned client.</p>
       {resource.loading && <p role="status">Loading assigned clients…</p>}
       {resource.error && (
