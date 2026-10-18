@@ -61,6 +61,7 @@ export function Workspace({
   const [notice, setNotice] = useState('')
   const [dismissed, setDismissed] = useState<number[]>([])
   const isOffline = offline || initial === 'offline' || !online
+  const isHelpPage = active === 'Profile' && /^\/profile\/help\/?$/.test(window.location.pathname)
 
   useEffect(() => {
     const update = () => setOnline(navigator.onLine)
@@ -110,7 +111,7 @@ export function Workspace({
 
   return (
     <div
-      className={`workspace secondary-workspace visual-auth-shell ${!api ? 'demo-workspace' : ''} ${active === 'Profile' || active === 'Wallet' ? 'remaining-workspace' : ''} ${active === 'Messages' ? 'chat-workspace' : ''} ${collapsed ? 'is-collapsed' : ''} ${expanded ? 'is-expanded' : ''} ${isOffline ? 'secondary-offline' : ''}`}
+      className={`workspace secondary-workspace visual-auth-shell ${!api ? 'demo-workspace' : ''} ${active === 'Profile' || active === 'Wallet' ? 'remaining-workspace' : ''} ${active === 'Messages' ? 'chat-workspace' : ''} ${isHelpPage ? 'profile-help-workspace' : ''} ${active === 'Wallet' ? 'wallet-workspace' : ''} ${collapsed ? 'is-collapsed' : ''} ${expanded ? 'is-expanded' : ''} ${isOffline ? 'secondary-offline' : ''}`}
     >
       {expanded && (
         <button
@@ -135,6 +136,11 @@ export function Workspace({
               }}
             >
               <DesignIcon name="part2-03-imgCaretDoubleHorizontal.svg" />
+              {active === 'Wallet' && (
+                <svg className="wallet-drawer-collapse" aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M3 17L8 12M3 12H8V17M17 3L12 8M12 3V8H17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
             </button>
           </header>
           <nav className="navigation">
@@ -266,7 +272,7 @@ export function Workspace({
         )}
         {children}
       </main>
-      {active === 'Messages' && (
+      {(active === 'Messages' || isHelpPage) && (
         <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
           {[...menu.map((item) => item.label), 'Profile'].map((label, index) => (
             <button
