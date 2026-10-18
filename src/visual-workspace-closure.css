@@ -44,6 +44,9 @@
     max-height: 100svh;
     overflow-y: auto;
   }
+  .wallet-workspace.is-expanded:has(.wallet-demo.wallet-overview) .sidebar {
+    height: 675px;
+  }
   .wallet-workspace.is-expanded .sidebar-header {
     margin-right: 22px;
     padding-right: 6px;

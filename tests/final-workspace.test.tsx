@@ -70,6 +70,12 @@ describe('final Help phone shell', () => {
 })
 
 describe('final wallet phone drawer', () => {
+  it('uses the shorter overview reference without changing earnings or live drawer budgets', () => {
+    const phoneStyles = styles.slice(styles.indexOf('@media (max-width: 600px)'))
+    expect(phoneStyles).toMatch(/\.wallet-workspace\.is-expanded:has\(\.wallet-demo\.wallet-overview\) \.sidebar\s*\{\s*height: 675px;/)
+    expect(phoneStyles).not.toMatch(/\.wallet-live[^}]*height: 675px;/)
+  })
+
   it('budgets the original 703px drawer with a smaller-viewport scroll fallback, not clipped content', () => {
     const phoneStyles = styles.slice(styles.indexOf('@media (max-width: 600px)'))
     expect(phoneStyles).toMatch(/\.wallet-workspace\.is-expanded \.sidebar\s*\{[^}]*height: 703px;[^}]*max-height: 100svh;[^}]*overflow-y: auto;/)
