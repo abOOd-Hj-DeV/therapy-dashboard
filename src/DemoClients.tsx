@@ -164,7 +164,7 @@ function ClientListFixture({ navigate }: { navigate: (path: string) => void }) {
   )
 
   return (
-    <div className="demo-client-list" data-density={density} aria-label="Development client-list design reference">
+    <div className="demo-client-list" data-density={density} data-compliance-open={filtersOpen} aria-label="Development client-list design reference">
       <Workspace active="Clients" title="Manage Clients" navigate={navigate} onSearch={setSearch}>
         <p className="sr-only" id="demo-client-list-disclosure">
           Development design fixtures only. Search and status filters operate locally; no server is
