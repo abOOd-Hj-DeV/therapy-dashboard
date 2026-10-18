@@ -28,17 +28,51 @@
 }
 .wallet-demo .wallet-transaction-copy strong {
   font:
-    400 14px/20px Inter,
+    400 14px/20px 'IBM Plex Sans Arabic',
     sans-serif;
 }
 .wallet-demo .wallet-transaction-copy small {
   font:
-    400 11px/16px Inter,
+    400 12px/16px 'IBM Plex Sans Arabic',
     sans-serif;
 }
 .wallet-demo .wallet-transaction-status > span {
   min-width: 0;
   line-height: 18px;
+}
+.wallet-demo:not(.wallet-overview) .wallet-advisory {
+  padding: 13px 16px;
+  border: 0;
+  border-radius: 12px;
+  align-items: center;
+  gap: 10px;
+  font:
+    400 14px/21px 'IBM Plex Sans Arabic',
+    sans-serif;
+}
+@media (min-width: 1101px) {
+  .wallet-demo .wallet-stat-grid {
+    row-gap: 10px;
+  }
+  .wallet-demo .wallet-stat-grid p {
+    margin-bottom: 12px;
+  }
+  .wallet-demo .wallet-panel {
+    margin-top: 18px;
+  }
+  .wallet-demo .wallet-transactions {
+    padding: 14px 0 18px;
+  }
+  .wallet-demo .wallet-transactions article {
+    padding-block: 4px;
+  }
+  .remaining-workspace.secondary-offline:has(.wallet-demo) .secondary-offline-banner {
+    margin-top: 16px;
+  }
+  /* The offline original overlaps only the decorative bottom of the hero. */
+  .remaining-workspace.secondary-offline .wallet-demo .wallet-panel {
+    margin-top: -16px;
+  }
 }
 @media (min-width: 601px) and (max-width: 1100px) {
   .remaining-workspace:has(.wallet-demo) {
@@ -210,6 +244,12 @@
 }
 .wallet-demo-modal .withdrawal-balance {
   margin-bottom: 0;
+  line-height: 20px;
+}
+.wallet-demo-modal .withdrawal-form > .remaining-primary {
+  box-shadow:
+    inset 0 -1px 2px #ffffff40,
+    inset 0 1px 2px #ffffff4d;
 }
 .wallet-demo-modal .wallet-method-menu {
   border: 1px solid #e0e3e9;
@@ -279,6 +319,12 @@
   }
 }
 @media (max-width: 600px) {
+  .wallet-demo-modal {
+    top: 35svh;
+    bottom: auto;
+    margin-block: 0;
+    max-height: calc(65svh - 16px);
+  }
   .wallet-demo:not(.wallet-overview) .wallet-phone-heading {
     margin-bottom: 8px;
   }
@@ -331,15 +377,6 @@
   .wallet-demo .wallet-transactions article {
     padding: 7px 4px;
   }
-  .wallet-demo .wallet-transaction-copy strong {
-    font:
-      400 12px/18px Inter,
-      sans-serif;
-  }
-  .wallet-demo .wallet-transaction-copy small {
-    font-size: 11px;
-    line-height: 16px;
-  }
   .wallet-demo .wallet-transaction-status {
     flex-direction: column-reverse;
     gap: 4px;
@@ -353,10 +390,8 @@
     font-size: 12px;
     line-height: 18px;
   }
-  .wallet-demo .wallet-advisory {
-    font:
-      400 12px/21px 'IBM Plex Sans Arabic',
-      sans-serif;
+  .wallet-demo:not(.wallet-overview) .wallet-advisory .remaining-icon {
+    margin-top: 0;
   }
   .wallet-demo.wallet-overview .wallet-advisory {
     font:
