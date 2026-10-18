@@ -532,7 +532,20 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
                         checked={clinicalFlag}
                         onChange={(event) => setClinicalFlag(event.target.checked)}
                       />
-                      🚩 Clinical Follow-up Flag
+                      <span className="clinical-flag-label">
+                        <svg
+                          className="clinical-flag-icon"
+                          width="12"
+                          height="12"
+                          viewBox="0 0 12 12"
+                          aria-hidden="true"
+                          focusable="false"
+                        >
+                          <path d="M2 1v10" stroke="currentColor" />
+                          <path d="m2 1 9 2.5L2 7Z" fill="currentColor" />
+                        </svg>
+                        Clinical Follow-up Flag
+                      </span>
                     </label>
                     <p>
                       When activated, the clinical supervisor is alerted to review this case — used
