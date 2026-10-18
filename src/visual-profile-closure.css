@@ -16,6 +16,37 @@
   .remaining-modal.logout-modal {
     width: 330px;
   }
+
+  .remaining-modal.hours-modal {
+    inset-inline-start: -84px;
+  }
+}
+
+@media (min-width: 1101px) {
+  .remaining-modal.preferences-modal {
+    inset-inline-start: -72px;
+  }
+}
+
+/* Reset native checkbox margins: 24px tracks plus 16px gaps give a 40px pitch. */
+.remaining-modal.preferences-modal .preferences-list label {
+  gap: 8px;
+}
+.remaining-modal.preferences-modal .preferences-list input[role='switch'] {
+  margin: 0;
+}
+.remaining-modal.preferences-modal .modal-heading {
+  margin-bottom: 24px;
+}
+.remaining-modal.preferences-modal .remaining-form-actions {
+  margin-top: 24px;
+}
+
+/* The session explanation stays separate, readable and naturally wrapping. */
+.remaining-modal.logout-modal > p:first-of-type {
+  color: #4a5565;
+  font: 400 14px/20px Arimo, Arial, sans-serif;
+  letter-spacing: -0.25px;
 }
 
 /* Originals 1:16123 / 1:16562: compact text rows, not a fixed-height dialog.
@@ -57,9 +88,19 @@
 }
 
 @media (max-width: 600px) {
+  .remaining-modal:is(.edit-modal, .preferences-modal, .logout-modal) {
+    max-width: calc(100vw - 30px);
+  }
   /* 1:27963: retain the full editable biography, with room for five lines. */
   .remaining-modal.edit-modal .remaining-field {
     line-height: 20px;
+    margin-bottom: 12px;
+  }
+  .remaining-modal.edit-modal .profile-field-title {
+    width: min(100%, 256px);
+  }
+  .remaining-modal.edit-modal .remaining-form-actions {
+    margin-top: 12px;
   }
   .remaining-modal.edit-modal textarea {
     height: 112px;
@@ -73,6 +114,13 @@
 
   /* 1:28628: day label over its paired native time inputs. The live editor
      uses a different multiple-window model and must not inherit this grid. */
+  .remaining-modal.hours-modal:has(.demo-hours-list) {
+    width: 348px;
+    max-width: calc(100vw - 22px);
+    max-height: calc(100svh - 48px);
+    inset-block: 32px auto;
+    margin-block: 0;
+  }
   .remaining-modal.hours-modal .modal-heading {
     margin-bottom: 24px;
   }
@@ -87,15 +135,19 @@
     grid-column: 1 / -1;
     gap: 8px;
     font-size: 16px;
-    line-height: 20px;
+    line-height: 19.2px;
   }
   .hours-modal .demo-hours-list input[type='time'] {
     padding: 6px;
     font-size: 12px;
   }
+  .hours-modal .demo-hours-list input[type='checkbox'] {
+    margin: 0;
+  }
   .hours-modal .demo-hours-list .day-off label {
     grid-column: auto;
     font-size: 14px;
+    line-height: 20px;
   }
   .hours-modal .demo-hours-list .day-off > span {
     grid-column: 2 / -1;
@@ -109,6 +161,10 @@
     align-items: flex-start;
     height: 71px;
     padding: 8px 12px;
+  }
+  .profile-settings .profile-summary .profile-counts > div {
+    align-items: center;
+    text-align: center;
   }
   /* Each stacked information section already owns its 16px top padding.
      A second grid gap was accumulating ahead of Contact Information. */
