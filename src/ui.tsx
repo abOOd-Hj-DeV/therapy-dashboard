@@ -33,6 +33,7 @@ export function Modal({
   closeIcon?: ReactNode
 }) {
   const ref = useRef<HTMLDialogElement>(null)
+  const pointerOrigin = useRef<EventTarget | null>(null)
   useEffect(() => {
     const dialog = ref.current!
     const previousFocus = document.activeElement as HTMLElement | null
@@ -73,8 +74,13 @@ export function Modal({
       className={`modal ${className}`}
       aria-labelledby="modal-title"
       onCancel={onClose}
+      onPointerDownCapture={(event) => {
+        pointerOrigin.current = event.target
+      }}
       onClick={(event) => {
-        if (event.target === event.currentTarget) onClose()
+        const startedInside = pointerOrigin.current !== null && pointerOrigin.current !== event.currentTarget
+        pointerOrigin.current = null
+        if (event.target === event.currentTarget && !startedInside) onClose()
       }}
     >
       <div className="modal-heading">

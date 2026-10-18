@@ -1,0 +1,37 @@
+.secondary-workspace .secondary-offline-banner {
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 42px;
+  padding: 11px 15px;
+  border: 1px solid #ffb900;
+  border-radius: 8px;
+  background: #fff4cc;
+  color: #fa7800;
+  font-size: 14px;
+  line-height: 18px;
+}
+.secondary-workspace .secondary-offline-banner > svg {
+  flex-shrink: 0;
+  color: #d97706;
+}
+.secondary-workspace.demo-workspace.secondary-offline :is(.sidebar, .secondary-topbar, .chat-layout, .profile-layout, .wallet-layout, .mobile-bottom-nav) {
+  opacity: .5;
+}
+@media (min-width: 601px) {
+  .secondary-workspace .sidebar {
+    height: 100svh;
+    min-height: 0;
+    align-self: flex-start;
+    overflow-y: auto;
+  }
+  .remaining-workspace.demo-workspace.secondary-offline:has(.profile-layout) .secondary-topbar {
+    height: 69px;
+    padding: 16px;
+  }
+}
+@media (max-width: 600px) {
+  .secondary-workspace .secondary-offline-banner {
+    margin: 16px;
+    min-height: 60px;
+  }
+}

@@ -7,6 +7,13 @@
   gap: 0;
   box-shadow: 0 24px 24px -12px #2929290a, 0 48px 48px -24px #2929290a;
 }
+@media (min-width: 601px) and (max-width: 1100px) {
+  .visual-demo-dashboard .search-results {
+    right: 12px;
+    top: 48px;
+  }
+  .visual-demo-dashboard:has(.search-open) .next-session { align-self: center; }
+}
 .visual-demo-dashboard .search-results button {
   border: 1px solid transparent;
   background: transparent;
@@ -15,6 +22,44 @@
   background: #f6f6f6;
   border-color: #eaeaea;
   box-shadow: inset 0 .75px .75px #ffffffa6;
+}
+@media (max-width: 600px) {
+  .visual-demo-dashboard .topbar-heading,
+  .visual-demo-dashboard .topbar-actions { gap: 8px; }
+  .visual-demo-dashboard .search-open .mobile-search { display: none; }
+  .visual-demo-dashboard .search-open .search-field {
+    display: flex;
+    position: static;
+    width: min(132px, calc(100vw - 236px));
+    box-shadow: none;
+    padding-inline: 8px;
+  }
+  .visual-demo-dashboard .search-results {
+    width: min(132px, calc(100vw - 236px));
+    top: 36px;
+    right: 0;
+  }
+  .visual-demo-dashboard.is-expanded .sidebar {
+    inset: 0 auto auto 0;
+    height: min(675px, 100svh);
+    min-height: 0;
+    border-radius: 0 0 24px 0;
+  }
+  .visual-demo-dashboard.is-expanded .dashboard-active-icon { background: #0a0a0a; }
+  .visual-demo-dashboard.is-expanded .sidebar-backdrop {
+    background: #0009;
+    backdrop-filter: blur(6px);
+  }
+  .visual-demo-dashboard .hero-rating > span {
+    padding: 8px 12px;
+    font-size: 14px;
+    line-height: 20px;
+    box-shadow: inset 0 0 0 1px #ffffff26;
+  }
+  .visual-demo-dashboard .offline-banner {
+    font-size: 14px;
+    padding: 10px 12px;
+  }
 }
 .visual-demo-dashboard .hero-rating { font-family: 'Inter Tight', sans-serif; }
 .visual-demo-dashboard .hero-rating > span { display: inline-flex; align-items: center; gap: 6px; border: 0; }
@@ -123,13 +168,57 @@
   background: #fef3c7;
   border-color: #f59e0b;
   color: #d97706;
-  padding-block: 12px;
+  margin-top: 8px;
+  padding-block: 10px;
   align-items: flex-start;
   font-family: 'IBM Plex Sans Arabic', sans-serif;
   line-height: 1.3;
 }
 .visual-demo-dashboard.is-offline :is(.sidebar, .hero-section, .metrics, .sessions-section, .topbar) { opacity: .5; }
 
+.visual-demo-dashboard .notifications-list {
+  max-height: calc(100svh - 170px);
+}
+.visual-demo-dashboard .notification-title { display: block; }
+.visual-demo-dashboard .notification-title time { margin-inline-start: 8px; }
+.visual-demo-dashboard .notification-system-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+.visual-demo-dashboard .notifications-panel footer {
+  min-height: 54px;
+  color: #d0d0d0;
+  font: italic 400 12px/16px 'IBM Plex Sans Arabic', sans-serif;
+}
+.visual-demo-dashboard .notifications-panel footer .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  filter: grayscale(1);
+  opacity: .4;
+}
+.visual-demo-dashboard .notifications-panel footer .brand-symbol {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+}
+.visual-demo-dashboard .notifications-panel footer .brand-symbol img {
+  width: 20px;
+  height: 20px;
+}
+.visual-demo-dashboard .notifications-panel footer .brand-wordmark {
+  display: block;
+  height: 22px;
+  width: auto;
+}
+@media (min-width: 601px) and (max-width: 1100px) {
+  .visual-demo-dashboard .notifications-panel {
+    width: 434px;
+    top: 40px;
+    right: 38px;
+  }
+}
 .visual-demo-dashboard .demo-notification-2 { background: #f6f6f6; }
 .visual-demo-dashboard .demo-notification-2 .notification-avatar > span { background: #2a85ff; }
 .visual-demo-dashboard .demo-notification-3 .notification-avatar > span { background: #ffd88d; }
@@ -187,12 +276,42 @@
   gap: 6px;
   background: #f6f6f6;
 }
-.visual-demo-dashboard .dashboard-meeting-modal .meeting-url input {
-  font: 400 14px/1.3 'IBM Plex Sans Arabic', sans-serif;
+.visual-demo-dashboard .dashboard-meeting-modal .meeting-url textarea {
+  font: 400 14px/24px 'IBM Plex Sans Arabic', sans-serif;
   padding: 0;
   color: #2f2f2f;
+  border: 0;
+  background: transparent;
+  width: 100%;
+  min-width: 0;
+  height: 24px;
+  resize: none;
+  overflow-wrap: anywhere;
 }
-.visual-demo-dashboard .dashboard-meeting-modal .meeting-url .icon-button { width: 24px; height: 24px; flex-shrink: 0; }
+/* Original compositions use an upper-screen dialog anchor, not the tall
+   inventory frame's midpoint. Keep centering when the actual screen is short. */
+@media (min-width: 601px) and (max-width: 1100px) {
+  .visual-demo-dashboard .dashboard-meeting-modal {
+    top: min(50svh, 448px);
+    bottom: auto;
+    margin: 0 auto;
+    transform: translateY(-50%);
+  }
+}
+@media (max-width: 600px) {
+  .visual-demo-dashboard .dashboard-meeting-modal {
+    top: min(50svh, 471px);
+    bottom: auto;
+    margin: 0 auto;
+    transform: translateY(-50%);
+  }
+  .visual-demo-dashboard .dashboard-meeting-modal .meeting-url textarea {
+    height: 36.4px;
+    line-height: 18.2px;
+  }
+}
+.visual-demo-dashboard .dashboard-meeting-modal .meeting-url .icon-button { width: 24px; height: 24px; padding: 0; flex-shrink: 0; }
+.visual-demo-dashboard .dashboard-meeting-modal .meeting-url .icon-button svg { flex-shrink: 0; }
 .visual-demo-dashboard .dashboard-meeting-modal > .primary-button {
   padding: 8px 10px;
   font: 700 14px/20px 'DM Sans', sans-serif;

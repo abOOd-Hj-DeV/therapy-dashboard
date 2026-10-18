@@ -436,7 +436,12 @@ function DemoDashboard({ navigate }: DashboardProps) {
                   key={item.id}
                 >
                   <div className="notification-avatar">
-                    <img src={asset(item.image)} alt="" />
+                    {item.id === 3 ? (
+                      <svg className="notification-system-avatar" viewBox="0 0 36 36" aria-hidden="true">
+                        <circle cx="18" cy="18" r="18" fill="#303030" />
+                        <path d="M27 33c-1-7-4-10-8-10l-1-3c2-1 3-4 3-7 0-4-2-6-5-6s-5 3-5 6c0 3 1 6 3 7l-1 3c-4 1-6 4-7 10" fill="#fff" />
+                      </svg>
+                    ) : <img src={asset(item.id === 6 ? 'notification-imgImage2.png' : item.image)} alt="" />}
                     <span>
                       <Icon name={item.icon} />
                     </span>
@@ -449,9 +454,9 @@ function DemoDashboard({ navigate }: DashboardProps) {
                           part.startsWith('"') ? (
                             <strong key={index}><em>{part}</em></strong>
                           ) : <span key={index}>{part}</span>,
-                        )}
+                        )}{' '}
+                        <time>{item.time}</time>
                       </p>
-                      <time>{item.time}</time>
                     </div>
                     <p>
                       {item.description.startsWith('@harper ') ? (
@@ -482,7 +487,7 @@ function DemoDashboard({ navigate }: DashboardProps) {
               ))}
           </div>
           <footer>
-            Powered by <img src={asset('notification-imgLogo.svg')} alt="Sakina" />
+            <span>Powered by</span> <Logo wordmark />
           </footer>
           {status && (
             <p role="status" className="notification-feedback">
@@ -501,9 +506,10 @@ function DemoDashboard({ navigate }: DashboardProps) {
           <label className="meeting-label">
             Meeting URL
             <div className="meeting-url">
-              <input
+              <textarea
                 aria-label="Meeting URL"
                 readOnly
+                rows={1}
                 value="https://meet.google.com/kxx-eyzx-dew?author=0"
               />
               <button

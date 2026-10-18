@@ -134,17 +134,32 @@
   .demo-all-sessions .all-sessions-table th:nth-child(2) {
     width: 28%;
   }
+  /* Original 1:30405 stacks the 40x42 portrait over readable patient text. */
   .demo-all-sessions .all-sessions-table th {
-    font-size: 12px;
+    font-size: 14px;
+  }
+  .demo-all-sessions .all-sessions-table .patient-cell {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding-block: 4px;
   }
   .demo-all-sessions .patient-name {
-    font-size: 11px;
+    font-size: 14px;
+    line-height: 18.2px;
+  }
+  .demo-all-sessions .all-sessions-table .patient-cell small {
+    font-size: 12px;
     line-height: 16px;
   }
+  .demo-all-sessions .all-sessions-table .session-date {
+    font-size: 14px;
+    line-height: 18.2px;
+  }
   .demo-all-sessions .session-status {
-    font-size: 10px;
-    gap: 4px;
-    padding: 3px 4px;
+    font-size: 12px;
+    gap: 2px;
+    padding: 2px 8px 2px 4px;
   }
 }
 
@@ -201,6 +216,15 @@
 }
 .part2-modal.homework-modal.demo-homework-modal.is-create textarea {
   height: 91px;
+}
+/* The original homework Backdrop children are centered, unlike the meeting
+   composition: cached 1:31894 is y459/h525.8 at 770x1443 and 1:32616 is
+   y631.6/h537.8 at 370x1800.8. Do not apply the meeting's upper anchor here.
+   Keep short/zoomed viewports scrollable with space for native focus outlines. */
+.part2-modal.demo-homework-modal {
+  margin: auto;
+  max-height: calc(100svh - 32px);
+  overflow-y: auto;
 }
 .part2-modal.demo-homework-modal .modal-heading {
   margin-bottom: 8px;
@@ -278,6 +302,254 @@
 }
 .session-detail .clinical-summary > * {
   position: relative;
+}
+
+/* Repair two: individual source card budgets, not a page-level translation.
+   Cached 1:31509/31549/31577 and 1:32304/32344/32372 retain natural growth
+   for longer notes, assignments and accessible, non-clipped warning text. */
+.demo-session-detail .detail-card h3 {
+  font: 600 16px/19.2px 'IBM Plex Sans Arabic', sans-serif;
+  letter-spacing: -0.176px;
+  color: #101828;
+}
+.demo-session-detail .overview-card {
+  padding: 16px;
+}
+.demo-session-detail .overview-card h3 {
+  margin-bottom: 14px;
+}
+.demo-session-detail .overview-card dl {
+  margin: 0 0 14px;
+  display: grid;
+  gap: 14px;
+}
+.demo-session-detail .overview-card dl > div {
+  padding: 0;
+  font: 500 14px/16px 'IBM Plex Sans Arabic', sans-serif;
+}
+.demo-session-detail .overview-card dt,
+.demo-session-detail .checklist-card label {
+  color: #99a1af;
+  font-weight: 500;
+}
+.demo-session-detail .checklist-card {
+  padding: 20px;
+}
+.demo-session-detail .checklist-card h3 {
+  margin-bottom: 0;
+}
+.demo-session-detail .checklist-card label {
+  padding: 9px 0;
+  font: 500 14px/16px 'IBM Plex Sans Arabic', sans-serif;
+}
+.demo-session-detail .checklist-card label:first-of-type {
+  padding-top: 14px;
+}
+.demo-session-detail .clinical-summary h3 {
+  margin-bottom: 16px;
+}
+.demo-session-detail .clinical-summary strong {
+  display: block;
+  font: 600 14px/16px 'IBM Plex Sans Arabic', sans-serif;
+}
+.demo-session-detail .clinical-summary p {
+  margin-top: 3px;
+  color: #99a1af;
+  font: 500 14px/16px 'IBM Plex Sans Arabic', sans-serif;
+}
+.demo-session-detail .clinical-summary > div {
+  padding-bottom: 16px;
+  min-height: 58px;
+}
+.demo-session-detail .clinical-badge {
+  font: 500 12px/16px 'IBM Plex Sans Arabic', sans-serif;
+  padding: 3px 8px;
+}
+.demo-session-detail .clinical-summary .soft-button {
+  min-width: 182px;
+  min-height: 40.8px;
+  font: 500 12px/16px 'IBM Plex Sans Arabic', sans-serif;
+}
+.demo-session-detail .suggested-focus h3 {
+  margin-bottom: 0;
+}
+.demo-session-detail .suggested-focus strong {
+  display: block;
+  font: 600 14px/16px 'IBM Plex Sans Arabic', sans-serif;
+}
+.demo-session-detail .suggested-focus p {
+  font: 400 12.5px/21.25px 'Tajawal', sans-serif;
+  color: #6b7280;
+}
+.demo-session-detail .clinical-pathway h3 {
+  margin-bottom: 0;
+}
+.demo-session-detail .clinical-pathway > div:first-of-type {
+  padding-top: 14px;
+}
+.demo-session-detail .clinical-pathway strong {
+  line-height: 18px;
+}
+.demo-session-detail .clinical-pathway small {
+  display: block;
+  padding-top: 4px;
+  line-height: 18.4px;
+}
+.demo-session-detail :is(.notes-card, .homework-card) {
+  padding: 16px;
+}
+.demo-session-detail .notes-card h3 {
+  margin-bottom: 9px;
+}
+.demo-session-detail .notes-card textarea {
+  font: 600 14px/16px 'IBM Plex Sans Arabic', sans-serif;
+}
+.demo-session-detail .notes-card > .teal-button {
+  display: flex;
+  width: fit-content;
+  margin-left: auto;
+  gap: 6px;
+}
+.demo-session-detail .note-add-icon {
+  font: 400 22px/16px 'IBM Plex Sans', sans-serif;
+}
+.demo-session-detail .notes-card .section-caption {
+  margin: 16px 0 10px;
+  padding-left: 4px;
+  color: #7c8085;
+  font: 600 14px/17px 'IBM Plex Sans Arabic', sans-serif;
+}
+.demo-session-detail .previous-note {
+  margin-top: 0;
+}
+.demo-session-detail .previous-note > span:first-child {
+  min-width: 0;
+}
+.demo-session-detail .previous-note-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 6px;
+}
+.demo-session-detail .previous-note strong {
+  font: 600 16px/19.2px 'IBM Plex Sans Arabic', sans-serif;
+  letter-spacing: -0.176px;
+}
+.demo-session-detail .previous-note small {
+  font: 400 12px/16px 'IBM Plex Sans Arabic', sans-serif;
+  letter-spacing: -0.36px;
+  color: #7c8085;
+}
+.demo-session-detail .previous-note p {
+  margin-top: 3px;
+  font: 400 13.5px/17.6px 'IBM Plex Sans', sans-serif;
+}
+.demo-session-detail .homework-card h3 {
+  margin-bottom: 8px;
+}
+.demo-session-detail .homework-card .section-caption {
+  font: 400 12px/16px 'IBM Plex Sans Arabic', sans-serif;
+}
+.demo-session-detail .homework-check {
+  padding: 10px 0;
+  gap: 12px;
+  border-top: 0.8px solid #f0f1f3;
+  border-bottom: 0;
+}
+.demo-session-detail .homework-check:first-of-type {
+  margin-top: 10px;
+}
+.demo-session-detail .homework-check strong {
+  display: block;
+  line-height: 16px;
+}
+.demo-session-detail .homework-check small {
+  font: 400 12px/16px 'IBM Plex Sans Arabic', sans-serif;
+  letter-spacing: -0.36px;
+  color: #99a1af;
+}
+.demo-session-detail .homework-card .new-assignment-title {
+  margin-top: 18px;
+  font: 600 11px/14px 'Tajawal', sans-serif;
+}
+.demo-session-detail .no-assignments {
+  padding-top: 20px;
+  font: 400 12px/14px 'Tajawal', sans-serif;
+  min-height: 44px;
+}
+.demo-session-detail .homework-add {
+  padding-top: 0;
+}
+.demo-session-detail .homework-add button {
+  font-weight: 500;
+}
+.demo-session-detail .outcome-card {
+  padding: 20px;
+}
+.demo-session-detail .outcome-card h3 {
+  margin: 0;
+}
+.demo-session-detail .outcome-card > label:first-of-type {
+  font: 500 12px/16px 'IBM Plex Sans Arabic', sans-serif;
+}
+.demo-session-detail .outcome-card textarea {
+  height: 74.2px;
+  font: 400 13px/20px 'Tajawal', sans-serif;
+}
+.demo-session-detail :is(.outcome-checkbox, .clinical-flag label) {
+  font: 400 12px/16px 'Tajawal', sans-serif;
+  gap: 9px;
+}
+.demo-session-detail .clinical-flag label {
+  min-height: 20px;
+  margin-bottom: 6px;
+}
+.demo-session-detail .clinical-flag p {
+  font: 500 12px/16px 'IBM Plex Sans Arabic', sans-serif;
+}
+.demo-session-detail .continuity-info {
+  margin-top: 22px;
+  font: 400 14px/18px 'IBM Plex Sans Arabic', sans-serif;
+}
+.demo-session-detail .record-footer {
+  gap: 16px;
+}
+@media (min-width: 601px) and (max-width: 1100px) {
+  .demo-session-detail .detail-overview > .overview-card {
+    flex: 0 0 calc((100% - 16px) * 0.494);
+  }
+  .demo-session-detail .overview-card > .teal-button {
+    background: #fff;
+    color: #374151;
+    border: 0.8px solid #eaeaeb;
+    box-shadow: none;
+    font: 500 12px/16px 'IBM Plex Sans Arabic', sans-serif;
+  }
+}
+@media (max-width: 600px) {
+  .demo-session-detail .overview-card > .teal-button {
+    font: 500 12px/16px 'IBM Plex Sans Arabic', sans-serif;
+  }
+  .demo-session-detail .notes-card > .teal-button {
+    width: 100%;
+    justify-content: center;
+  }
+  .demo-session-detail .previous-note-heading {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .demo-session-detail .clinical-summary > div {
+    padding-bottom: 16px;
+  }
+  .demo-session-detail .clinical-badge {
+    margin-top: 12px;
+  }
+  .demo-session-detail .outcome-card {
+    padding: 16px;
+  }
+  .demo-session-detail .record-footer {
+    gap: 8px;
+  }
 }
 
 /* Original action dropdown 2:3934; keep its responsive anchor from secondary.css. */

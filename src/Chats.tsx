@@ -131,7 +131,9 @@ function DemoChats({ navigate }: { navigate: (path: string) => void }) {
       offline={offline}
       onSearch={setQuery}
     >
-      <div className={`chat-layout ${client ? 'has-conversation' : 'no-conversation'}`}>
+      <div
+        className={`chat-layout demo-chat-layout ${offline ? 'is-offline' : ''} ${client ? 'has-conversation' : 'no-conversation'}`}
+      >
         <section className="chat-list" aria-label="Conversations">
           <label className="chat-search">
             <DesignIcon name="part2-03-imgSearch.svg" />
@@ -142,10 +144,12 @@ function DemoChats({ navigate }: { navigate: (path: string) => void }) {
               onChange={(event) => setQuery(event.target.value)}
             />
           </label>
-          <div className="response-promise list-promise">
-            <DesignIcon name="part2-03-imgIcon1.svg" />
-            <span>Committed to responding within 8 hours</span>
-          </div>
+          {(!offline || client) && (
+            <div className="response-promise list-promise">
+              <DesignIcon name="part2-03-imgIcon1.svg" />
+              <span>Committed to responding within 8 hours</span>
+            </div>
+          )}
           <div className="conversation-list">
             {clients
               .filter((item) => item.name.toLowerCase().includes(query.trim().toLowerCase()))

@@ -217,6 +217,10 @@
   .demo-client-profile .dcp-session-toolbar { flex-wrap: wrap; }
   .demo-client-profile .dcp-filters { gap: 16px; }
   .demo-client-profile .dcp-row-heading { flex-wrap: wrap; }
+  /* 1:10682: wrap the date within its remaining column, not below the title. */
+  .demo-client-profile .dcp-session-upcoming .dcp-row-heading { flex-wrap: nowrap; }
+  .demo-client-profile .dcp-session-upcoming .dcp-row-heading h3 { flex-shrink: 0; }
+  .demo-client-profile .dcp-session-upcoming .dcp-date { min-width: 0; white-space: normal; }
 }
 @media (min-width: 740px) and (max-width: 1100px) {
   .demo-client-profile:has(.dcp-note-form) .dcp-tabs { justify-content: start; gap: 0; }
@@ -251,6 +255,8 @@
   .demo-client-profile .dcp-session .dcp-session-actions { justify-self: end; align-items: center; }
   .demo-client-profile .dcp-session-upcoming { display: flex; flex-direction: column; align-items: start; }
   .demo-client-profile .dcp-row-heading { flex-direction: column; align-items: start; gap: 6px; }
+  /* Source phone node 1:11240 alone retains the short title/date on one line. */
+  .demo-client-profile .dcp-row-heading-inline { flex-direction: row; flex-wrap: wrap; align-items: center; }
   .demo-client-profile .dcp-session-copy { width: 100%; }
   .demo-client-profile .dcp-session-copy > p { max-width: 100%; }
   .demo-client-profile .dcp-notes-body { padding-inline: 8px; }

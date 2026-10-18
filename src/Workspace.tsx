@@ -4,6 +4,7 @@ import { menu, notifications as demoNotifications } from './data'
 import { Logo, Modal } from './ui'
 import { ApiClient } from './api'
 import { LiveNotifications } from './api-chat-and-notifications-live-notifications'
+import './visual-workspace-closure.css'
 
 type WorkspaceProps = {
   title: string
@@ -109,7 +110,7 @@ export function Workspace({
 
   return (
     <div
-      className={`workspace secondary-workspace visual-auth-shell ${active === 'Profile' || active === 'Wallet' ? 'remaining-workspace' : ''} ${active === 'Messages' ? 'chat-workspace' : ''} ${collapsed ? 'is-collapsed' : ''} ${expanded ? 'is-expanded' : ''} ${isOffline ? 'secondary-offline' : ''}`}
+      className={`workspace secondary-workspace visual-auth-shell ${!api ? 'demo-workspace' : ''} ${active === 'Profile' || active === 'Wallet' ? 'remaining-workspace' : ''} ${active === 'Messages' ? 'chat-workspace' : ''} ${collapsed ? 'is-collapsed' : ''} ${expanded ? 'is-expanded' : ''} ${isOffline ? 'secondary-offline' : ''}`}
     >
       {expanded && (
         <button
@@ -249,7 +250,18 @@ export function Workspace({
         </header>
         {isOffline && (
           <div className="secondary-offline-banner" role="status">
-            <span>⚠</span>You're offline. Some data may not be up to date.
+            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <g fill="currentColor" opacity=".3">
+                <path d="M3.35013 4.41079C2.50036 4.86508 1.71172 5.41858 0.999822 6.05575C0.691177 6.33199 0.664911 6.80614 0.941156 7.11479C1.2174 7.42343 1.69155 7.4497 2.00019 7.17345C2.73628 6.51464 3.56555 5.95825 4.46587 5.52653L3.35013 4.41079Z" />
+                <path d="M6.183 7.24366C5.16312 7.61418 4.23696 8.18 3.45026 8.8956C3.14385 9.17432 3.1214 9.64867 3.40012 9.95508C3.67884 10.2615 4.15318 10.2839 4.45959 10.0052C5.27695 9.26173 6.27657 8.71649 7.38389 8.44455L6.183 7.24366Z" />
+                <path d="M9.4629 10.5236C9.3107 10.508 9.15627 10.5 9.00001 10.5C7.83482 10.5 6.77155 10.9438 5.9728 11.6704C5.66639 11.9491 5.64394 12.4235 5.92266 12.7299C6.20138 13.0363 6.67572 13.0587 6.98213 12.78C7.51555 12.2948 8.22248 12 9.00001 12C9.77754 12 10.4845 12.2948 11.0179 12.78C11.2493 12.9905 11.5765 13.0292 11.8429 12.9036L9.4629 10.5236Z" />
+                <path d="M6.43533 3.27481L7.73579 4.57527C8.15022 4.52557 8.57211 4.5 9.00001 4.5C11.6897 4.5 14.1417 5.51037 15.9998 7.17345C16.3085 7.4497 16.7826 7.42343 17.0589 7.11479C17.3351 6.80614 17.3088 6.33199 17.0002 6.05575C14.8777 4.15604 12.0729 3 9.00001 3C8.11987 3 7.26173 3.09483 6.43533 3.27481Z" />
+                <path d="M12.2341 9.07355L9.96659 6.80607C11.7215 7.01103 13.3091 7.76706 14.5498 8.8956C14.8562 9.17432 14.8786 9.64867 14.5999 9.95508C14.3212 10.2615 13.8468 10.2839 13.5404 10.0052C13.1448 9.64539 12.7066 9.332 12.2341 9.07355Z" />
+                <path d="M8.25001 15C8.25001 14.5858 8.58579 14.25 9.00001 14.25H9.00751C9.42172 14.25 9.75751 14.5858 9.75751 15C9.75751 15.4142 9.42172 15.75 9.00751 15.75H9.00001C8.58579 15.75 8.25001 15.4142 8.25001 15Z" />
+              </g>
+              <path fill="currentColor" d="M1.71967 1.71967C2.01256 1.42678 2.48744 1.42678 2.78033 1.71967L16.2803 15.2197C16.5732 15.5126 16.5732 15.9874 16.2803 16.2803C15.9874 16.5732 15.5126 16.5732 15.2197 16.2803L1.71967 2.78033C1.42678 2.48744 1.42678 2.01256 1.71967 1.71967Z" />
+            </svg>
+            <span>You're offline. Some data may not be up to date.</span>
           </div>
         )}
         {children}

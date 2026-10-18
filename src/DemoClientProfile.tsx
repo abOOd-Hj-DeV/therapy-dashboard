@@ -104,7 +104,7 @@ function ClientProfileFixture({ navigate }: { navigate: (path: string) => void }
       <article key={session.id} className={`dcp-session dcp-session-${session.status.toLowerCase()}`} aria-label={`${session.title}: ${session.status}`}>
         <span className="dcp-calendar"><PreviewIcon name={session.status === 'Missed' ? 'calendar-missed' : 'calendar'} /></span>
         <div className="dcp-session-copy">
-          <div className="dcp-row-heading"><h3>{session.title}</h3><span className="dcp-date">{session.date}</span></div>
+          <div className={`dcp-row-heading${session.id === 'exercises' ? ' dcp-row-heading-inline' : ''}`}><h3>{session.title}</h3><span className="dcp-date">{session.date}</span></div>
           <p>{session.description}</p>
         </div>
         <div className="dcp-session-actions">

@@ -9,6 +9,23 @@
 .chat-layout .list-promise {
   margin: 0 14px 8px;
 }
+/* 1:12530: offline without selection goes straight from search to rows. */
+.demo-chat-layout.is-offline.no-conversation .chat-search {
+  margin-bottom: 10px;
+}
+@media (min-width: 601px) {
+  .chat-workspace.demo-workspace.secondary-offline .secondary-offline-banner {
+    margin-bottom: 32px;
+  }
+}
+@media (min-width: 1101px) {
+  .demo-chat-layout.is-offline .message-history {
+    padding-top: 24px;
+  }
+}
+.demo-chat-layout .reply-reminder {
+  flex-shrink: 0;
+}
 .chat-layout .conversation strong {
   font: 700 13.5px / normal 'IBM Plex Sans', sans-serif;
   min-width: 0;
@@ -64,6 +81,16 @@
   opacity: 1;
 }
 @media (min-width: 601px) and (max-width: 1100px) {
+  /* 1:12906: the full demo SLA belongs in the offline tablet thread. */
+  .demo-chat-layout.is-offline .list-promise {
+    display: none;
+  }
+  .demo-chat-layout.is-offline .thread-promise {
+    display: flex;
+  }
+  .demo-chat-layout.is-offline .chat-search {
+    margin-bottom: 10px;
+  }
   .chat-layout .message-composer textarea {
     padding-block: 2px;
   }
@@ -209,6 +236,18 @@
 }
 
 @media (max-width: 600px) {
+  /* 1:13211 / 1:13386 add a 92px alert above the same phone content.
+     Reset the inherited offline desktop height; preserve composer dimensions. */
+  .chat-layout.demo-chat-layout.is-offline {
+    height: auto;
+    min-height: calc(100svh - 164px);
+  }
+  .chat-layout.demo-chat-layout.is-offline .chat-list {
+    min-height: max(calc(100svh - 164px), 719px);
+  }
+  .chat-layout.demo-chat-layout.is-offline .chat-thread {
+    min-height: max(calc(100svh - 180px), 787.6px);
+  }
   /* Both the phone thread (2:1484) and phone list (2:1667) use this shell edge. */
   .chat-workspace .mobile-bottom-nav {
     border: 1px solid #eff0f0;

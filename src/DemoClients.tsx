@@ -124,6 +124,15 @@ export function DemoClients({ navigate }: { navigate: (path: string) => void }) 
 }
 
 function ClientListFixture({ navigate }: { navigate: (path: string) => void }) {
+  // Finite development-only presentation states for the distinct source densities.
+  // This component is never mounted by the protected API clients route.
+  const params = new URLSearchParams(window.location.search)
+  const requestedDensity = params.get('density')
+  const density = requestedDensity === 'compact' || requestedDensity === 'spacious'
+    ? requestedDensity
+    : params.get('state') === 'offline' || params.get('state') === 'expanded'
+      ? 'spacious'
+      : 'responsive'
   const [filter, setFilter] = useState<PreviewFilter>('All')
   const [filtersOpen, setFiltersOpen] = useState(false)
   const filterMenu = useRef<HTMLDivElement>(null)
@@ -155,13 +164,30 @@ function ClientListFixture({ navigate }: { navigate: (path: string) => void }) {
   )
 
   return (
-    <div className="demo-client-list" aria-label="Development client-list design reference">
+    <div className="demo-client-list" data-density={density} aria-label="Development client-list design reference">
       <Workspace active="Clients" title="Manage Clients" navigate={navigate} onSearch={setSearch}>
         <p className="sr-only" id="demo-client-list-disclosure">
           Development design fixtures only. Search and status filters operate locally; no server is
           connected. Every card opens the separate Ahmed Mohamed reference profile, not a live
           record.
         </p>
+        <div className="demo-client-list-add-row">
+          <button
+            className="demo-client-list-add"
+            type="button"
+            disabled
+            aria-describedby="demo-client-list-add-unavailable"
+            title="Client creation is unavailable in this local design preview. No client will be created."
+          >
+            <svg viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden="true">
+              <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+            Add Client
+          </button>
+          <span className="sr-only" id="demo-client-list-add-unavailable">
+            Client creation is unavailable in this local design preview. No client will be created.
+          </span>
+        </div>
         <div className="demo-client-list-toolbar">
           <div
             className="demo-client-list-filters"
@@ -200,7 +226,7 @@ function ClientListFixture({ navigate }: { navigate: (path: string) => void }) {
           </button>
           {filtersOpen && <section id="demo-client-compliance-options" className="demo-client-list-compliance" aria-label="Compliance design options">
             <h2>Filter by Compliance</h2>
-            <button type="button" onClick={() => { setFilter('All'); setFiltersOpen(false) }}>All</button>
+            <button type="button" aria-pressed="true" onClick={() => { setFilter('All'); setFiltersOpen(false) }}>All</button>
             <button type="button" disabled title="Compliance data is not supplied; the activity strip is not a clinical compliance score.">High Compliance (80%+)</button>
             <button type="button" disabled title="Compliance data is not supplied; the activity strip is not a clinical compliance score.">Low Compliance (Below 80%)</button>
           </section>}

@@ -6,6 +6,7 @@ import { Modal } from './ui'
 import { asset } from './assets'
 import { remainingAssets } from './remaining-assets'
 import { FaqSummary, FormActions, RemainingIcon, SettingRow, type RemainingIconName } from './RemainingUI'
+import './visual-profile-closure.css'
 
 type Page = 'profile' | 'settings' | 'help'
 type Dialog =
@@ -42,7 +43,7 @@ const initialProfile: ProfileData = {
 const notificationLabels = [
   'New client messages',
   'Client progress updates',
-  'Payment and withdrawal notifications',
+  'Payment & withdrawal notifications',
   'Platform news and offers',
   'Session reminders',
 ]
@@ -595,7 +596,7 @@ function HoursForm({
   }
   return (
     <form onSubmit={submit}>
-      <div className="hours-list">
+      <div className="hours-list demo-hours-list">
         {draft.map((day, index) => (
           <div key={day.day} className={day.enabled ? '' : 'day-off'}>
             <label>
