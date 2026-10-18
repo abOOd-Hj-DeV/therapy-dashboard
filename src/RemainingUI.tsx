@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { asset } from './assets'
 import { remainingAssets } from './remaining-assets'
 import './visual-profile-wallet.css'
+import './visual-help-final.css'
 
 export type RemainingIconName = keyof typeof remainingAssets
 
