@@ -6,6 +6,7 @@ import { DesignIcon, Workspace } from './Workspace'
 import { Avatar } from './Dashboard'
 import { ApiClient } from './api'
 import { LiveCarePage } from './api-sessions-and-clinical-live'
+import './visual-session-list-final.css'
 
 type ListedSession = Session & {
   id: string
@@ -60,7 +61,7 @@ const initialSessions: ListedSession[] = [
       ? 'Follow-up Session'
       : index === 8
         ? 'Initial Consultation'
-        : index === 9
+        : index === 9 || index === 10
           ? 'Group Session'
           : 'Private Session',
 }))
@@ -195,7 +196,10 @@ function DemoSessions({ navigate }: { navigate: (path: string) => void }) {
           Schedule New <DesignIcon name="part2-07-imgArrowLeft.svg" />
         </button>
       </div>
-      <section className="all-sessions demo-all-sessions" aria-label="All Sessions">
+      <section
+        className="all-sessions demo-all-sessions final-session-list"
+        aria-label="All Sessions"
+      >
         <header>
           <h2>{tab === 'All' ? 'All Sessions' : `${tab} Sessions`}</h2>
           <button
