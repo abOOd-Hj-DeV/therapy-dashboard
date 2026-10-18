@@ -6,6 +6,7 @@ import { DesignIcon, Workspace } from './Workspace'
 import { Avatar } from './Dashboard'
 import { ApiClient } from './api'
 import { LiveCarePage } from './api-sessions-and-clinical-live'
+import { closurePortraitAssets } from './closure-portrait-assets'
 import './visual-session-list-final.css'
 
 type ListedSession = Session & {
@@ -37,34 +38,50 @@ const extraSessions: Session[] = [
   },
 ]
 const initialSessions: ListedSession[] = [
-  ...sessions.map((item, index) => ({
-    ...item,
-    image:
-      index === 4
-        ? 'part2-07-imgContainer5.png'
-        : index === 5
-          ? 'part2-07-imgContainer6.png'
-          : index === 6
-            ? 'part2-07-imgContainer7.png'
-            : item.image,
-    crop: index >= 4 ? undefined : item.crop,
-  })),
+  ...sessions,
   ...extraSessions,
   { ...extraSessions[2] },
   ...sessions.slice(0, 5).map((item, index) => ({ ...item, date: `${24 + index} Apr 2026` })),
-].map((item, index) => ({
-  ...item,
-  id: `session-${index}`,
-  category: index < 2 ? 'Today' : index < 8 ? 'Previous' : 'Upcoming',
-  type:
-    index === 7
-      ? 'Follow-up Session'
-      : index === 8
-        ? 'Initial Consultation'
-        : index === 9 || index === 10
-          ? 'Group Session'
-          : 'Private Session',
-}))
+].map((item, index) => {
+  const id = `session-${index}`
+  const portrait = closurePortraitAssets.sessions.desktopTablet.find(
+    ({ target }) => target.sessionId === id && target.name === item.name,
+  )
+  return {
+    ...item,
+    image: portrait?.image ?? item.image,
+    crop: portrait ? portrait.crop : item.crop,
+    id,
+    category: index < 2 ? 'Today' : index < 8 ? 'Previous' : 'Upcoming',
+    type:
+      index === 7
+        ? 'Follow-up Session'
+        : index === 8
+          ? 'Initial Consultation'
+          : index === 9 || index === 10
+            ? 'Group Session'
+            : 'Private Session',
+  }
+})
+
+function DemoSessionAvatar({ session }: { session: ListedSession }) {
+  const phone = closurePortraitAssets.sessions.phone.find(
+    ({ target }) => target.sessionId === session.id && target.name === session.name,
+  )
+  if (!phone || (phone.image === session.image && phone.crop === session.crop)) {
+    return <Avatar patient={session} />
+  }
+  return (
+    <span className="session-row-portrait">
+      <span className="session-desktop-portrait">
+        <Avatar patient={session} />
+      </span>
+      <span className="session-phone-portrait">
+        <Avatar patient={{ ...session, image: phone.image, crop: phone.crop }} />
+      </span>
+    </span>
+  )
+}
 
 export function ScheduleDialog({
   onClose,
@@ -230,7 +247,7 @@ function DemoSessions({ navigate }: { navigate: (path: string) => void }) {
                         navigate(`/sessions/upcoming?patient=${encodeURIComponent(item.name)}`)
                       }
                     >
-                      <Avatar patient={item} />
+                      <DemoSessionAvatar session={item} />
                       <span>
                         <span className="patient-name">{item.name}</span>
                         <small>{item.type}</small>

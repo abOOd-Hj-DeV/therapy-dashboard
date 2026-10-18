@@ -140,7 +140,7 @@ describe('session scheduling and records', () => {
       screen.getByLabelText('Next Step / Continuity Note'),
       'Discuss sleep next time',
     )
-    await userEvent.click(screen.getByLabelText('🚩 Clinical Follow-up Flag'))
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Clinical Follow-up Flag' }))
     await userEvent.click(screen.getByRole('button', { name: 'Save and Update Next Session' }))
     expect(screen.getByRole('status')).toHaveTextContent('no supervisor was notified')
     await userEvent.click(screen.getByRole('button', { name: 'Back to Summary' }))

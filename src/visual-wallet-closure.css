@@ -26,6 +26,12 @@
   display: flex;
   flex-shrink: 0;
 }
+.wallet-demo .wallet-transactions img[data-artwork='masked-avatar'] {
+  width: 42px;
+  height: 44px;
+  border: 0;
+  border-radius: 0;
+}
 .wallet-demo .wallet-transaction-copy strong {
   font:
     400 14px/20px 'IBM Plex Sans Arabic',
@@ -307,6 +313,13 @@
   background: #eaf7f8;
 }
 @media (max-width: 1100px) {
+  .wallet-demo .wallet-transactions img[data-responsive-artwork='masked-avatar'] {
+    width: 42px;
+    height: 44px;
+    border: 0;
+    border-radius: 0;
+  }
+
   .wallet-demo .wallet-desktop-detail,
   .wallet-demo .wallet-desktop-only {
     display: none;

@@ -99,7 +99,8 @@ describe('bounded demo wallet closure', () => {
     expect(rows[4]).toHaveTextContent('+400 SP')
     const portraits = Array.from(rows, (row) => row.querySelector('img')!.getAttribute('src'))
     expect(new Set(portraits.slice(0, 4)).size).toBe(4)
-    expect(portraits[3]).toBe(portraits[4])
+    // Original 1:21198 has distinct native portraits for the 200 and 400 SP Omar rows.
+    expect(portraits[3]).not.toBe(portraits[4])
     expect(error).not.toHaveBeenCalled()
     error.mockRestore()
   })

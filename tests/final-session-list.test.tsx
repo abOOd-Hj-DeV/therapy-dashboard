@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
 import { Sessions } from '../src/Sessions'
+import { closurePortraitAssets } from '../src/closure-portrait-assets'
 
 const styles = readFileSync('src/visual-session-list-final.css', 'utf8')
 
@@ -11,6 +12,48 @@ beforeEach(() => {
 })
 
 describe('final session list source contracts (not UI acceptance)', () => {
+  it('wires eleven desktop/tablet portraits and the seven documented phone identities', () => {
+    render(<Sessions navigate={vi.fn()} />)
+    const rows = within(screen.getByRole('table')).getAllByRole('row').slice(1)
+    closurePortraitAssets.sessions.desktopTablet.forEach((portrait, index) => {
+      const avatar =
+        rows[index].querySelector('.session-desktop-portrait .avatar') ??
+        rows[index].querySelector('.avatar')
+      expect(rows[index]).toHaveTextContent(portrait.target.name)
+      expect(avatar?.querySelector('img')).toHaveAttribute('src', `/assets/${portrait.image}`)
+      if (portrait.crop) expect(avatar).toHaveClass(portrait.crop)
+    })
+    closurePortraitAssets.sessions.phone.forEach((portrait, index) => {
+      const avatar =
+        rows[index].querySelector('.session-phone-portrait .avatar') ??
+        rows[index].querySelector('.avatar')
+      expect(avatar?.querySelector('img')).toHaveAttribute('src', `/assets/${portrait.image}`)
+      if (portrait.crop) expect(avatar).toHaveClass(portrait.crop)
+    })
+    expect(rows.slice(7).every((row) => !row.querySelector('.session-phone-portrait'))).toBe(true)
+    expect(styles).toMatch(/\.final-session-list \.session-phone-portrait\s*\{\s*display: none;/)
+    const phone = styles.slice(styles.indexOf('@media (max-width: 600px)'))
+    expect(phone).toMatch(/\.final-session-list \.session-desktop-portrait\s*\{\s*display: none;/)
+    expect(phone).toMatch(/\.final-session-list \.session-phone-portrait\s*\{\s*display: block;/)
+  })
+
+  it('keeps portrait identities attached to their session through filtering', () => {
+    render(<Sessions navigate={vi.fn()} />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Previous (6)' }))
+    const rows = within(screen.getByRole('table')).getAllByRole('row').slice(1)
+    expect(rows[0]).toHaveTextContent('Sara Muhammad')
+    expect(rows[0].querySelector('.avatar img')).toHaveAttribute(
+      'src',
+      '/assets/dashboard-imgContainer3.png',
+    )
+    expect(rows[2]).toHaveTextContent('Jad Matcha')
+    expect(rows[2].querySelector('.avatar')).toHaveClass('jad')
+    expect(rows[2].querySelector('.avatar img')).toHaveAttribute(
+      'src',
+      '/assets/dashboard-imgContainer4.png',
+    )
+  })
+
   it('keeps both source Noor rows as group sessions while preserving the other session types', () => {
     render(<Sessions navigate={vi.fn()} />)
     const rows = within(screen.getByRole('table')).getAllByRole('row').slice(1)
@@ -56,7 +99,12 @@ describe('final session list source contracts (not UI acceptance)', () => {
     expect(phone).toMatch(/\.final-session-list \.patient-name\s*\{[^}]*overflow-wrap:\s*anywhere;/)
     expect(screen.getByText('Fahad Al Ali')).toBeInTheDocument()
     expect(screen.getByRole('table').querySelectorAll('tbody tr')).toHaveLength(16)
-    expect(styles).not.toMatch(/overflow:\s*(hidden|clip)|transform:|zoom:|display:\s*none/)
+    // Only alternate decorative photos switch at 600px; no patient content may be hidden.
+    const contentStyles = styles.replace(
+      /\.final-session-list \.session-(?:phone|desktop)-portrait\s*\{[^}]*\}/g,
+      '',
+    )
+    expect(contentStyles).not.toMatch(/overflow:\s*(hidden|clip)|transform:|zoom:|display:\s*none/)
   })
 
   it('reuses the teal calendar only in compact navigation and leaves active semantics intact', () => {

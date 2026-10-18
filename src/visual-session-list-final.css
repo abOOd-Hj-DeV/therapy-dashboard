@@ -2,6 +2,15 @@
   padding: 16px;
 }
 
+.final-session-list .session-row-portrait {
+  display: block;
+  flex-shrink: 0;
+}
+
+.final-session-list .session-phone-portrait {
+  display: none;
+}
+
 @media (min-width: 601px) {
   .demo-workspace:has(.final-session-list) .secondary-topbar {
     height: 68px;
@@ -26,6 +35,14 @@
 }
 
 @media (max-width: 600px) {
+  .final-session-list .session-desktop-portrait {
+    display: none;
+  }
+
+  .final-session-list .session-phone-portrait {
+    display: block;
+  }
+
   .demo-workspace:has(.final-session-list) .demo-sessions-toolbar {
     padding-top: 10px;
     gap: 16px;

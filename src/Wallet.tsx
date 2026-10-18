@@ -6,6 +6,7 @@ import { remainingAssets } from './remaining-assets'
 import { RemainingIcon } from './RemainingUI'
 import { ApiClient } from './api'
 import { ApiWalletAndWithdrawalsLive } from './api-wallet-and-withdrawals-live'
+import { closurePortraitAssets } from './closure-portrait-assets'
 import './visual-wallet-closure.css'
 
 type Tab = 'overview' | 'earnings' | 'withdrawals'
@@ -23,37 +24,42 @@ const earnings = [
     date: '2024-05-20',
     amount: 300,
     status: 'Completed',
-    portrait: remainingAssets.walletAvatar,
   },
   {
     name: 'Ahmed Mohammed',
     date: '2024-05-20',
     amount: 200,
     status: 'Completed',
-    portrait: 'dashboard-imgContainer2.png',
   },
   {
     name: 'Sarah Khalid',
     date: '2024-05-17',
     amount: 100,
     status: 'Processing',
-    portrait: 'dashboard-imgContainer3.png',
   },
   {
     name: 'Omar Youssef',
     date: '2024-05-16',
     amount: 200,
     status: 'Completed',
-    portrait: 'dashboard-imgContainer6.png',
   },
   {
     name: 'Omar Youssef',
     date: '2024-05-16',
     amount: 400,
     status: 'Completed',
-    portrait: 'dashboard-imgContainer6.png',
   },
-]
+].map((item) => {
+  const portrait = closurePortraitAssets.wallet.earnings.find(
+    ({ target }) =>
+      target.name === item.name && target.date === item.date && target.amount === item.amount,
+  )
+  return {
+    ...item,
+    portrait: portrait?.image ?? remainingAssets.walletAvatar,
+    artwork: portrait?.artwork ?? 'photo',
+  }
+})
 // Reference-only fixtures: never used by ApiWalletAndWithdrawalsLive.
 const responsiveWithdrawals = [
   { date: '2024-05-20', amount: 300, status: 'Completed' },
@@ -61,7 +67,16 @@ const responsiveWithdrawals = [
   { date: '2024-05-17', amount: 100, status: 'Processing' },
   { date: '2024-05-16', amount: 200, status: 'Completed' },
   { date: '2024-05-16', amount: 400, status: 'Completed' },
-].map((item, index) => ({ ...item, portrait: earnings[index].portrait }))
+].map((item) => {
+  const portrait = closurePortraitAssets.wallet.responsiveWithdrawals.find(
+    ({ target }) => target.date === item.date && target.amount === item.amount,
+  )
+  return {
+    ...item,
+    portrait: portrait?.image ?? remainingAssets.walletAvatar,
+    artwork: portrait?.artwork ?? 'photo',
+  }
+})
 const withdrawals = Array.from({ length: 6 }, (_, index) => ({
   id: `demo-withdrawal-${index + 1}`,
   responsive: responsiveWithdrawals[index],
@@ -249,6 +264,7 @@ function DemoWallet({ navigate }: { navigate: (path: string) => void }) {
                     <article key={`demo-earning-${index}`}>
                       <img
                         className="wallet-transaction-avatar"
+                        data-artwork={item.artwork}
                         src={asset(item.portrait)}
                         alt=""
                       />
@@ -280,6 +296,7 @@ function DemoWallet({ navigate }: { navigate: (path: string) => void }) {
                         />
                         <img
                           className="wallet-transaction-avatar"
+                          data-responsive-artwork={item.responsive?.artwork}
                           src={asset(remainingAssets.walletAvatar)}
                           alt=""
                         />

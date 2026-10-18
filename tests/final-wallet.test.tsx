@@ -3,6 +3,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { readFileSync } from 'node:fs'
 import { Wallet } from '../src/Wallet'
+import { closurePortraitAssets } from '../src/closure-portrait-assets'
 
 vi.mock('../src/Workspace', () => ({
   Workspace: ({ children }: { children: ReactNode }) => <main>{children}</main>,
@@ -18,6 +19,47 @@ function mount(state: string) {
 }
 
 describe('final wallet-owned closure regressions', () => {
+  it('wires all five original earnings identities without adding borders to masked artwork', () => {
+    const { container } = mount('earnings')
+    const rows = container.querySelectorAll('.wallet-transactions article')
+    closurePortraitAssets.wallet.earnings.forEach((portrait, index) => {
+      expect(rows[index]).toHaveTextContent(portrait.target.name)
+      expect(rows[index]).toHaveTextContent(`+${portrait.target.amount} SP`)
+      expect(rows[index]).toHaveTextContent(portrait.target.date!)
+      expect(rows[index].querySelector('img')).toHaveAttribute('src', `/assets/${portrait.image}`)
+      expect(rows[index].querySelector('img')).toHaveAttribute('data-artwork', portrait.artwork)
+    })
+    expect(css).toContain(
+      ".wallet-demo .wallet-transactions img[data-artwork='masked-avatar'] { width: 42px; height: 44px; border: 0; border-radius: 0; }",
+    )
+  })
+
+  it('uses the responsive ATM portraits while retaining every desktop Sarah portrait', () => {
+    const { container } = mount('withdrawals')
+    const rows = container.querySelectorAll('.wallet-withdrawal-row')
+    expect(rows).toHaveLength(6)
+    closurePortraitAssets.wallet.responsiveWithdrawals.forEach((portrait, index) => {
+      expect(rows[index].querySelector('source')).toHaveAttribute(
+        'srcset',
+        `/assets/${portrait.image}`,
+      )
+      expect(rows[index].querySelector('source')).toHaveAttribute('media', '(max-width: 1100px)')
+      expect(rows[index].querySelector('img')).toHaveAttribute(
+        'data-responsive-artwork',
+        portrait.artwork,
+      )
+      expect(rows[index]).toHaveTextContent(`-${portrait.target.amount} SP`)
+    })
+    rows.forEach((row) =>
+      expect(row.querySelector('img')).toHaveAttribute('src', '/assets/part3-walletAvatar.png'),
+    )
+    expect(rows[5]).toHaveClass('wallet-desktop-only')
+    const responsiveCss = css.slice(css.indexOf('@media (max-width: 1100px)'))
+    expect(responsiveCss).toContain(
+      ".wallet-demo .wallet-transactions img[data-responsive-artwork='masked-avatar'] { width: 42px; height: 44px; border: 0; border-radius: 0; }",
+    )
+  })
+
   it.each(['withdraw', 'shamcash', 'haram'])(
     'keeps Withdrawals truthful under the %s payment preview',
     (state) => {
