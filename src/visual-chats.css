@@ -17,6 +17,9 @@
   .chat-workspace.demo-workspace.secondary-offline .secondary-offline-banner {
     margin-bottom: 32px;
   }
+  .demo-chat-layout.is-offline.no-conversation .empty-conversation {
+    padding-block-start: 76px;
+  }
 }
 @media (min-width: 1101px) {
   .demo-chat-layout.is-offline .message-history {
