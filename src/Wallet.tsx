@@ -94,11 +94,9 @@ function DemoWallet({ navigate }: { navigate: (path: string) => void }) {
   const [tab, setTab] = useState<Tab>(
     state === 'earnings'
       ? 'earnings'
-      : state === 'withdrawals'
+      : state === 'withdrawals' || ['withdraw', 'shamcash', 'haram'].includes(state ?? '')
         ? 'withdrawals'
-        : ['withdraw', 'shamcash', 'haram'].includes(state ?? '')
-          ? 'earnings'
-          : 'overview',
+        : 'overview',
   )
   const [requestOpen, setRequestOpen] = useState(
     ['withdraw', 'shamcash', 'haram'].includes(state ?? ''),
@@ -363,8 +361,8 @@ function DemoWallet({ navigate }: { navigate: (path: string) => void }) {
 }
 
 const paymentMethods = [
-  { value: 'haram', label: 'Al-Haram transfer' },
-  { value: 'shamcash', label: 'Shamcash Transfer' },
+  { value: 'haram', label: 'Al-Haram transfer', selectedLabel: 'Al-Haram Transfer' },
+  { value: 'shamcash', label: 'Shamcash Transfer', selectedLabel: 'Shamcash Transfer' },
 ] as const
 
 function PaymentMethodMenu({
@@ -422,6 +420,7 @@ function PaymentMethodMenu({
         ref={trigger}
         role="combobox"
         aria-label="Payment method"
+        aria-describedby={`${id}-value`}
         aria-required="true"
         aria-expanded={open}
         aria-controls={`${id}-options`}
@@ -463,7 +462,7 @@ function PaymentMethodMenu({
             event.preventDefault()
             choose(paymentMethods[active].value)
           } else if (event.key === 'Tab') setOpen(false)
-          else if (/^[as]$/i.test(event.key)) {
+          else if (!event.ctrlKey && !event.metaKey && !event.altKey && /^[as]$/i.test(event.key)) {
             event.preventDefault()
             setActive(event.key.toLowerCase() === 'a' ? 0 : 1)
             setOpen(true)
@@ -480,8 +479,8 @@ function PaymentMethodMenu({
             <path d="M2 7h16M5 12h3" stroke="currentColor" strokeWidth="2" />
           </svg>
         )}
-        <span>
-          {paymentMethods.find((option) => option.value === method)?.label ??
+        <span id={`${id}-value`}>
+          {paymentMethods.find((option) => option.value === method)?.selectedLabel ??
             'Select payment method'}
         </span>
         <svg
