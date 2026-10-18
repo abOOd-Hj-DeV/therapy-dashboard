@@ -101,7 +101,7 @@ describe('final wallet-owned closure regressions', () => {
   it('scopes the original offline geometry to desktop and phone payment anchors to responsive units', () => {
     expect(css).toContain('@media (min-width: 1101px)')
     expect(css).toContain(
-      '.remaining-workspace.secondary-offline:has(.wallet-demo) .secondary-offline-banner { margin-top: 16px; }',
+      '.remaining-workspace.secondary-offline:has(.wallet-demo) .secondary-offline-banner { margin-top: 0; }',
     )
     expect(css).toContain(
       '.remaining-workspace.secondary-offline .wallet-demo .wallet-panel { margin-top: -16px; }',
@@ -112,6 +112,22 @@ describe('final wallet-owned closure regressions', () => {
       '.wallet-demo-modal { top: 35svh; bottom: auto; margin-block: 0; max-height: calc(65svh - 16px); }',
     )
     expect(css).not.toMatch(/(?:scale|zoom)\s*[:(]/)
+  })
+
+  it('keeps the full phone advisory at its reference text size without clipping', () => {
+    const phoneCss = css.slice(css.indexOf('@media (max-width: 600px)'))
+    expect(phoneCss).toContain(
+      '.wallet-demo:not(.wallet-overview) .wallet-advisory { font-size: 12px; }',
+    )
+    expect(phoneCss).toContain('.wallet-demo .wallet-transactions { padding: 8px 0 12px; }')
+    expect(phoneCss).toContain(
+      '.wallet-demo.wallet-withdrawals .wallet-stat-grid article { padding-block: 13px; }',
+    )
+    expect(phoneCss).not.toMatch(/\.wallet-demo[^}]*\.wallet-advisory[^}]*(?:overflow:\s*hidden|line-clamp|max-height)/)
+    mount('earnings')
+    expect(document.querySelector('.phone-wallet-advisory')).toHaveTextContent(
+      'Withdrawals are processed within 3-5 business days, with a minimum withdrawal amount of 500 Riyals — same terms apply as stated above the withdraw button.',
+    )
   })
 
   it('announces the selected method, tracks keyboard focus and leaves browser shortcuts alone', () => {

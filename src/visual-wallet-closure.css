@@ -73,7 +73,7 @@
     padding-block: 4px;
   }
   .remaining-workspace.secondary-offline:has(.wallet-demo) .secondary-offline-banner {
-    margin-top: 16px;
+    margin-top: 0;
   }
   /* The offline original overlaps only the decorative bottom of the hero. */
   .remaining-workspace.secondary-offline .wallet-demo .wallet-panel {
@@ -351,6 +351,9 @@
   .wallet-demo:not(.wallet-overview) .wallet-stat-grid {
     gap: 8px;
   }
+  .wallet-demo.wallet-withdrawals .wallet-stat-grid article {
+    padding-block: 13px;
+  }
   .wallet-demo .wallet-stat-grid .desktop-metric-value {
     display: none;
   }
@@ -382,7 +385,7 @@
     display: none;
   }
   .wallet-demo .wallet-transactions {
-    padding: 8px 0 16px;
+    padding: 8px 0 12px;
   }
   .wallet-demo.wallet-withdrawals .wallet-transactions {
     padding: 0;
@@ -405,6 +408,9 @@
   }
   .wallet-demo:not(.wallet-overview) .wallet-advisory .remaining-icon {
     margin-top: 0;
+  }
+  .wallet-demo:not(.wallet-overview) .wallet-advisory {
+    font-size: 12px;
   }
   .wallet-demo.wallet-overview .wallet-advisory {
     font:
