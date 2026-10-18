@@ -221,7 +221,8 @@ function DemoProfile({ page, navigate }: { page: Page; navigate: (path: string) 
                       setNotice('Demo only: live chat and phone support are not connected.')
                     }
                   >
-                    Give Me A Call
+                    <span className="help-desktop-call">Give Me A Call</span>
+                    <span className="help-compact-chat">Start Live Chat</span>
                   </button>
                 </div>
                 <small>App version v1.0.0</small>
@@ -434,7 +435,7 @@ function EditProfile({
   const [error, setError] = useState('')
   function field(label: string, key: keyof ProfileData, type = 'text') {
     return (
-      <label className="remaining-field">
+      <label className={`remaining-field profile-field-${key}`}>
         {label}
         <span
           className={key === 'phone' || key === 'location' ? 'editable-profile-field' : undefined}
@@ -553,7 +554,7 @@ function PreferencesForm({
       <div className="preferences-list">
         {notificationLabels.map((label, index) => (
           <label key={label}>
-            {label}
+            <span>{label}</span>
             <input
               type="checkbox"
               role="switch"
