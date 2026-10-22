@@ -8,6 +8,7 @@ import { Icon, Logo, Modal } from './ui'
 import { asset } from './assets'
 import { ApiClient } from './api'
 import { LiveCarePage } from './api-sessions-and-clinical-live'
+import { DemoNetworkToggle } from './DemoNetworkToggle'
 
 type DashboardProps = { navigate: (path: string) => void; api?: ApiClient }
 type Overlay = 'meeting' | 'notifications' | 'unavailable' | 'profile' | 'patient' | null
@@ -575,6 +576,7 @@ function DemoDashboard({ navigate }: DashboardProps) {
           </button>
         </Modal>
       )}
+      <DemoNetworkToggle />
     </div>
   )
 }

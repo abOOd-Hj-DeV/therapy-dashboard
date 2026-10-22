@@ -33,7 +33,14 @@ describe('R4 desktop shell fit (CSS contract, not a rendered pixel comparison)',
   it('loads once, after the shared base styles', () => {
     const main = readFileSync('src/main.tsx', 'utf8')
     const imports = [...main.matchAll(/^import '\.\/([^']+)'$/gm)].map((m) => m[1])
-    expect(imports).toEqual(['styles.css', 'secondary.css', 'remaining.css', 'visual-r4-shell-fit.css'])
+    expect(imports).toEqual([
+      'styles.css',
+      'secondary.css',
+      'remaining.css',
+      'visual-r4-shell-fit.css',
+      'visual-r4-rail.css',
+      'visual-r4-nav.css',
+    ])
   })
 
   it('scopes the fit to desktop so tablet rail and phone drawer rules stay untouched', () => {

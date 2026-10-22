@@ -133,17 +133,9 @@ const signature = (bytes: Buffer) =>
       : 'unknown'
 
 // JPEG bytes shipped with a .png name: Vite and most hosts send `Content-Type: image/png`.
-// Browsers sniff and still render them; renaming them requires page/data edits outside this unit.
-const KNOWN_JPEG_NAMED_PNG = [
-  'dashboard-imgContainer1.png',
-  'dashboard-imgContainer3.png',
-  'dashboard-imgContainer5.png',
-  'part2-03-imgContainer3.png',
-  'part2-07-imgContainer6.png',
-  'part3-profileAvatar.png',
-  'preview-client-list-maya.png',
-  'preview-client-list-saad.png',
-]
+// The eight files formerly pinned here were re-encoded as real PNG during integration; keep this
+// list empty so any new mislabeled file fails the test.
+const KNOWN_JPEG_NAMED_PNG: string[] = []
 
 describe('r4 asset integrity: files are valid and served with the right type', () => {
   it('ships only extensions with a correct image MIME mapping', () => {

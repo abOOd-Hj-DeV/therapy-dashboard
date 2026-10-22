@@ -26,7 +26,9 @@ beforeEach(() => window.history.replaceState({}, '', '/sessions?state=collapsed'
 
 describe('R4 collapsed rail', () => {
   it('loads once after remaining.css', () => {
-    expect(main).toMatch(/import '\.\/remaining\.css'\nimport '\.\/visual-r4-rail\.css'\n/)
+    expect(main.indexOf("import './visual-r4-rail.css'")).toBeGreaterThan(
+      main.indexOf("import './remaining.css'"),
+    )
     expect(main.match(/visual-r4-rail\.css/g)).toHaveLength(1)
   })
 

@@ -112,12 +112,8 @@ describe('DemoNetworkToggle', () => {
     async (route) => {
       const user = userEvent.setup()
       window.history.replaceState({}, '', route)
-      render(
-        <>
-          <App />
-          <DemoNetworkToggle />
-        </>,
-      )
+      // The shells (DemoDashboard and Workspace) render the toggle themselves.
+      render(<App />)
       const offlineText = /You.re offline\. Some data may not be up to date\./
       expect(screen.queryByText(offlineText)).not.toBeInTheDocument()
       await user.click(screen.getByRole('button', { name: 'Simulate offline' }))

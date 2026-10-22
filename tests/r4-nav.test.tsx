@@ -71,7 +71,9 @@ describe('r4 responsive navigation popup', () => {
   })
 
   it('applies Figma popup geometry to every phone/tablet expanded shell', () => {
-    expect(main).toMatch(/import '\.\/remaining\.css'\nimport '\.\/visual-r4-nav\.css'/)
+    expect(main.indexOf("import './visual-r4-nav.css'")).toBeGreaterThan(
+      main.indexOf("import './remaining.css'"),
+    )
     const block = styles.slice(styles.indexOf('@media (max-width: 1100px)'))
     expect(block).toMatch(/:is\(\.secondary-workspace, \.visual-demo-dashboard\)\.is-expanded \.sidebar \{[^}]*position: fixed;[^}]*width: 264px;[^}]*height: min\(675px, 100svh\);[^}]*border-radius: 0 0 24px 0;[^}]*overflow-y: auto;/)
     expect(block).toMatch(/\.is-expanded \.sidebar-backdrop \{[^}]*background: #0009;[^}]*backdrop-filter: blur\(6px\);/)

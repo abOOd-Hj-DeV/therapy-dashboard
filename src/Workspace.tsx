@@ -4,6 +4,7 @@ import { menu, notifications as demoNotifications } from './data'
 import { Logo, Modal } from './ui'
 import { ApiClient } from './api'
 import { LiveNotifications } from './api-chat-and-notifications-live-notifications'
+import { DemoNetworkToggle } from './DemoNetworkToggle'
 import './visual-workspace-closure.css'
 
 type WorkspaceProps = {
@@ -32,7 +33,7 @@ const mobileIcons = [
   'part2-06-imgFrame2147234899.svg',
   'part2-06-imgStars.svg',
   'part2-06-imgWalletAlt.svg',
-  'part2-06-imgUserAlt.svg',
+  'r4-chats-user-alt.svg',
 ]
 
 export function DesignIcon({ name }: { name: string }) {
@@ -380,6 +381,7 @@ export function Workspace({
           <p>{notice}</p>
         </Modal>
       )}
+      <DemoNetworkToggle />
     </div>
   )
 }
