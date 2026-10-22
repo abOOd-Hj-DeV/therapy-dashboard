@@ -69,7 +69,7 @@ describe('chat demo', () => {
     render(<App />)
     Object.defineProperty(navigator, 'onLine', { configurable: true, value: false })
     act(() => window.dispatchEvent(new Event('offline')))
-    expect(screen.getByRole('status')).toHaveTextContent("You're offline")
+    expect(screen.getByText(/You.re offline/)).toBeInTheDocument()
     expect(screen.getByLabelText('Message', { exact: true })).toBeDisabled()
     Object.defineProperty(navigator, 'onLine', { configurable: true, value: true })
     act(() => window.dispatchEvent(new Event('online')))

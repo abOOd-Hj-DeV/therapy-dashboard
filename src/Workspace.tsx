@@ -1,9 +1,10 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { asset } from './assets'
 import { menu, notifications as demoNotifications } from './data'
 import { Logo, Modal } from './ui'
 import { ApiClient } from './api'
 import { LiveNotifications } from './api-chat-and-notifications-live-notifications'
+import { DemoNetworkToggle } from './DemoNetworkToggle'
 import './visual-workspace-closure.css'
 
 type WorkspaceProps = {
@@ -32,7 +33,7 @@ const mobileIcons = [
   'part2-06-imgFrame2147234899.svg',
   'part2-06-imgStars.svg',
   'part2-06-imgWalletAlt.svg',
-  'part2-06-imgUserAlt.svg',
+  'r4-chats-user-alt.svg',
 ]
 
 export function DesignIcon({ name }: { name: string }) {
@@ -62,6 +63,43 @@ export function Workspace({
   const [dismissed, setDismissed] = useState<number[]>([])
   const isOffline = offline || initial === 'offline' || !online
   const isHelpPage = active === 'Profile' && /^\/profile\/help\/?$/.test(window.location.pathname)
+  const sidebarRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    const popupViewport =
+      typeof window.matchMedia === 'function' ? window.matchMedia('(max-width: 1100px)').matches : window.innerWidth <= 1100
+    if (!expanded || !popupViewport) return
+    const sidebar = sidebarRef.current
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const focusable = () =>
+      Array.from(sidebar?.querySelectorAll<HTMLElement>('button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])') ?? []).filter(
+        (element) => element.getClientRects().length > 0 || !element.closest('.compact-reminder'),
+      )
+    if (!sidebar?.contains(document.activeElement)) sidebar?.focus()
+    const trap = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return
+      const items = focusable()
+      if (!items.length) return
+      const first = items[0]
+      const last = items[items.length - 1]
+      if (event.shiftKey && (document.activeElement === first || !sidebar?.contains(document.activeElement))) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && (document.activeElement === last || !sidebar?.contains(document.activeElement))) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+    document.addEventListener('keydown', trap)
+    return () => {
+      document.removeEventListener('keydown', trap)
+      document.body.style.overflow = previousOverflow
+      if (opener && opener.isConnected && !sidebar?.contains(opener)) opener.focus()
+      else document.querySelector<HTMLElement>('.secondary-mobile-menu')?.focus()
+    }
+  }, [expanded])
 
   useEffect(() => {
     const update = () => setOnline(navigator.onLine)
@@ -120,7 +158,7 @@ export function Workspace({
           onClick={() => setExpanded(false)}
         />
       )}
-      <aside className="sidebar" aria-label="Main navigation">
+      <aside ref={sidebarRef} tabIndex={expanded ? -1 : undefined} className="sidebar" aria-label="Main navigation">
         <div>
           <header className="sidebar-header">
             <Logo wordmark />
@@ -135,7 +173,7 @@ export function Workspace({
                 else setCollapsed(!collapsed)
               }}
             >
-              <DesignIcon name="part2-03-imgCaretDoubleHorizontal.svg" />
+              <DesignIcon name={expanded ? 'r4-nav-popup-minimize.svg' : 'part2-03-imgCaretDoubleHorizontal.svg'} />
               {active === 'Wallet' && (
                 <svg className="wallet-drawer-collapse" aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none">
                   <path d="M3 17L8 12M3 12H8V17M17 3L12 8M12 3V8H17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -343,6 +381,7 @@ export function Workspace({
           <p>{notice}</p>
         </Modal>
       )}
+      <DemoNetworkToggle />
     </div>
   )
 }

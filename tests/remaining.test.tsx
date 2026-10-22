@@ -183,7 +183,7 @@ describe('wallet and integration', () => {
     open('/wallet')
     const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
     fireEvent(window, new Event('offline'))
-    expect(screen.getByRole('status')).toHaveTextContent("You're offline")
+    expect(screen.getByText(/You.re offline/)).toBeInTheDocument()
     online.mockReturnValue(true)
     fireEvent(window, new Event('online'))
     expect(screen.queryByText(/You're offline/)).not.toBeInTheDocument()

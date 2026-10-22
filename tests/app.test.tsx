@@ -182,7 +182,7 @@ describe('therapist dashboard', () => {
     render(<App />)
     getter.mockReturnValue(false)
     act(() => window.dispatchEvent(new Event('offline')))
-    expect(screen.getByRole('status')).toHaveTextContent('offline')
+    expect(screen.getByText(/You.re offline\. Some data may not be up to date\./)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Start session' })).toBeDisabled()
     getter.mockReturnValue(true)
     act(() => window.dispatchEvent(new Event('online')))

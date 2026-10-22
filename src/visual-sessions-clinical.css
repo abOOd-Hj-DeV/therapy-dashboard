@@ -416,9 +416,6 @@
   margin-left: auto;
   gap: 6px;
 }
-.demo-session-detail .note-add-icon {
-  font: 400 22px/16px 'IBM Plex Sans', sans-serif;
-}
 .demo-session-detail .notes-card .section-caption {
   margin: 16px 0 10px;
   padding-left: 4px;
@@ -610,5 +607,37 @@
     font-size: 18px;
     line-height: 24px;
     letter-spacing: -0.27px;
+  }
+}
+
+/* Round 4 icon parity with 1:30922/1:33300: 12px gray dots, 16px plus and
+   chevron vectors, flat #2394a1 checks, deep red pending mark, white Back. */
+.demo-session-detail .detail-actions .icon-button .design-icon {
+  width: 14px;
+  height: 14px;
+}
+.demo-session-detail .notes-card > .teal-button {
+  align-items: center;
+}
+.demo-session-detail .notes-card > .teal-button .design-icon,
+.demo-session-detail .previous-note > .design-icon {
+  width: 16px;
+  height: 16px;
+}
+.demo-session-detail .checklist-card span.reviewed {
+  background: #2394a1;
+}
+.demo-session-detail .checklist-card span.not-reviewed {
+  background: #a02727;
+}
+.demo-session-detail .record-footer > .soft-button {
+  background: #fff;
+  border-color: #eaeaeb;
+  color: #101010;
+}
+@media (max-width: 600px) {
+  /* The 16px chevron keeps the former text-glyph budget (5px + 14px gap). */
+  .demo-session-detail .previous-note {
+    gap: 3px;
   }
 }
