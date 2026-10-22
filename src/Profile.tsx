@@ -703,7 +703,9 @@ function HolidaysForm({
               aria-label={`Remove ${holiday.reason}`}
               onClick={() => onChange(values.filter((item) => item.id !== holiday.id))}
             >
-              <RemainingIcon name="close" />
+              <span className="remaining-icon" aria-hidden="true">
+                <img src={asset('r4-profile-settings-holiday-remove.svg')} alt="" />
+              </span>
             </button>
           </article>
         ))}
