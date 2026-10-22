@@ -21,6 +21,7 @@ import './secondary.css'
 import './remaining.css'
 import './visual-r4-shell-fit.css'
 import './visual-r4-rail.css'
+import './visual-r4-nav.css'
 // Component-owned visual repairs must follow the shared base styles in the cascade.
 import { App } from './App'
 
