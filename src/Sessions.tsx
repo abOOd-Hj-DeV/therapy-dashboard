@@ -225,7 +225,13 @@ function DemoSessions({ navigate }: { navigate: (path: string) => void }) {
               setQuery('')
             }}
           >
-            See all <DesignIcon name="part2-07-imgArrowLeft.svg" />
+            See all{' '}
+            <img
+              className="see-all-arrow"
+              src={asset('r4-sessions-list-see-all-arrow.svg')}
+              alt=""
+              aria-hidden="true"
+            />
           </button>
         </header>
         <div className="sessions-list-scroll">
