@@ -273,3 +273,36 @@
     display: block;
   }
 }
+
+/* 1:12906 / 1:13122 clip the header subtitle on one line; online tablet 1:12694 wraps it. */
+@media (min-width: 601px) and (max-width: 1100px) {
+  .demo-chat-layout.is-offline .chat-thread-header p {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
+  }
+}
+@media (max-width: 600px) {
+  .chat-layout .chat-thread-header p {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
+  }
+  /* 1:13122 / 1:13211: the full SLA breaks after "business" in the source. */
+  .chat-layout .thread-promise span {
+    letter-spacing: -0.2px;
+  }
+}
+@media (min-width: 601px) {
+  /* Laptop viewports shorter than the 817px frames: fit the chat to the viewport
+     so the composer stays visible; history and list scroll inside their panels. */
+  .secondary-workspace.chat-workspace {
+    min-height: 100svh;
+  }
+  .chat-workspace .chat-layout {
+    height: max(calc(100svh - 69px), 420px);
+  }
+  .chat-workspace.secondary-offline .chat-layout {
+    height: max(calc(100svh - 145px), 380px);
+  }
+}

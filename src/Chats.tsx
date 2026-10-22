@@ -94,6 +94,7 @@ function DemoChats({ navigate }: { navigate: (path: string) => void }) {
   const [compact, setCompact] = useState(window.innerWidth <= 600)
   const fileRef = useRef<HTMLInputElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const historyRef = useRef<HTMLDivElement>(null)
   const offline = !online || initial === 'offline'
   const client = clients.find((item) => item.id === selected)
   useEffect(() => {
@@ -108,6 +109,10 @@ function DemoChats({ navigate }: { navigate: (path: string) => void }) {
       window.removeEventListener('offline', update)
     }
   }, [])
+  useEffect(() => {
+    const history = historyRef.current
+    if (history) history.scrollTop = history.scrollHeight
+  }, [selected])
   function send(event: FormEvent) {
     event.preventDefault()
     if (!draft.trim() || !selected || offline) return
@@ -212,7 +217,7 @@ function DemoChats({ navigate }: { navigate: (path: string) => void }) {
                 </p>
               </div>
             </header>
-            <div className="message-history">
+            <div className="message-history" ref={historyRef}>
               <div className="response-promise thread-promise">
                 <DesignIcon name="part2-03-imgIcon1.svg" />
                 <span>Committed to responding within 8 business hours (Sat–Thu, 9 AM–5 PM)</span>
