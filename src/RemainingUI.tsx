@@ -6,9 +6,13 @@ import './visual-help-final.css'
 
 export type RemainingIconName = keyof typeof remainingAssets
 
+const figmaIconOverrides: Partial<Record<RemainingIconName, string>> = {
+  helpArrow: 'r4-help-chevron-right.svg',
+}
+
 export function RemainingIcon({ name }: { name: RemainingIconName }) {
   return (
-    <span className="remaining-icon" aria-hidden="true">
+    <span className="remaining-icon" data-icon={name} aria-hidden="true">
       <picture>
         {`${name}Mobile` in remainingAssets && (
           <source
@@ -16,7 +20,7 @@ export function RemainingIcon({ name }: { name: RemainingIconName }) {
             srcSet={asset(remainingAssets[`${name}Mobile` as RemainingIconName])}
           />
         )}
-        <img src={asset(remainingAssets[name])} alt="" />
+        <img src={asset(figmaIconOverrides[name] ?? remainingAssets[name])} alt="" />
       </picture>
     </span>
   )
