@@ -10,7 +10,7 @@
   --demo-client-list-card-gap: 20px;
 }
 .demo-client-list > .workspace {
-  min-height: max(100svh, 942px);
+  min-height: 100svh;
 }
 .demo-client-list .secondary-topbar {
   height: 52px;
@@ -347,11 +347,18 @@
     gap: 16px;
     align-items: stretch;
   }
+  /* 1:6934 shows three 368px columns at 1440; other laptop widths reflow instead of stranding cards. */
+  .demo-client-list .secondary-workspace:not(.is-collapsed) .demo-client-list-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    align-items: stretch;
+  }
   .demo-client-list[data-compliance-open='true'],
   .demo-client-list .secondary-workspace.is-collapsed {
     --demo-client-list-card-gap: 16px;
   }
-  /* 1:7517 keeps the date beneath the session count even when both pills fit. */
+  /* 1:6934/1:7517 keep the date beneath the session count even when both pills fit. */
+  .demo-client-list .secondary-workspace:not(.is-collapsed) .demo-client-list-card-footer,
   .demo-client-list .secondary-workspace.is-collapsed .demo-client-list-card-footer {
     flex-direction: column;
     flex-wrap: nowrap;
