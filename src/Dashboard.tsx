@@ -118,6 +118,7 @@ function DemoDashboard({ navigate }: DashboardProps) {
               }}
             >
               <Icon name="dashboard-imgCaretDoubleHorizontal.svg" />
+              <Icon name="r4-dashboard-arrows-in.svg" className="dashboard-drawer-collapse" />
             </button>
           </header>
           <nav className="navigation">
@@ -165,7 +166,7 @@ function DemoDashboard({ navigate }: DashboardProps) {
             aria-label="Client review"
             onClick={() => navigate('/sessions/upcoming')}
           >
-            <Icon name="dashboard-imgStars.svg" />
+            <Icon name="part2-10-imgMaterialSymbolsLightEmergencyHome.svg" />
             <i />
           </button>
           <button
@@ -598,7 +599,7 @@ function WifiSlashIcon() {
 
 function DashboardCloseIcon() {
   return (
-    <svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none">
+    <svg aria-hidden="true" width="30" height="30" viewBox="0 0 20 20" fill="none">
       <path d="M6.28033 5.21967C5.98744 4.92678 5.51256 4.92678 5.21967 5.21967C4.92678 5.51256 4.92678 5.98744 5.21967 6.28033L8.93934 10L5.21967 13.7197C4.92678 14.0126 4.92678 14.4874 5.21967 14.7803C5.51256 15.0732 5.98744 15.0732 6.28033 14.7803L10 11.0607L13.7197 14.7803C14.0126 15.0732 14.4874 15.0732 14.7803 14.7803C15.0732 14.4874 15.0732 14.0126 14.7803 13.7197L11.0607 10L14.7803 6.28033C15.0732 5.98744 15.0732 5.51256 14.7803 5.21967C14.4874 4.92678 14.0126 4.92678 13.7197 5.21967L10 8.93934L6.28033 5.21967Z" fill="#2f2f2f" />
     </svg>
   )

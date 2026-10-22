@@ -377,3 +377,42 @@
   font: 700 14px/20px 'DM Sans', sans-serif;
   letter-spacing: -.42px;
 }
+
+/* Icon parity with the original dashboard frames. */
+.visual-demo-dashboard .notification-button .icon {
+  width: 14.25px;
+  height: 16.5px;
+}
+.visual-demo-dashboard .mobile-menu .icon {
+  width: 24px;
+  height: 24px;
+}
+.visual-demo-dashboard .compact-reminder .icon {
+  width: 24px;
+  height: 24px;
+}
+.visual-demo-dashboard .dashboard-drawer-collapse { display: none; }
+@media (min-width: 1101px) {
+  .visual-demo-dashboard.is-collapsed .dashboard-active-icon { background: #1d919e; }
+}
+@media (max-width: 600px) {
+  .visual-demo-dashboard.is-expanded .collapse-button {
+    width: 36px;
+    height: 36px;
+    border: 1px solid #ebebeb;
+    border-radius: 12px;
+    background: #fff;
+  }
+  .visual-demo-dashboard.is-expanded .collapse-button .icon:not(.dashboard-drawer-collapse) { display: none; }
+  .visual-demo-dashboard.is-expanded .collapse-button .dashboard-drawer-collapse {
+    display: block;
+    width: 24px;
+    height: 24px;
+  }
+  .visual-demo-dashboard .mobile-search .icon {
+    width: 16px;
+    height: 16px;
+  }
+}
+.visual-demo-dashboard .notifications-panel > header .icon-button { padding: 0; }
+.visual-demo-dashboard .notifications-panel > header .icon-button svg { flex-shrink: 0; }
