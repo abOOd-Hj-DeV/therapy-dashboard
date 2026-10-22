@@ -243,10 +243,12 @@
 .wallet-demo .wallet-withdrawal-row .wallet-income {
   color: #006b76;
 }
-.wallet-demo .wallet-withdraw-button::after,
-.wallet-demo .wallet-phone-withdraw::after {
-  content: ' →';
+.wallet-demo .wallet-withdraw-arrow {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
   margin-left: 8px;
+  vertical-align: top;
 }
 .wallet-demo-modal .withdrawal-balance {
   margin-bottom: 0;
@@ -427,5 +429,8 @@
   }
   .wallet-demo .wallet-phone-withdraw {
     width: 100%;
+  }
+  .wallet-demo .wallet-mobile-list-heading > .wallet-phone-withdraw {
+    font-size: 14px;
   }
 }

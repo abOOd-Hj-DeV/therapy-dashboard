@@ -9,6 +9,7 @@ import { ApiWalletAndWithdrawalsLive } from './api-wallet-and-withdrawals-live'
 import { closurePortraitAssets } from './closure-portrait-assets'
 import './visual-wallet-closure.css'
 
+const withdrawArrow = 'r4-wallet-arrow-right.svg'
 type Tab = 'overview' | 'earnings' | 'withdrawals'
 type Method = '' | 'shamcash' | 'haram'
 const monthly = [
@@ -196,6 +197,7 @@ function DemoWallet({ navigate }: { navigate: (path: string) => void }) {
                 onClick={() => setRequestOpen(true)}
               >
                 Withdraw
+                <img className="wallet-withdraw-arrow" src={asset(withdrawArrow)} alt="" />
               </button>
             )}
           </nav>
@@ -256,6 +258,7 @@ function DemoWallet({ navigate }: { navigate: (path: string) => void }) {
                     onClick={() => setRequestOpen(true)}
                   >
                     Withdraw
+                    <img className="wallet-withdraw-arrow" src={asset(withdrawArrow)} alt="" />
                   </button>
                 )}
               </div>
@@ -334,7 +337,13 @@ function DemoWallet({ navigate }: { navigate: (path: string) => void }) {
             </div>
           )}
           <div className="wallet-advisory">
-            <RemainingIcon name="withdrawalInfo" />
+            {tab === 'overview' ? (
+              <RemainingIcon name="withdrawalInfo" />
+            ) : (
+              <span className="remaining-icon" aria-hidden="true">
+                <img src={asset(remainingAssets.withdrawalInfo)} alt="" />
+              </span>
+            )}
             <p className="desktop-wallet-advisory">
               Withdrawals are processed within 3-5 business days, with a minimum withdrawal amount
               of 500 Riyals — same terms apply as stated above the withdraw button.
