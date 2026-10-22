@@ -258,7 +258,7 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
                 aria-expanded={actions}
                 onClick={() => setActions(!actions)}
               >
-                ⋯
+                <DesignIcon name="r4-clinical-more.svg" />
               </button>
               {actions && (
                 <div className="session-actions-menu">
@@ -429,7 +429,7 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
                       }
                     }}
                   >
-                    <span aria-hidden="true" className="note-add-icon">+</span> Add Note
+                    <DesignIcon name="preview-client-profile-plus.svg" /> Add Note
                   </button>
                   <p className="section-caption">Previous Notes</p>
                   <button className="previous-note" onClick={() => setModal('notes')}>
@@ -440,7 +440,7 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
                       </span>
                       <p>Noticed clear progress in managing anxiety.</p>
                     </span>
-                    <span>›</span>
+                    <DesignIcon name="preview-client-profile-chevron.svg" />
                   </button>
                   {notes.map((text, index) => (
                     <div className="previous-note" key={index}>
