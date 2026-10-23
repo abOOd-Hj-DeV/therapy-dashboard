@@ -37,9 +37,8 @@ export function CarePlanInsertion({ navigate, api }: { navigate: (path: string) 
 }
 
 // The nav-wire unit owns the shell contract: /homework/* pages highlight
-// "Additional Content" in the sidebar. That Workspace union member lands with
-// their branch, so the literal is bridged here until the merge makes it typed.
-const homeworkNav = 'Additional Content' as unknown as 'Clients'
+// "Additional Content" in the sidebar via the Workspace active union.
+const homeworkNav = 'Additional Content' as const
 const homeworkTitle = 'Assign Homework'
 
 function LiveCarePlanInsertion({ navigate, api }: { navigate: (path: string) => void; api?: ApiClient }) {

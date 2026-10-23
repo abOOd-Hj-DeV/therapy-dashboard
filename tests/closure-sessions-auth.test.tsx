@@ -108,37 +108,36 @@ describe('closure sessions/auth static state setup contracts (not visual accepta
     expect(screen.getByRole('button', { name: 'Reschedule' })).toBeInTheDocument()
   })
 
-  it.each(['create', 'library'] as const)('initializes record with the %s homework composition', (state) => {
-    window.history.replaceState({}, '', `/sessions/upcoming?state=${state}`)
-    render(<SessionDetails navigate={vi.fn()} />)
-    const dialog = screen.getByRole('dialog', { name: 'Assign homework to Ahmed Mohamed' })
-    expect(dialog).toHaveClass(`is-${state}`)
-    expect(within(dialog).getByRole('tab', { name: state === 'create' ? 'Create New' : 'From the library' })).toHaveAttribute('aria-selected', 'true')
-    expect(screen.getByRole('tab', { name: 'Session record' })).toHaveAttribute('aria-selected', 'true')
-    if (state === 'library') {
-      expect(within(dialog).getByRole('button', { name: 'Added Small daily activity' })).toBeDisabled()
-    }
-  })
+  it.each([
+    ['create', '/homework/create'],
+    ['library', '/homework'],
+  ] as const)(
+    'redirects the removed %s homework composition to %s while keeping the record tab',
+    (state, route) => {
+      window.history.replaceState({}, '', `/sessions/upcoming?state=${state}`)
+      const navigate = vi.fn()
+      render(<SessionDetails navigate={navigate} />)
+      expect(navigate).toHaveBeenCalledWith(route)
+      expect(screen.getByRole('tab', { name: 'Session record' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      )
+      expect(
+        screen.queryByRole('dialog', { name: 'Assign homework to Ahmed Mohamed' }),
+      ).not.toBeInTheDocument()
+    },
+  )
 
-  it('preserves reference-centered homework with short-viewport scrolling rather than a meeting anchor', () => {
-    const styles = readFileSync('src/visual-sessions-clinical.css', 'utf8')
-    expect(styles).toMatch(/\.part2-modal\.demo-homework-modal\s*\{[^}]*margin:\s*auto;[^}]*max-height:\s*calc\(100svh - 32px\);[^}]*overflow-y:\s*auto;/)
-    window.history.replaceState({}, '', '/sessions/upcoming?state=library')
-    render(<SessionDetails navigate={vi.fn()} />)
-    const dialog = screen.getByRole('dialog', { name: 'Assign homework to Ahmed Mohamed' })
-    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Search homework library' }), { target: { value: 'missing homework' } })
-    expect(within(dialog).getByText('No homework found')).toBeInTheDocument()
-    fireEvent.click(within(dialog).getByRole('tab', { name: 'Create New' }))
-    expect(dialog).toHaveClass('is-create')
-    fireEvent.change(within(dialog).getByLabelText('Homework title'), { target: { value: 'Local exercise' } })
-    fireEvent.change(within(dialog).getByLabelText('Instructions for the client'), { target: { value: 'Write down practical obstacles.' } })
-    fireEvent.submit(within(dialog).getByRole('button', { name: "Add to client's homework" }).closest('form')!)
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(screen.getByText('Local exercise')).toBeInTheDocument()
-    expect(screen.getByRole('status')).toHaveTextContent('No client was notified')
+  it('sends the record homework actions to the /homework routes rather than the removed modal', () => {
+    window.history.replaceState({}, '', '/sessions/upcoming?state=record')
+    const navigate = vi.fn()
+    render(<SessionDetails navigate={navigate} />)
+    expect(
+      screen.queryByRole('dialog', { name: 'Assign homework to Ahmed Mohamed' }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('No new assignments yet')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: '+ Add New Homework' }))
-    fireEvent(screen.getByRole('dialog'), new Event('cancel', { bubbles: false, cancelable: true }))
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(navigate).toHaveBeenCalledWith('/homework/create')
   })
 
   it('reaches the filled visible-password design through ordinary form interaction', () => {

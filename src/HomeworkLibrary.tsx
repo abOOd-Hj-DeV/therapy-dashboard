@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { asset } from './assets'
 import { ApiClient } from './api'
 import { DesignIcon, Workspace } from './Workspace'
+import { DeleteTemplateDialog } from './DeleteTemplateDialog'
 import { Modal } from './ui'
 
 type HomeworkLibraryProps = { navigate: (path: string) => void; api?: ApiClient }
@@ -83,11 +84,14 @@ export function HomeworkLibrary({ navigate, api }: HomeworkLibraryProps) {
   const requested = new URLSearchParams(window.location.search).get('state')
   const normalized = requested === 'published-success' ? 'published' : requested
   const demo = isDemoMode()
-  const variant: LibraryVariant =
-    demo && variants.includes(normalized as LibraryVariant)
+  const deleteTemplate = demo && normalized === 'delete-template'
+  const variant: LibraryVariant = deleteTemplate
+    ? 'list'
+    : demo && variants.includes(normalized as LibraryVariant)
       ? (normalized as LibraryVariant)
       : 'empty'
   const [notice, setNotice] = useState('')
+  const [deleteDismissed, setDeleteDismissed] = useState(false)
   const [search, setSearch] = useState('')
   const [need, setNeed] = useState('All needs')
   const [type, setType] = useState('All types')
@@ -118,15 +122,13 @@ export function HomeworkLibrary({ navigate, api }: HomeworkLibraryProps) {
   return (
     <Workspace
       title={
-        (
-          <>
-            <span className="r5-hw-crumb">Additional Content / </span>
-            {isDetails ? 'Homework Details' : 'Homework Library'}
-          </>
-        ) as unknown as string
+        <>
+          <span className="r5-hw-crumb">Additional Content / </span>
+          {isDetails ? 'Homework Details' : 'Homework Library'}
+        </>
       }
       mobileTitle={isDetails ? 'Homework Details' : 'Sakina Library'}
-      active={'Additional Content' as 'Dashboard'}
+      active="Additional Content"
       navigate={navigate}
       onSearch={isDetails || api ? undefined : setSearch}
       api={api}
@@ -255,6 +257,17 @@ export function HomeworkLibrary({ navigate, api }: HomeworkLibraryProps) {
         >
           <p>{notice}</p>
         </Modal>
+      )}
+      {deleteTemplate && !deleteDismissed && (
+        <DeleteTemplateDialog
+          templateName="Daily Breathing Exercise"
+          assignedCount={14}
+          onClose={() => setDeleteDismissed(true)}
+          onDelete={() => {
+            setDeleteDismissed(true)
+            setNotice('Demo only: no template was deleted. No backend is connected.')
+          }}
+        />
       )}
     </Workspace>
   )

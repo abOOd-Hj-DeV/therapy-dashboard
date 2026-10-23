@@ -148,20 +148,18 @@ describe('sessions and clinical visual markup contracts', () => {
     expect(writes).toEqual([])
   })
 
-  it('uses separately sized homework create and library dialogs without giving live unsupported formats', async () => {
+  it('redirects the removed demo homework dialog states while the live dialog keeps its sizing', async () => {
     window.history.replaceState({}, '', '/sessions/upcoming?state=create')
-    const demo = render(<SessionDetails navigate={vi.fn()} />)
-    const createDialog = screen.getByRole('dialog')
-    expect(createDialog).toHaveClass('is-create', 'demo-homework-modal')
+    const navigate = vi.fn()
+    const demo = render(<SessionDetails navigate={navigate} />)
+    expect(navigate).toHaveBeenCalledWith('/homework/create')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(careStyles).toMatch(/\.part2-modal\.homework-modal\.is-create\s*\{[^}]*width:\s*min\(500px/)
-    expect(careStyles).toMatch(/\.part2-modal\.homework-modal\.demo-homework-modal\.is-create textarea\s*\{[^}]*height:\s*91px/)
-    expect(careStyles).toMatch(/\.part2-modal\.demo-homework-modal\.is-create \.part2-form label\s*\{[^}]*gap:\s*10px/)
-    expect(careStyles).toMatch(/\.part2-modal\.demo-homework-modal\.is-create \.form-footer\s*\{[^}]*margin-top:\s*4px/)
     demo.unmount()
     window.history.replaceState({}, '', '/sessions/upcoming?state=library')
-    render(<SessionDetails navigate={vi.fn()} />)
-    expect(screen.getByRole('dialog')).toHaveClass('is-library')
-    expect(screen.getByRole('dialog')).not.toHaveClass('is-create')
+    render(<SessionDetails navigate={navigate} />)
+    expect(navigate).toHaveBeenCalledWith('/homework')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('keeps schedule demo-only and matches its evidenced modal width without changing native inputs', () => {

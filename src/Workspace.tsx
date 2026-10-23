@@ -8,7 +8,7 @@ import { DemoNetworkToggle } from './DemoNetworkToggle'
 import './visual-workspace-closure.css'
 
 type WorkspaceProps = {
-  title: string
+  title: ReactNode
   active:
     | 'Dashboard'
     | 'Clients'

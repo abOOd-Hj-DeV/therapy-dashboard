@@ -155,7 +155,7 @@ function WizardForm({
   return (
     <Workspace
       title="Additional Content"
-      active={'Additional Content' as never}
+      active="Additional Content"
       navigate={navigate}
     >
       <div className="homework-wizard">

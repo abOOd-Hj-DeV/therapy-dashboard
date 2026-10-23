@@ -146,35 +146,29 @@ describe('session scheduling and records', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Back to Summary' }))
     expect(screen.getByText('Discuss sleep next time')).toBeInTheDocument()
   })
-  it('creates new homework, shows it, and removes it', async () => {
+  it('creates new homework through the wizard and lands on the published library', async () => {
     window.history.replaceState({}, '', '/sessions/upcoming?state=record')
     render(<App />)
     await userEvent.click(screen.getByRole('button', { name: '+ Add New Homework' }))
-    const dialog = screen.getByRole('dialog')
-    await userEvent.type(within(dialog).getByLabelText('Homework title'), 'Grounding practice')
-    await userEvent.type(
-      within(dialog).getByLabelText('Instructions for the client'),
-      'Practice for five minutes',
-    )
-    await userEvent.click(within(dialog).getByRole('button', { name: "Add to client's homework" }))
-    expect(screen.getByText('Grounding practice')).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Remove Grounding practice' }))
-    expect(screen.getByText('No new assignments yet')).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/homework/create')
+    await userEvent.type(screen.getByLabelText('Title'), 'Grounding practice')
+    await userEvent.click(screen.getByRole('button', { name: 'Publish' }))
+    expect(window.location.pathname).toBe('/homework')
+    expect(window.location.search).toBe('?state=published')
+    expect(screen.getByRole('status')).toHaveTextContent('Homework published successfully.')
   })
-  it('filters the homework library and prevents duplicate additions', async () => {
-    window.history.replaceState({}, '', '/sessions/upcoming?state=library')
+  it('filters homework library rows by type and search then opens the preview details', async () => {
+    window.history.replaceState({}, '', '/homework?state=list')
     render(<App />)
-    const dialog = screen.getByRole('dialog')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Audio' }))
-    expect(within(dialog).queryByText('Daily activity log')).not.toBeInTheDocument()
-    await userEvent.click(
-      within(dialog).getByRole('button', { name: 'Add Muscle relaxation exercises' }),
-    )
-    expect(
-      within(dialog).getByRole('button', { name: 'Added Muscle relaxation exercises' }),
-    ).toBeDisabled()
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Close dialog' }))
-    expect(screen.getByText('Muscle relaxation exercises')).toBeInTheDocument()
+    await userEvent.selectOptions(screen.getByLabelText('Filter by type'), 'Video')
+    expect(screen.queryByText('Daily Small Activity')).not.toBeInTheDocument()
+    expect(screen.getByText('Daily Breathing Exercise')).toBeInTheDocument()
+    await userEvent.selectOptions(screen.getByLabelText('Filter by type'), 'All types')
+    await userEvent.type(screen.getByLabelText('Search homework templates'), 'Worry')
+    expect(screen.queryByText('Daily Breathing Exercise')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /Worry Time Practice/ }))
+    expect(window.location.search).toBe('?state=preview')
+    expect(screen.getByRole('heading', { name: 'Template Details' })).toBeInTheDocument()
   })
   it('confirms demo deletion and returns to sessions', async () => {
     window.history.replaceState({}, '', '/sessions/upcoming')

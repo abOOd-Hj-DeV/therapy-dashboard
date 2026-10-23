@@ -103,10 +103,10 @@ describe('r5 homework navigation wiring', () => {
   })
 
   it.each([
-    ['/homework', 'Homework Library'],
-    ['/homework/create', 'Add new content'],
-    ['/homework/insert', 'Assign Homework'],
-  ])('resolves %s through App routes', (route, title) => {
+    ['/homework', 'Homework Library', '.r5-homework'],
+    ['/homework/create', 'Add new content', '.homework-wizard'],
+    ['/homework/insert', 'Assign Homework', '.care-plan-insertion'],
+  ])('resolves %s through App routes', (route, title, marker) => {
     window.history.replaceState({}, '', route)
     render(<App />)
     expect(screen.getByRole('complementary', { name: 'Main navigation' })).toBeInTheDocument()
@@ -115,10 +115,7 @@ describe('r5 homework navigation wiring', () => {
       'aria-current',
       'page',
     )
-    expect(document.querySelector('.homework-route-body')).toHaveAttribute(
-      'data-homework-route',
-      route,
-    )
+    expect(document.querySelector(marker)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Login' })).not.toBeInTheDocument()
   })
 

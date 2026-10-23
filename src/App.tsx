@@ -12,7 +12,9 @@ import { Clients } from './Clients'
 import { ClientProfile } from './ClientProfile'
 import { DemoClients } from './DemoClients'
 import { DemoClientProfile } from './DemoClientProfile'
-import { Workspace } from './Workspace'
+import { HomeworkLibrary } from './HomeworkLibrary'
+import { HomeworkWizard } from './HomeworkWizard'
+import { CarePlanInsertion } from './CarePlanInsertion'
 
 export function App() {
   const user = useApiUser(api)
@@ -66,23 +68,9 @@ export function App() {
       />
     )
   if (path === '/wallet') return <Wallet navigate={navigate} api={client} />
-  const homeworkTitles: Record<string, string> = {
-    '/homework': 'Homework Library',
-    '/homework/create': 'Add new content',
-    '/homework/insert': 'Assign Homework',
-  }
-  if (path in homeworkTitles)
-    return (
-      <Workspace
-        title={homeworkTitles[path]}
-        mobileTitle={homeworkTitles[path]}
-        active="Additional Content"
-        navigate={navigate}
-        api={client}
-      >
-        <div className="homework-route-body" data-homework-route={path} />
-      </Workspace>
-    )
+  if (path === '/homework') return <HomeworkLibrary navigate={navigate} api={client} />
+  if (path === '/homework/create') return <HomeworkWizard navigate={navigate} api={client} />
+  if (path === '/homework/insert') return <CarePlanInsertion navigate={navigate} api={client} />
   if (demo && path === '/clients') return <DemoClients navigate={navigate} />
   if (demo && path === '/clients/profile') return <DemoClientProfile navigate={navigate} />
   if (path === '/clients' && client) return <Clients api={client} navigate={navigate} />
