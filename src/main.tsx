@@ -24,6 +24,7 @@ import './visual-r4-rail.css'
 import './visual-r4-nav.css'
 // Component-owned visual repairs must follow the shared base styles in the cascade.
 import { App } from './App'
+import './visual-homework-wizard.css' // r5 create-wizard page styles (keeps r4-shell-fit css-import regex out)
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
