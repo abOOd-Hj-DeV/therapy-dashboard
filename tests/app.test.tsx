@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from '../src/App'
 
 beforeEach(() => {
+  vi.stubEnv('VITE_DEMO_MODE', 'true')
   window.history.replaceState({}, '', '/login')
   vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
   vi.spyOn(HTMLDialogElement.prototype, 'showModal').mockImplementation(function (
@@ -114,6 +115,15 @@ describe('authentication demo', () => {
 })
 
 describe('therapist dashboard', () => {
+  it.each(['/clients', '/clients/profile?id=demo-client'])('protects %s from fixture fallback outside demo mode', (path) => {
+    vi.stubEnv('VITE_DEMO_MODE', 'false')
+    window.history.replaceState({}, '', path)
+    render(<App />)
+    expect(document.querySelector('input[name="password"]')).toBeInTheDocument()
+    expect(screen.queryByText('Ahmed Mohamed')).not.toBeInTheDocument()
+    expect(screen.queryByText('Saad Ali')).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Manage Clients' })).not.toBeInTheDocument()
+  })
   beforeEach(() => window.history.replaceState({}, '', '/dashboard'))
   it('renders all seven sessions and four metrics', () => {
     render(<App />)
@@ -161,7 +171,7 @@ describe('therapist dashboard', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Start session' }))
     const dialog = screen.getByRole('dialog')
     expect(within(dialog).getByLabelText('Meeting URL')).toHaveValue(
-      'https://meet.google.com/xxx-eyzx-dew?author=0',
+      'https://meet.google.com/kxx-eyzx-dew?author=0',
     )
     await userEvent.click(within(dialog).getByRole('button', { name: 'Join meeting' }))
     expect(within(dialog).getByRole('status')).toHaveTextContent('no live meeting service')
@@ -172,17 +182,23 @@ describe('therapist dashboard', () => {
     render(<App />)
     getter.mockReturnValue(false)
     act(() => window.dispatchEvent(new Event('offline')))
-    expect(screen.getByRole('status')).toHaveTextContent('offline')
+    expect(screen.getByText(/You.re offline\. Some data may not be up to date\./)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Start session' })).toBeDisabled()
     getter.mockReturnValue(true)
     act(() => window.dispatchEvent(new Event('online')))
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Start session' })).toBeEnabled()
   })
-  it('clearly marks navigation pages not supplied yet', async () => {
+  it('opens the newly supplied clients design and preserves its profile query route', async () => {
     render(<App />)
     await userEvent.click(screen.getByRole('button', { name: 'Patients' }))
-    expect(screen.getByRole('dialog')).toHaveTextContent('not in the first Figma file')
+    expect(screen.getByRole('heading', { name: 'Manage Clients' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Open Saad Ali demo reference profile' }))
+    expect(window.location.pathname).toBe('/clients/profile')
+    expect(window.location.search).toBe('?id=demo-client')
+    expect(screen.getByRole('heading', { name: 'Ahmed Mohamed' })).toBeInTheDocument()
+    await userEvent.click(within(screen.getByRole('complementary', { name: 'Main navigation' })).getByRole('button', { name: 'Patients' }))
+    expect(screen.getByRole('heading', { name: 'Manage Clients' })).toBeInTheDocument()
   })
   it('honors direct links to design states', () => {
     window.history.replaceState({}, '', '/dashboard?state=meeting')
