@@ -9,7 +9,14 @@ import './visual-workspace-closure.css'
 
 type WorkspaceProps = {
   title: string
-  active: 'Dashboard' | 'Clients' | 'Messages' | 'Sessions' | 'Profile' | 'Wallet'
+  active:
+    | 'Dashboard'
+    | 'Clients'
+    | 'Messages'
+    | 'Sessions'
+    | 'Profile'
+    | 'Wallet'
+    | 'Additional Content'
   navigate: (path: string) => void
   children: ReactNode
   offline?: boolean
@@ -131,6 +138,8 @@ export function Workspace({
             ? '/sessions'
             : label === 'Wallet'
               ? '/wallet'
+              : label === 'Additional Content'
+                ? '/homework'
               : label === 'Profile'
                 ? '/profile'
                 : (label === 'Patients' || label === 'Clients') && (api || (import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === 'true'))

@@ -24,6 +24,7 @@ import './visual-r4-rail.css'
 import './visual-r4-nav.css'
 // Component-owned visual repairs must follow the shared base styles in the cascade.
 import { App } from './App'
+import './visual-r5-nav.css' // round 5 nav wiring for the homework routes
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
