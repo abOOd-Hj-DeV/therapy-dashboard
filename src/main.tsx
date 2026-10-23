@@ -26,6 +26,7 @@ import './visual-homework-library.css' // round 5 homework library
 // Component-owned visual repairs must follow the shared base styles in the cascade.
 import { App } from './App'
 import './visual-r5-nav.css' // round 5 nav wiring for the homework routes
+import './visual-homework-wizard.css' // r5 create-wizard page styles (keeps r4-shell-fit css-import regex out)
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
