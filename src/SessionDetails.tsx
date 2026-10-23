@@ -1,181 +1,13 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState } from 'react'
 import { asset } from './assets'
 import { Modal } from './ui'
 import { DesignIcon, Workspace } from './Workspace'
 import { ScheduleDialog } from './Sessions'
 import { ApiClient } from './api'
 import { LiveCarePage } from './api-sessions-and-clinical-live'
+import { DeleteTemplateDialog } from './DeleteTemplateDialog'
 
 type Assignment = { title: string; type: string; instructions?: string; link?: string }
-const library: Assignment[] = [
-  { title: 'Daily activity log', type: 'Interactive' },
-  { title: 'Small daily activity', type: 'Interactive' },
-  { title: '4-7-8 Breathing Exercise', type: 'Video' },
-  { title: 'Muscle relaxation exercises', type: 'Audio' },
-]
-
-function HomeworkDialog({
-  client,
-  onClose,
-  onAdd,
-  assigned,
-  initial,
-}: {
-  client: string
-  onClose: () => void
-  onAdd: (item: Assignment) => void
-  assigned: Assignment[]
-  initial: 'library' | 'create'
-}) {
-  const [tab, setTab] = useState(initial)
-  const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState('All')
-  const [title, setTitle] = useState('')
-  const [type, setType] = useState('Article')
-  const [link, setLink] = useState('')
-  const [instructions, setInstructions] = useState('')
-  function create(event: FormEvent) {
-    event.preventDefault()
-    if (!title.trim() || !instructions.trim()) return
-    onAdd({ title: title.trim(), type, link: link.trim(), instructions: instructions.trim() })
-    onClose()
-  }
-  return (
-    <Modal
-      title={`Assign homework to ${client}`}
-      className={`part2-modal homework-modal demo-homework-modal ${tab === 'create' ? 'is-create' : 'is-library'}`}
-      onClose={onClose}
-    >
-      <div className="segmented-control" role="tablist" aria-label="Homework source">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'library'}
-          className={tab === 'library' ? 'selected' : ''}
-          onClick={() => setTab('library')}
-        >
-          From the library
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'create'}
-          className={tab === 'create' ? 'selected' : ''}
-          onClick={() => setTab('create')}
-        >
-          Create New
-        </button>
-      </div>
-      {tab === 'create' ? (
-        <form className="part2-form" onSubmit={create}>
-          <label>
-            Homework title
-            <input
-              required
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="Example: Diary of stressful situations"
-            />
-          </label>
-          <label>
-            Content type
-            <select value={type} onChange={(event) => setType(event.target.value)}>
-              {['Article', 'Audio', 'Video', 'Interactive'].map((item) => (
-                <option key={item}>{item}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Content link or file
-            <input
-              value={link}
-              onChange={(event) => setLink(event.target.value)}
-              placeholder="Paste a link or upload a file"
-            />
-          </label>
-          <label>
-            Instructions for the client
-            <textarea
-              required
-              value={instructions}
-              onChange={(event) => setInstructions(event.target.value)}
-              placeholder="What should the client do with this homework?"
-            />
-          </label>
-          <footer className="form-footer">
-            <button type="button" className="soft-button" onClick={onClose}>
-              cancel
-            </button>
-            <button className="teal-button" type="submit">
-              Add to client's homework
-            </button>
-          </footer>
-        </form>
-      ) : (
-        <>
-          <input
-            className="library-search"
-            aria-label="Search homework library"
-            placeholder="Search..."
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-          <div className="library-filters" role="group" aria-label="Content type filters">
-            {['All', 'Article', 'Audio', 'Video', 'Interactive'].map((item) => (
-              <button
-                key={item}
-                aria-pressed={filter === item}
-                className={filter === item ? 'selected' : ''}
-                onClick={() => setFilter(item)}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-          <div className="library-results">
-            {library
-              .filter(
-                (item) =>
-                  (filter === 'All' || item.type === filter) &&
-                  item.title.toLowerCase().includes(query.trim().toLowerCase()),
-              )
-              .map((item) => {
-                const added =
-                  assigned.some((current) => current.title === item.title) ||
-                  ['Small daily activity', '4-7-8 Breathing Exercise'].includes(item.title)
-                return (
-                  <article key={item.title}>
-                    <div>
-                      <strong>{item.title}</strong>
-                      <small>{item.type}</small>
-                    </div>
-                    <button
-                      className={added ? 'added' : ''}
-                      aria-label={`${added ? 'Added' : 'Add'} ${item.title}`}
-                      disabled={added}
-                      onClick={() => onAdd(item)}
-                    >
-                      {added ? 'Added' : '+ Add'}
-                    </button>
-                  </article>
-                )
-              })}
-            {!library.some(
-              (item) =>
-                (filter === 'All' || item.type === filter) &&
-                item.title.toLowerCase().includes(query.trim().toLowerCase()),
-            ) && <p className="empty-result">No homework found</p>}
-          </div>
-          <footer className="form-footer">
-            <button className="soft-button" onClick={onClose}>
-              cancel
-            </button>
-          </footer>
-        </>
-      )}
-    </Modal>
-  )
-}
 
 export function SessionDetails({
   navigate,
@@ -201,11 +33,8 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
   )
   const [actions, setActions] = useState(initial === 'actions')
   const [modal, setModal] = useState<
-    'homework' | 'schedule' | 'delete' | 'meeting' | 'notes' | 'profile' | null
-  >(initial === 'create' || initial === 'library' ? 'homework' : null)
-  const [homeworkTab, setHomeworkTab] = useState<'library' | 'create'>(
-    initial === 'library' ? 'library' : 'create',
-  )
+    'schedule' | 'delete' | 'meeting' | 'notes' | 'profile' | 'delete-template' | null
+  >(initial === 'delete-template' ? 'delete-template' : null)
   const [note, setNote] = useState('')
   const [notes, setNotes] = useState<string[]>([])
   const [assignments, setAssignments] = useState<Assignment[]>([])
@@ -217,6 +46,13 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
   const [feedback, setFeedback] = useState('')
   const [savedOutcome, setSavedOutcome] = useState('')
   const [date, setDate] = useState('Sep 25 · 10:00 AM · 45 min · Follow-up')
+
+  // The assign-homework modal is superseded by the /homework library routes;
+  // the old fixture states now open the new library pages instead.
+  useEffect(() => {
+    if (initial === 'library') navigate('/homework')
+    else if (initial === 'create') navigate('/homework/create')
+  }, [initial, navigate])
 
   return (
     <Workspace title="Sessions / Upcoming Session" active="Sessions" navigate={navigate}>
@@ -497,14 +333,7 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
                     <p className="no-assignments">No new assignments yet</p>
                   )}
                   <div className="homework-add">
-                    <button
-                      onClick={() => {
-                        setHomeworkTab('create')
-                        setModal('homework')
-                      }}
-                    >
-                      + Add New Homework
-                    </button>
+                    <button onClick={() => navigate('/homework/create')}>+ Add New Homework</button>
                   </div>
                 </section>
                 <section className="detail-card outcome-card">
@@ -583,17 +412,14 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
           </p>
         )}
       </div>
-      {modal === 'homework' && (
-        <HomeworkDialog
-          client={client}
-          initial={homeworkTab}
-          assigned={assignments}
+      {modal === 'delete-template' && (
+        <DeleteTemplateDialog
+          templateName="Daily Breathing Exercise"
+          assignedCount={14}
           onClose={() => setModal(null)}
-          onAdd={(item) => {
-            setAssignments((current) =>
-              current.some((value) => value.title === item.title) ? current : [...current, item],
-            )
-            setFeedback('Demo homework assigned locally. No client was notified.')
+          onDelete={() => {
+            setModal(null)
+            setFeedback('Demo only: no template was deleted. No backend is connected.')
           }}
         />
       )}

@@ -24,6 +24,7 @@ import './visual-r4-rail.css'
 import './visual-r4-nav.css'
 // Component-owned visual repairs must follow the shared base styles in the cascade.
 import { App } from './App'
+import './visual-r5-dialogs.css' // r5 dialogs-remove styles (kept out of r4-shell-fit's css list)
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
