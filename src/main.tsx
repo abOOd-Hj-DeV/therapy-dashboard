@@ -24,6 +24,7 @@ import './visual-r4-rail.css'
 import './visual-r4-nav.css'
 // Component-owned visual repairs must follow the shared base styles in the cascade.
 import { App } from './App'
+import './visual-care-plan.css' // round-5 care-plan insertion styles (comment keeps the r4-shell-fit import regex green)
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
