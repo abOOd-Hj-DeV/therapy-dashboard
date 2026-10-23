@@ -22,6 +22,7 @@ import './remaining.css'
 import './visual-r4-shell-fit.css'
 import './visual-r4-rail.css'
 import './visual-r4-nav.css'
+import './visual-homework-library.css' // round 5 homework library
 // Component-owned visual repairs must follow the shared base styles in the cascade.
 import { App } from './App'
 import './visual-r5-nav.css' // round 5 nav wiring for the homework routes
