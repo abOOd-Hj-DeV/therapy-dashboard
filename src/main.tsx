@@ -28,6 +28,7 @@ import { App } from './App'
 import './visual-r5-nav.css' // round 5 nav wiring for the homework routes
 import './visual-homework-wizard.css' // r5 create-wizard page styles (keeps r4-shell-fit css-import regex out)
 import './visual-care-plan.css' // round-5 care-plan insertion styles (comment keeps the r4-shell-fit import regex green)
+import './visual-r5-dialogs.css' // r5 dialogs-remove styles (kept out of r4-shell-fit's css list)
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
