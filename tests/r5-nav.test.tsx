@@ -3,6 +3,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from '../src/App'
+import { Dashboard } from '../src/Dashboard'
 import { Workspace } from '../src/Workspace'
 import { menu } from '../src/data'
 
@@ -151,6 +152,18 @@ describe('r5 homework navigation wiring', () => {
     expect(document.querySelector('input[name="password"]')).toBeInTheDocument()
     expect(
       screen.queryByRole('complementary', { name: 'Main navigation' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('reaches /homework from the dashboard page sidebar too', async () => {
+    const navigate = vi.fn()
+    window.history.replaceState({}, '', '/dashboard')
+    render(<Dashboard navigate={navigate} />)
+    const sidebar = screen.getByRole('complementary', { name: 'Main navigation' })
+    await userEvent.click(within(sidebar).getByRole('button', { name: 'Additional Content' }))
+    expect(navigate).toHaveBeenCalledWith('/homework')
+    expect(
+      screen.queryByText(/not in the first Figma file/),
     ).not.toBeInTheDocument()
   })
 

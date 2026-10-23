@@ -140,7 +140,9 @@ function DemoDashboard({ navigate }: DashboardProps) {
                         ? navigate('/sessions')
                         : item.label === 'Wallet'
                           ? navigate('/wallet')
-                          : unavailable(item.label)
+                          : item.label === 'Additional Content'
+                            ? navigate('/homework')
+                            : unavailable(item.label)
                 }
               >
                 {item.label === 'Dashboard' ? (
