@@ -10,7 +10,7 @@ type LibraryVariant = 'empty' | 'list' | 'published' | 'preview' | 'no-patients'
 type Tab = 'content' | 'patients'
 
 function isDemoMode() {
-  return import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === 'true'
+  return import.meta.env.VITE_DEMO_MODE === 'true'
 }
 
 const variants: LibraryVariant[] = ['empty', 'list', 'published', 'preview', 'no-patients']

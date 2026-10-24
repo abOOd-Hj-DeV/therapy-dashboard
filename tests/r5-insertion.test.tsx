@@ -100,18 +100,15 @@ describe('r5 care plan insertion point (refs r5-102..r5-112)', () => {
     expect(styles).toContain('dashed')
   })
 
-  it.each([['DEV', false], ['VITE_DEMO_MODE', 'false']] as const)(
-    'stays honest without fixtures when %s is disabled',
-    (key, value) => {
-      vi.stubEnv(key, value)
-      renderPage()
-      expect(screen.queryByText('سلّم النشاط')).not.toBeInTheDocument()
-      expect(screen.getByText(/not connected/i)).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Why is this empty?' })).toBeInTheDocument()
-      fireEvent.click(screen.getByRole('button', { name: 'Why is this empty?' }))
-      expect(screen.getByRole('status')).toHaveTextContent(/not available/)
-    },
-  )
+  it('stays honest without fixtures when VITE_DEMO_MODE is disabled', () => {
+    vi.stubEnv('VITE_DEMO_MODE', 'false')
+    renderPage()
+    expect(screen.queryByText('سلّم النشاط')).not.toBeInTheDocument()
+    expect(screen.getByText(/not connected/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Why is this empty?' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Why is this empty?' }))
+    expect(screen.getByRole('status')).toHaveTextContent(/not available/)
+  })
 
   it('does not import api clients or persist state in demo mode', () => {
     expect(source).not.toContain('localStorage')

@@ -142,7 +142,7 @@ export function Workspace({
                 ? '/homework'
               : label === 'Profile'
                 ? '/profile'
-                : (label === 'Patients' || label === 'Clients') && (api || (import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === 'true'))
+                : (label === 'Patients' || label === 'Clients') && (api || (import.meta.env.VITE_DEMO_MODE === 'true'))
                   ? '/clients'
                   : null
     if (route) navigate(route)

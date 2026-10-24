@@ -118,7 +118,7 @@ const filters = ['All', 'Active', 'Inactive'] as const
 type PreviewFilter = (typeof filters)[number]
 
 export function DemoClients({ navigate }: { navigate: (path: string) => void }) {
-  return import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === 'true'
+  return import.meta.env.VITE_DEMO_MODE === 'true'
     ? <ClientListFixture navigate={navigate} />
     : null
 }

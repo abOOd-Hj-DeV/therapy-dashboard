@@ -51,7 +51,7 @@ function PreviewIcon({ name }: { name: string }) {
 }
 
 export function DemoClientProfile({ navigate }: { navigate: (path: string) => void }) {
-  return import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === 'true'
+  return import.meta.env.VITE_DEMO_MODE === 'true'
     ? <ClientProfileFixture navigate={navigate} />
     : null
 }

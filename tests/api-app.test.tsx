@@ -24,11 +24,11 @@ describe('live routing boundaries', () => {
       expect(request).not.toHaveBeenCalled()
     },
   )
-  it('does not enable demo bypass in a production build even with the demo variable set', () => {
+  it('enables demo mode in a production build when the demo variable is set', () => {
     vi.stubEnv('DEV', false)
     vi.stubEnv('VITE_DEMO_MODE', 'true')
     window.history.replaceState({}, '', '/dashboard')
     render(<App />)
-    expect(screen.getByLabelText('WhatsApp number')).toBeInTheDocument()
+    expect(screen.getByRole('complementary', { name: 'Main navigation' })).toBeInTheDocument()
   })
 })

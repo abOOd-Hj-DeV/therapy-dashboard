@@ -76,8 +76,8 @@ beforeEach(() => {
 })
 
 describe('development-only client-list reference interactions (not visual validation)', () => {
-  it.each([['DEV', false], ['VITE_DEMO_MODE', 'false']] as const)('does not expose fixtures when %s is disabled', (key, value) => {
-    vi.stubEnv(key, value)
+  it('does not expose fixtures when VITE_DEMO_MODE is disabled', () => {
+    vi.stubEnv('VITE_DEMO_MODE', 'false')
     const { container } = render(<DemoClients navigate={vi.fn()} />)
     expect(container).toBeEmptyDOMElement()
   })

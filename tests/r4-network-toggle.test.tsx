@@ -39,14 +39,14 @@ describe('offline URL helper', () => {
 })
 
 describe('DemoNetworkToggle', () => {
-  it('renders nothing in live mode or outside the development server', () => {
+  it('renders nothing in live mode and renders in production demo deployments', () => {
     vi.stubEnv('VITE_DEMO_MODE', 'false')
     const { container, rerender } = render(<DemoNetworkToggle />)
     expect(container).toBeEmptyDOMElement()
     vi.stubEnv('VITE_DEMO_MODE', 'true')
     vi.stubEnv('DEV', false)
     rerender(<DemoNetworkToggle key="production" />)
-    expect(container).toBeEmptyDOMElement()
+    expect(container).not.toBeEmptyDOMElement()
   })
 
   it('toggles ?state=offline through history with aria-pressed and notifies routing', async () => {
