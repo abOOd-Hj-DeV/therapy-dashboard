@@ -56,9 +56,9 @@ describe('client-list bounded closure repairs', () => {
     expect(css).toContain(".demo-client-list[data-density='spacious'] {\n  --demo-client-list-card-gap: 20px;")
     expect(css).toContain('gap: var(--demo-client-list-card-gap);')
   })
-  it.each([['DEV', false], ['VITE_DEMO_MODE', 'false']] as const)('keeps presentation queries gated when %s is disabled', (key, value) => {
+  it('keeps presentation queries gated when VITE_DEMO_MODE is disabled', () => {
     window.history.replaceState({}, '', '/clients?density=spacious&state=expanded')
-    vi.stubEnv(key, value)
+    vi.stubEnv('VITE_DEMO_MODE', 'false')
     const { container } = render(<DemoClients navigate={vi.fn()} />)
     expect(container).toBeEmptyDOMElement()
   })

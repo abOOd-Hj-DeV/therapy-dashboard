@@ -30,7 +30,7 @@ const proposal = {
 }
 
 export function CarePlanInsertion({ navigate, api }: { navigate: (path: string) => void; api?: ApiClient }) {
-  if (import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === 'true' && !api) {
+  if (import.meta.env.VITE_DEMO_MODE === 'true' && !api) {
     return <DemoCarePlanInsertion navigate={navigate} />
   }
   return <LiveCarePlanInsertion navigate={navigate} api={api} />

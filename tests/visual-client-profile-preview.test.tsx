@@ -48,8 +48,8 @@ describe('development-only client profile Figma reference', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
-  it('renders nothing in a production environment', () => {
-    vi.stubEnv('DEV', false)
+  it('renders nothing when the demo variable is unset', () => {
+    vi.stubEnv('VITE_DEMO_MODE', 'false')
     const { container } = render(<DemoClientProfile navigate={vi.fn()} />)
     expect(container).toBeEmptyDOMElement()
   })

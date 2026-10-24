@@ -73,7 +73,7 @@ export function HomeworkWizard({ navigate, api }: HomeworkWizardProps) {
 // Development design fixture only: the live route renders WizardForm with live=true
 // and never mounts these ?state= presentation presets.
 function DemoHomeworkWizard({ navigate }: { navigate: (path: string) => void }) {
-  if (!(import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === 'true')) return null
+  if (!(import.meta.env.VITE_DEMO_MODE === 'true')) return null
   const params = new URLSearchParams(window.location.search)
   const state = params.get('state')
   const requestedType = params.get('type')

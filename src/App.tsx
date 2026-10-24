@@ -18,7 +18,7 @@ import { CarePlanInsertion } from './CarePlanInsertion'
 
 export function App() {
   const user = useApiUser(api)
-  const demo = import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === 'true'
+  const demo = import.meta.env.VITE_DEMO_MODE === 'true'
   const client = demo ? undefined : api
   const [location, setLocation] = useState(window.location.pathname + window.location.search)
   const path = location.split('?')[0]

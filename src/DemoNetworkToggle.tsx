@@ -5,7 +5,7 @@ const OFFLINE = 'offline'
 const PREVIOUS_STATE_KEY = 'demoNetworkPreviousState'
 
 function isDemoNetworkToggleEnabled() {
-  return import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === 'true'
+  return import.meta.env.VITE_DEMO_MODE === 'true'
 }
 
 // Returns the next ?query with only the design-preview `state` parameter changed.
