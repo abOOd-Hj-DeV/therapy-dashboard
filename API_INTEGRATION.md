@@ -24,7 +24,7 @@ The source/demo Figma views are preserved for development reference, not present
 
 ## Frontend safeguards
 
-- Memory-only access/refresh credentials; bearer header only to the configured API prefix. No credentials in URLs, persistent browser storage, analytics or logs.
+- Memory-only access token; only the rotating refresh token is stored in tab-scoped sessionStorage. Bearer headers only go to the configured API prefix. No credentials in URLs, localStorage, analytics or logs.
 - HTTPS required outside loopback development, no fetch redirects, cookies omitted, no-store request caching and no-referrer policy. Encoded traversal and API-origin escapes rejected.
 - Valid therapist role/active/phone-verified session required before private navigation. Backend authorization remains authoritative: hiding a button is not an authorization fix.
 - Rotating refresh deduplication, serialized refresh/logout, session-generation checks, request cancellation, and generation-keyed page boundaries clear stale sensitive results/drafts even on same-account reauthentication.
@@ -33,7 +33,7 @@ The source/demo Figma views are preserved for development reference, not present
 - On a hard reload, unresolved browser intent/key is lost intentionally. Check server history and contact finance if uncertain before creating another request. Backend pending-request checks remain the authority; do not interpret local cancellation as server rollback.
 - Clinical text is ordinary escaped React text, not injected HTML. Downloads use authenticated blob requests and revoked object URLs; bearer tokens are never forwarded to arbitrary attachment URLs.
 
-Memory-only storage reduces persistent credential exposure but does **not** protect against active same-origin XSS. Deploy with an appropriate CSP, TLS, narrow CORS, controlled asset hosting and dependency monitoring. A reviewed BFF/HttpOnly-cookie design would require a separate backend contract.
+Tab-scoped storage limits refresh-token persistence but does **not** protect against active same-origin XSS. Deploy with an appropriate CSP, TLS, narrow CORS, controlled asset hosting and dependency monitoring. A reviewed BFF/HttpOnly-cookie design would require a separate backend contract.
 
 ## Unresolved backend/release findings
 

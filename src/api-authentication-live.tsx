@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import {
+  getCountries,
+  getCountryCallingCode,
+  parsePhoneNumberFromString,
+  type CountryCode,
+} from 'libphonenumber-js/max'
+import {
   ApiClient,
   ApiError,
   apiErrorMessage,
@@ -10,17 +16,49 @@ import {
 import type { AuthPage } from './Auth'
 import { asset } from './assets'
 import { Icon, Logo } from './ui'
+import { passwordPolicyMessage, validNewPassword } from './auth-policy'
 
 type Phase = 'login' | 'activate' | 'forgot' | 'reset' | 'otp'
 type Challenge = LoginChallenge & { phone: string }
 type Operation = { controller: AbortController }
 type AuthResponse = ApiSession | LoginChallenge
 
-// Require an explicit international prefix; never infer a country from a local number.
-function internationalPhone(value: string): string | null {
-  const compact = value.trim().replace(/[\s().-]/g, '')
-  if (!/^(?:\+|00)[1-9][0-9]{7,14}$/.test(compact)) return null
-  return compact.startsWith('00') ? `+${compact.slice(2)}` : compact
+const regionNames = new Intl.DisplayNames(['en'], { type: 'region' })
+const countries = getCountries()
+  .map((code) => ({
+    code,
+    name: regionNames.of(code) ?? code,
+    dial: getCountryCallingCode(code),
+  }))
+  .sort((a, b) => a.name.localeCompare(b.name))
+const invalidPhoneMessage = 'Enter a valid WhatsApp number.'
+const rejectedCredentials = 'Invalid WhatsApp number or password.'
+
+function internationalPhone(value: string, region: CountryCode): string | null {
+  const input = value.trim().replace(/^00/, '+')
+  const number = parsePhoneNumberFromString(input, { defaultCountry: region, extract: false })
+  return number?.isValid() && !number.ext ? number.number : null
+}
+
+function otpError(failure: ApiError): string | null {
+  switch (failure.code) {
+    case 'otp_invalid':
+      return failure.meta.attempts_left === undefined
+        ? 'The code is incorrect.'
+        : `The code is incorrect. You have ${failure.meta.attempts_left} attempts left.`
+    case 'otp_expired':
+      return 'The code has expired. Select “Resend” to request a new code.'
+    case 'otp_exhausted':
+      return 'The attempts for this code are exhausted. Start again.'
+    case 'otp_cooldown':
+      return failure.retryAfter
+        ? `You can request a new code in ${failure.retryAfter} seconds.`
+        : 'Wait before requesting a new code.'
+    case 'otp_send_failed':
+      return 'We could not send a code on WhatsApp. Try again shortly.'
+    default:
+      return null
+  }
 }
 
 function initialPhase(page: AuthPage): Phase {
@@ -41,6 +79,7 @@ export function LiveAuthentication({
 }) {
   const [phase, setPhase] = useState<Phase>(() => initialPhase(page))
   const [phone, setPhone] = useState('')
+  const [region, setRegion] = useState<CountryCode>('SY')
   const [password, setPassword] = useState('')
   const [confirmation, setConfirmation] = useState('')
   const [activationCode, setActivationCode] = useState('')
@@ -49,7 +88,7 @@ export function LiveAuthentication({
   const [visible, setVisible] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [fields, setFields] = useState<Record<string, string[]>>({})
+  const [fields, setFields] = useState<Record<string, string>>({})
   const [notice, setNotice] = useState(
     new URLSearchParams(window.location.search).get('logout') === 'revocation-unknown'
       ? 'Signed out locally. Server revocation could not be confirmed; sign in and use sign out of all devices before leaving a shared device.'
@@ -179,21 +218,53 @@ export function LiveAuthentication({
       await success(response, current)
     } catch (failure) {
       if (!current()) return
-      setError(apiErrorMessage(failure))
       if (failure instanceof ApiError) {
-        // Render fixed copy by field key only; never echo field-error contents.
-        setFields(failure.fields)
-        if (failure.retryAfter > 0) {
-          const deadline = Date.now() + failure.retryAfter * 1000
-          setRetryUntil(deadline)
-          setNow(Date.now())
-        }
-        if (Object.hasOwn(failure.fields, 'login_challenge')) {
+        const codeMessage = otpError(failure)
+        if (failure.code === 'phone_invalid' && phase !== 'otp') {
+          setFields({ whatsapp_number: invalidPhoneMessage })
+        } else if (failure.code === 'password_reused' && phase !== 'login') {
+          setFields({ password: 'The new password must be different from your current password.' })
+        } else if (failure.code === 'otp_exhausted') {
+          clearSecrets()
+          setResendUntil(0)
+          setPhase(phase === 'otp' ? 'login' : phase === 'reset' ? 'forgot' : phase)
+          setError(codeMessage ?? apiErrorMessage(failure))
+        } else if (codeMessage) {
+          const field = phase === 'activate' ? 'code' : phase === 'forgot' ? 'whatsapp_number' : phase === 'login' ? null : 'otp'
+          const message =
+            phase === 'activate' && failure.code === 'otp_expired'
+              ? 'The invitation code has expired. Contact management for a replacement.'
+              : codeMessage
+          if (field) setFields({ [field]: message })
+          else setError(message)
+        } else if (
+          phase === 'login' &&
+          (failure.status === 401 ||
+            failure.status === 422 && (Object.hasOwn(failure.fields, 'whatsapp_number') ||
+              Object.hasOwn(failure.fields, 'password')))
+        ) {
+          setError(rejectedCredentials)
+        } else if (Object.hasOwn(failure.fields, 'login_challenge')) {
           clearSecrets()
           setPhase('login')
           setNotice('The sign-in challenge is no longer usable. Sign in with your password again.')
+        } else {
+          const field = ['whatsapp_number', 'code', 'otp', 'password', 'password_confirmation'].find(
+            (name) => Object.hasOwn(failure.fields, name),
+          )
+          if (field) setFields({ [field]: apiErrorMessage(failure) })
+          else setError(apiErrorMessage(failure))
         }
-      }
+        if (failure.retryAfter > 0) {
+          const deadline = Date.now() + failure.retryAfter * 1000
+          if (failure.code === 'otp_cooldown' && (phase === 'otp' || phase === 'reset')) {
+            setResendUntil(deadline)
+          } else {
+            setRetryUntil(deadline)
+          }
+          setNow(Date.now())
+        }
+      } else setError(apiErrorMessage(failure))
     } finally {
       if (current()) {
         operation.current = null
@@ -215,7 +286,7 @@ export function LiveAuthentication({
         !(Date.parse(response.challenge_expires_at) > Date.now())
       )
         throw new ApiError(502)
-      const normalized = internationalPhone(phone)
+      const normalized = internationalPhone(phone, region)
       if (!normalized) throw new ApiError(422)
       setChallenge({
         requires_2fa: true,
@@ -278,24 +349,27 @@ export function LiveAuthentication({
     navigate('/dashboard')
   }
 
-  const normalizedPhone = internationalPhone(phone)
-  const newPasswordValid = password.length >= 8 && confirmation === password
+  const normalizedPhone = internationalPhone(phone, region)
+  const newPasswordValid = validNewPassword(password) && confirmation === password
   const otpValid = /^[0-9]{6}$/.test(otp)
   const challengeValid = !!challenge && Date.parse(challenge.challenge_expires_at) > now
   const valid =
     phase === 'otp'
       ? otpValid && challengeValid
-      : !!normalizedPhone &&
-        (phase === 'forgot' ||
+      : phase === 'forgot' ||
           (phase === 'login'
             ? password.length > 0
             : newPasswordValid &&
-              (phase === 'activate' ? /^[A-Za-z0-9]{8}$/.test(activationCode.trim()) : otpValid)))
+              (phase === 'activate' ? /^[A-Za-z0-9]{8}$/.test(activationCode.trim()) : otpValid))
   const retrySeconds = Math.max(0, Math.ceil((retryUntil - now) / 1000))
   const resendSeconds = Math.max(0, Math.ceil((Math.max(resendUntil, retryUntil) - now) / 1000))
 
   function submit(event: FormEvent) {
     event.preventDefault()
+    if (phase !== 'otp' && !normalizedPhone) {
+      setFields((previous) => ({ ...previous, whatsapp_number: invalidPhoneMessage }))
+      return
+    }
     if (!valid || operation.current || Date.now() < retryUntil) return
     if (phase === 'otp') {
       if (!challenge || Date.parse(challenge.challenge_expires_at) <= Date.now()) return
@@ -367,7 +441,11 @@ export function LiveAuthentication({
           setNotice('If a staff sign-in is pending, a new code has been sent. Check WhatsApp.')
         },
       )
-    } else if (phase === 'reset' && normalizedPhone) {
+    } else if (phase === 'reset') {
+      if (!normalizedPhone) {
+        setFields((previous) => ({ ...previous, whatsapp_number: invalidPhoneMessage }))
+        return
+      }
       void run<{ message: string }>(
         '/auth/forgot-password',
         { whatsapp_number: normalizedPhone },
@@ -387,9 +465,16 @@ export function LiveAuthentication({
   }
 
   function fieldError(name: string) {
-    return Object.hasOwn(fields, name) ? (
-      <span className="live-auth-field-error" role="status">Please check this field.</span>
-    ) : null
+    const message = fields[name] ??
+      (name === 'password' && phase !== 'login' && password && !validNewPassword(password)
+        ? passwordPolicyMessage
+        : '')
+    return message ? <span className="live-auth-field-error" role="alert">{message}</span> : null
+  }
+
+  function editField(name: string) {
+    setFields((previous) => Object.fromEntries(Object.entries(previous).filter(([key]) => key !== name)))
+    if (error === rejectedCredentials) setError('')
   }
 
   const title =
@@ -430,7 +515,7 @@ export function LiveAuthentication({
                       ? 'Enter the six-digit code from WhatsApp for this sign-in request.'
                       : phase === 'reset'
                         ? 'Enter your six-digit WhatsApp reset code and your new password together.'
-                        : 'Use your WhatsApp number with an explicit country code.'}
+                        : 'Use your local or international WhatsApp number.'}
                 </p>
               </div>
             </header>
@@ -457,6 +542,19 @@ export function LiveAuthentication({
             <form onSubmit={submit} className="auth-form" aria-busy={busy}>
               {phase !== 'otp' && (
                 <label>
+                  Country or region
+                  <select value={region} disabled={busy} onChange={(event) => {
+                    editField('whatsapp_number')
+                    setRegion(event.target.value as CountryCode)
+                  }}>
+                    {countries.map(({ code, name, dial }) => (
+                      <option key={code} value={code}>{name} (+{dial})</option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              {phase !== 'otp' && (
+                <label>
                   WhatsApp number
                   <input
                     name="whatsapp_number"
@@ -464,15 +562,22 @@ export function LiveAuthentication({
                     autoComplete="tel"
                     aria-label="WhatsApp number"
                     aria-describedby="auth-phone-help"
-                    placeholder="+491234567890"
+                    placeholder="0983321260"
                     value={phone}
-                    onChange={(event) => setPhone(event.target.value)}
+                    onChange={(event) => {
+                      editField('whatsapp_number')
+                      setPhone(event.target.value)
+                    }}
+                    onBlur={() => {
+                      if (phone && !normalizedPhone)
+                        setFields((previous) => ({ ...previous, whatsapp_number: invalidPhoneMessage }))
+                    }}
                     aria-invalid={Object.hasOwn(fields, 'whatsapp_number')}
                     disabled={busy}
                     required
                   />
                   <span id="auth-phone-help" className="live-auth-help">
-                    Include + or 00 and the country code; local numbers cannot be inferred.
+                    For a local number, select your country. International numbers may start with + or 00.
                   </span>
                   {fieldError('whatsapp_number')}
                 </label>
@@ -482,9 +587,13 @@ export function LiveAuthentication({
                   Invitation code
                   <input
                     name="code"
-                    autoComplete="off"
+                    aria-label="Invitation code"
+                    autoComplete="one-time-code"
                     value={activationCode}
-                    onChange={(event) => setActivationCode(event.target.value)}
+                    onChange={(event) => {
+                      editField('code')
+                      setActivationCode(event.target.value)
+                    }}
                     minLength={8}
                     maxLength={8}
                     pattern="[A-Za-z0-9]{8}"
@@ -501,6 +610,7 @@ export function LiveAuthentication({
                   {phase === 'reset' ? 'Reset code' : 'Verification code'}
                   <input
                     name="otp"
+                    aria-label={phase === 'reset' ? 'Reset code' : 'Verification code'}
                     type="text"
                     inputMode="numeric"
                     autoComplete="one-time-code"
@@ -508,7 +618,10 @@ export function LiveAuthentication({
                     minLength={6}
                     maxLength={6}
                     value={otp}
-                    onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                    onChange={(event) => {
+                      editField('otp')
+                      setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))
+                    }}
                     aria-invalid={Object.hasOwn(fields, 'otp')}
                     disabled={busy}
                     required
@@ -522,12 +635,16 @@ export function LiveAuthentication({
                   <span className="password-field">
                     <input
                       name="password"
+                      aria-label={phase === 'login' ? 'Password' : 'New password'}
                       type={visible ? 'text' : 'password'}
                       autoComplete={phase === 'login' ? 'current-password' : 'new-password'}
                       minLength={phase === 'login' ? undefined : 8}
                       value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                      aria-invalid={Object.hasOwn(fields, 'password')}
+                      onChange={(event) => {
+                        editField('password')
+                        setPassword(event.target.value)
+                      }}
+                      aria-invalid={Object.hasOwn(fields, 'password') || (phase !== 'login' && !!password && !validNewPassword(password))}
                       disabled={busy}
                       required
                     />
@@ -549,11 +666,15 @@ export function LiveAuthentication({
                   Confirm password
                   <input
                     name="password_confirmation"
+                    aria-label="Confirm password"
                     type="password"
                     autoComplete="new-password"
                     minLength={8}
                     value={confirmation}
-                    onChange={(event) => setConfirmation(event.target.value)}
+                    onChange={(event) => {
+                      editField('password_confirmation')
+                      setConfirmation(event.target.value)
+                    }}
                     aria-invalid={Object.hasOwn(fields, 'password_confirmation')}
                     disabled={busy}
                     required
@@ -575,7 +696,7 @@ export function LiveAuthentication({
               </button>
             </form>
             {error && <p className="live-auth-feedback" role="alert">{error}</p>}
-            {retrySeconds > 0 && <p className="live-auth-feedback" role="status">Try again in {retrySeconds} seconds.</p>}
+            {retrySeconds > 0 && error && <p className="live-auth-feedback" role="status">Try again in {retrySeconds} seconds.</p>}
             {notice && (
               <p className="auth-notice" role="status">
                 {notice}
@@ -592,13 +713,12 @@ export function LiveAuthentication({
             <button
               type="button"
               disabled={
-                busy || resendSeconds > 0 || (phase === 'otp' ? !challengeValid : !normalizedPhone)
+                busy || resendSeconds > 0 || (phase === 'otp' && !challengeValid)
               }
               onClick={resend}
             >
-              Resend
+              {resendSeconds > 0 ? `Resend (${resendSeconds}s)` : 'Resend'}
             </button>
-            {resendSeconds > 0 && <span> Available in {resendSeconds} seconds.</span>}
           </p>
         )}
         <p className="auth-switch">
@@ -624,8 +744,8 @@ export function LiveAuthentication({
         </p>
         <p className="auth-legal">
           This portal is for invited therapists. Google sign-in and public therapist registration
-          are not available. Sign-in credentials are kept in memory only; reloading requires
-          sign-in.
+          are not available. The access token stays in memory. This tab stores a refresh token so
+          you can stay signed in after reloading.
         </p>
       </div>
     </main>

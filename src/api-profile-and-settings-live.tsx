@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'rea
 import { ApiClient, ApiError, apiErrorMessage, apiId, type ApiUser } from './api'
 import { useApiResource, useApiUser } from './api-hooks'
 import { Workspace } from './Workspace'
+import { passwordPolicyMessage, validNewPassword } from './auth-policy'
 import { Modal } from './ui'
 import { FaqSummary, RemainingIcon, SettingRow, type RemainingIconName } from './RemainingUI'
 
@@ -1048,6 +1049,7 @@ function ChangePassword({
 }) {
   const mutation = useMutation(api)
   const [validation, setValidation] = useState('')
+  const [reused, setReused] = useState(false)
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const form = event.currentTarget
@@ -1057,22 +1059,28 @@ function ChangePassword({
       password: String(data.get('password') ?? ''),
       password_confirmation: String(data.get('password_confirmation') ?? ''),
     }
-    if (
-      body.password !== body.password_confirmation ||
-      body.password === body.current_password ||
-      body.password.length < 8
-    ) {
-      setValidation(
-        'Use a different password of at least eight characters and matching confirmation.',
-      )
+    if (!validNewPassword(body.password)) {
+      setValidation(passwordPolicyMessage)
+      return
+    }
+    if (body.password === body.current_password) {
+      setValidation('The new password must be different from your current password.')
+      return
+    }
+    if (body.password !== body.password_confirmation) {
+      setValidation('The new password and confirmation must match.')
       return
     }
     setValidation('')
+    setReused(false)
     void mutation.run(
       (signal) => api.request('/auth/user/password', 'PUT', { body, signal }),
       () => {
         form.reset()
         saved()
+      },
+      (error) => {
+        if (error instanceof ApiError && error.code === 'password_reused') setReused(true)
       },
     )
   }
@@ -1091,19 +1099,25 @@ function ChangePassword({
             <input
               type="password"
               name={name}
+              aria-label={label}
               required
-              minLength={name === 'current_password' ? 1 : 8}
               autoComplete={name === 'current_password' ? 'current-password' : 'new-password'}
+              onChange={() => {
+                setValidation('')
+                if (name === 'password') setReused(false)
+              }}
             />
+            {name === 'password' && (validation || reused) && (
+              <span className="remaining-error" role="alert">
+                {validation || 'The new password must be different from your current password.'}
+              </span>
+            )}
           </Field>
         ))}
       </fieldset>
-      {validation && (
-        <p className="remaining-error" role="alert">
-          {validation}
-        </p>
+      {!(mutation.error instanceof ApiError && mutation.error.code === 'password_reused') && (
+        <Failure error={mutation.error} />
       )}
-      <Failure error={mutation.error} />
       <Actions pending={mutation.pending} close={close} />
     </form>
   )

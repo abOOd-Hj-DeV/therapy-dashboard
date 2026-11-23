@@ -7,7 +7,8 @@ import { SessionDetails } from './SessionDetails'
 import { Profile } from './Profile'
 import { Wallet } from './Wallet'
 import { api } from './api'
-import { useApiUser } from './api-hooks'
+import { useApiResource, useApiUser } from './api-hooks'
+import { TherapistOnboarding } from './TherapistOnboarding'
 import { Clients } from './Clients'
 import { ClientProfile } from './ClientProfile'
 import { DemoClients } from './DemoClients'
@@ -20,14 +21,30 @@ export function App() {
   const user = useApiUser(api)
   const demo = import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === 'true'
   const client = demo ? undefined : api
+  const [restoring, setRestoring] = useState(() => !!client?.hasStoredSession() && !user)
+  const approval = useApiResource(client, user ? '/therapists/me/dashboard' : null)
   const [location, setLocation] = useState(window.location.pathname + window.location.search)
-  const path = location.split('?')[0]
+  const requestedPath = location.split('?')[0]
+  const path =
+    client && user && ['/', '/login', '/activate', '/signup'].includes(requestedPath)
+      ? '/dashboard'
+      : requestedPath
   const [verificationEmail, setVerificationEmail] = useState('henryford@Sakina.com')
   useEffect(() => {
     const onPopState = () => setLocation(window.location.pathname + window.location.search)
     window.addEventListener('popstate', onPopState)
     return () => window.removeEventListener('popstate', onPopState)
   }, [])
+  useEffect(() => {
+    if (!restoring || !client) return
+    let active = true
+    void client.restore().finally(() => {
+      if (active) setRestoring(false)
+    })
+    return () => {
+      active = false
+    }
+  }, [client, restoring])
   function navigate(next: string) {
     window.history.pushState({}, '', next)
     setLocation(window.location.pathname + window.location.search)
@@ -42,6 +59,22 @@ export function App() {
     '/forgot-password',
     '/reset-password',
   ].includes(path)
+  if (restoring) return <main role="status">Restoring your session…</main>
+  if (client && user && protectedPage) {
+    if (approval.loading) return <main role="status">Checking your therapist account…</main>
+    if (approval.error?.code === 'therapist_pending_approval') {
+      const status = approval.error.meta.approval_status
+      return (
+        <TherapistOnboarding
+          api={client}
+          path={path}
+          status={status === 'rejected' || status === 'suspended' ? status : 'pending'}
+          navigate={navigate}
+          checkApproval={approval.reload}
+        />
+      )
+    }
+  }
   if (!demo && protectedPage && !user)
     return (
       <Auth
