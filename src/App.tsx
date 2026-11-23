@@ -6,8 +6,9 @@ import { Sessions } from './Sessions'
 import { SessionDetails } from './SessionDetails'
 import { Profile } from './Profile'
 import { Wallet } from './Wallet'
-import { api } from './api'
-import { useApiUser } from './api-hooks'
+import { api, type ApiError } from './api'
+import { useApiResource, useApiUser } from './api-hooks'
+import { TherapistOnboarding } from './TherapistOnboarding'
 import { Clients } from './Clients'
 import { ClientProfile } from './ClientProfile'
 import { DemoClients } from './DemoClients'
@@ -20,14 +21,42 @@ export function App() {
   const user = useApiUser(api)
   const demo = import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === 'true'
   const client = demo ? undefined : api
+  const [restoring, setRestoring] = useState(() => !!client?.hasStoredSession() && !user)
+  const approval = useApiResource(client, user ? '/therapists/me/dashboard' : null)
+  const [recheckingFrom, setRecheckingFrom] = useState<{
+    sessionKey: number
+    response: ApiError
+  } | null>(null)
   const [location, setLocation] = useState(window.location.pathname + window.location.search)
-  const path = location.split('?')[0]
+  const requestedPath = location.split('?')[0]
+  const approvedOnboardingPath =
+    !!approval.data && ['/profile/approval', '/profile/documents'].includes(requestedPath)
+  const path =
+    approvedOnboardingPath ||
+    (client && user && ['/', '/login', '/activate', '/signup'].includes(requestedPath))
+      ? '/dashboard'
+      : requestedPath
   const [verificationEmail, setVerificationEmail] = useState('henryford@Sakina.com')
   useEffect(() => {
     const onPopState = () => setLocation(window.location.pathname + window.location.search)
     window.addEventListener('popstate', onPopState)
     return () => window.removeEventListener('popstate', onPopState)
   }, [])
+  useEffect(() => {
+    if (!restoring || !client) return
+    let active = true
+    void client.restore().finally(() => {
+      if (active) setRestoring(false)
+    })
+    return () => {
+      active = false
+    }
+  }, [client, restoring])
+  useEffect(() => {
+    if (!approvedOnboardingPath) return
+    window.history.replaceState({}, '', '/dashboard')
+    setLocation('/dashboard')
+  }, [approvedOnboardingPath])
   function navigate(next: string) {
     window.history.pushState({}, '', next)
     setLocation(window.location.pathname + window.location.search)
@@ -42,6 +71,35 @@ export function App() {
     '/forgot-password',
     '/reset-password',
   ].includes(path)
+  if (restoring) return <main role="status">Restoring your session…</main>
+  if (client && user && protectedPage) {
+    const sessionKey = client.getSessionKey()
+    const approvalResponse =
+      approval.error?.code === 'therapist_pending_approval'
+        ? approval.error
+        : !approval.data && recheckingFrom?.sessionKey === sessionKey
+          ? recheckingFrom.response
+          : null
+    if (approvalResponse) {
+      return (
+        <TherapistOnboarding
+          api={client}
+          path={path}
+          approvalResponse={approvalResponse}
+          navigate={navigate}
+          checkingApproval={approval.loading}
+          approvalCheckFailed={
+            !!approval.error && approval.error.code !== 'therapist_pending_approval'
+          }
+          checkApproval={() => {
+            setRecheckingFrom({ sessionKey, response: approvalResponse })
+            approval.reload()
+          }}
+        />
+      )
+    }
+    if (approval.loading) return <main role="status">Checking your therapist account…</main>
+  }
   if (!demo && protectedPage && !user)
     return (
       <Auth

@@ -30,6 +30,12 @@ export class ApiError extends Error {
     public readonly status: number,
     public readonly fields: Record<string, string[]> = {},
     public readonly retryAfter = 0,
+    public readonly code?: string,
+    public readonly meta: {
+      approval_status?: string
+      attempts_left?: number
+      retry_after?: number
+    } = {},
   ) {
     super(
       status === 401
@@ -109,8 +115,14 @@ function validSession(value: ApiSession): boolean {
     Date.parse(value.refresh_expires_at) > Date.now() &&
     !!value.user &&
     typeof value.user.id === 'string' &&
+    /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(value.user.id) &&
+    typeof value.user.name === 'string' &&
+    (value.user.email === null || typeof value.user.email === 'string') &&
+    typeof value.user.whatsapp_number === 'string' &&
+    typeof value.user.timezone === 'string' &&
     value.user.role === 'therapist' &&
     value.user.is_active === true &&
+    typeof value.user.phone_verified_at === 'string' &&
     !!value.user.phone_verified_at
   )
 }
@@ -121,6 +133,7 @@ export class ApiClient {
   private generation = 0
   private requests = new Set<AbortController>()
   private refreshing: Promise<void> | null = null
+  private restoring: Promise<void> | null = null
   private closing = false
   readonly base: string
 
@@ -139,6 +152,53 @@ export class ApiClient {
   }
   private emit() {
     this.listeners.forEach((listener) => listener())
+  }
+
+  private get storageKey() {
+    return `sakina:therapist:refresh:${this.base}`
+  }
+
+  private storedToken(): string | null {
+    try {
+      return window.sessionStorage.getItem(this.storageKey)
+    } catch {
+      return null
+    }
+  }
+
+  private storeToken(token?: string) {
+    try {
+      if (token) window.sessionStorage.setItem(this.storageKey, token)
+      else window.sessionStorage.removeItem(this.storageKey)
+    } catch {
+      // Storage can be disabled; in-memory sign-in is still available.
+    }
+  }
+
+  hasStoredSession = (): boolean => !!this.storedToken()
+
+  restore = (): Promise<void> => {
+    if (this.restoring) return this.restoring
+    const refreshToken = this.storedToken()
+    if (this.session || this.closing || !refreshToken) return Promise.resolve()
+    const generation = this.generation
+    const pending = (async () => {
+      try {
+        if (!/^[A-Za-z0-9]{64}$/.test(refreshToken)) throw new ApiError(401)
+        const tokens = await this.rotate(refreshToken)
+        if (generation !== this.generation) return
+        if (typeof tokens?.access_token !== 'string' || !tokens.access_token)
+          throw new ApiError(401)
+        const { user } = await this.raw<{ user: ApiUser }>('/auth/user', 'GET', {}, tokens.access_token)
+        if (generation === this.generation) await this.establish({ ...tokens, user })
+      } catch {
+        if (generation === this.generation) this.clear()
+      }
+    })()
+    this.restoring = pending
+    return pending.finally(() => {
+      if (this.restoring === pending) this.restoring = null
+    })
   }
 
   establish = async (session: ApiSession): Promise<void> => {
@@ -170,6 +230,7 @@ export class ApiClient {
       expires_at: session.expires_at,
       refresh_expires_at: session.refresh_expires_at,
     }
+    this.storeToken(this.session.refresh_token)
     this.emit()
   }
 
@@ -177,6 +238,8 @@ export class ApiClient {
     this.generation++
     this.session = null
     this.refreshing = null
+    this.restoring = null
+    this.storeToken()
     this.requests.forEach((controller) => controller.abort())
     this.requests.clear()
     this.emit()
@@ -189,6 +252,7 @@ export class ApiClient {
     const originalToken = this.session?.access_token
     try {
       // Finish a rotation before selecting its replacement token; never clear a newer login.
+      this.storeToken()
       await this.refreshing?.catch(() => undefined)
       const token = generation === this.generation ? this.session?.access_token : originalToken
       if (generation === this.generation) this.clear()
@@ -197,6 +261,13 @@ export class ApiClient {
     } finally {
       this.closing = false
     }
+  }
+
+  private rotate(refreshToken: string) {
+    return this.raw<Omit<ApiSession, 'user'>>('/auth/refresh', 'POST', {
+      public: true,
+      body: { refresh_token: refreshToken },
+    })
   }
 
   private async refresh(): Promise<void> {
@@ -209,10 +280,7 @@ export class ApiClient {
     }
     this.refreshing = (async () => {
       try {
-        const tokens = await this.raw<Omit<ApiSession, 'user'>>('/auth/refresh', 'POST', {
-          public: true,
-          body: { refresh_token: session.refresh_token },
-        })
+        const tokens = await this.rotate(session.refresh_token)
         if (generation !== this.generation) throw new DOMException('Session changed', 'AbortError')
         const next = {
           user: session.user,
@@ -224,6 +292,7 @@ export class ApiClient {
         }
         if (!validSession(next)) throw new ApiError(401)
         this.session = next
+        if (!this.closing) this.storeToken(next.refresh_token)
         this.emit()
       } catch (error) {
         if (generation === this.generation) this.clear()
@@ -289,7 +358,7 @@ export class ApiClient {
     options.signal?.addEventListener('abort', onAbort, { once: true })
     if (options.signal?.aborted) controller.abort()
     this.requests.add(controller)
-    const timeout = setTimeout(() => controller.abort(), 25000)
+    const timeout = setTimeout(() => controller.abort(), 60000)
     const assertCurrent = () => {
       if (controller.signal.aborted || (generation !== this.generation && !options.public))
         throw new DOMException('Request cancelled', 'AbortError')
@@ -318,14 +387,22 @@ export class ApiClient {
       })
       assertCurrent()
       if (!response.ok) {
-        if (response.status === 401 && token && !options.public) this.clear()
         // Never render server exception text or field-error contents, which can contain secrets.
-        let keys: string[] = []
-        if (response.status === 422) {
-          const value = await response.json().catch(() => null)
-          assertCurrent()
-          if (value?.errors && typeof value.errors === 'object') keys = Object.keys(value.errors)
-        }
+        const value = await response.json().catch(() => null)
+        assertCurrent()
+        if (response.status === 401 && token && !options.public) this.clear()
+        const keys =
+          value?.errors && typeof value.errors === 'object' ? Object.keys(value.errors) : []
+        const code =
+          typeof value?.code === 'string'
+            ? value.code
+            : response.status === 403 &&
+                value?.message === 'Your therapist profile has not been approved yet.'
+              ? 'therapist_pending_approval'
+              : undefined
+        const seconds = value?.meta?.retry_after
+        const attempts = value?.meta?.attempts_left
+        const approval = value?.meta?.approval_status
         const retry = response.headers.get('Retry-After')
         const delay = retry
           ? /^\d+$/.test(retry)
@@ -335,7 +412,15 @@ export class ApiClient {
         throw new ApiError(
           response.status,
           Object.fromEntries(keys.map((key) => [key, ['Please check this field.']])),
-          Number.isFinite(delay) ? delay : 0,
+          Number.isInteger(seconds) && seconds > 0 ? seconds : Number.isFinite(delay) ? delay : 0,
+          code,
+          {
+            ...(Number.isInteger(attempts) && attempts >= 0 && { attempts_left: attempts }),
+            ...(Number.isInteger(seconds) && seconds > 0 && { retry_after: seconds }),
+            ...(['pending', 'approved', 'rejected', 'suspended'].includes(approval) && {
+              approval_status: approval,
+            }),
+          },
         )
       }
       if (options.binary) {

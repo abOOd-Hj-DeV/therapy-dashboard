@@ -253,8 +253,8 @@ describe('live Profile API integration', () => {
     await loaded()
     fireEvent.click(screen.getByRole('button', { name: 'Change Password' }))
     change('Current Password', 'old-test-password')
-    change('New Password', 'new-test-password')
-    change('Confirm New Password', 'new-test-password')
+    change('New Password', 'new-test-password1')
+    change('Confirm New Password', 'new-test-password1')
     fireEvent.click(modal().getByRole('button', { name: 'Save Changes' }))
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Current password: Please check this field.',
@@ -264,8 +264,8 @@ describe('live Profile API integration', () => {
       method: 'PUT',
       body: {
         current_password: 'old-test-password',
-        password: 'new-test-password',
-        password_confirmation: 'new-test-password',
+        password: 'new-test-password1',
+        password_confirmation: 'new-test-password1',
       },
     })
     expect(screen.queryByText('incorrect secret supplied')).not.toBeInTheDocument()
@@ -273,6 +273,27 @@ describe('live Profile API integration', () => {
     await screen.findByText(/Password changed. Other devices have been signed out/)
     expect(api.getUser()?.id).toBe(userId)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('enforces the shared password policy and clears a reuse error when the new password changes', async () => {
+    const { api, calls } = await client((call) =>
+      call.path === '/auth/user/password' ? json({ code: 'password_reused' }, 422) : undefined,
+    )
+    render(<Profile page="settings" api={api} navigate={vi.fn()} />)
+    await loaded()
+    fireEvent.click(screen.getByRole('button', { name: 'Change Password' }))
+    change('Current Password', 'old-test-password')
+    change('New Password', 'onlyletters')
+    change('Confirm New Password', 'onlyletters')
+    fireEvent.click(modal().getByRole('button', { name: 'Save Changes' }))
+    expect(modal().getByRole('alert')).toHaveTextContent('Password must be at least 8 characters and include a letter and a number.')
+    expect(calls.every((call) => call.method === 'GET')).toBe(true)
+    change('New Password', 'new-test-password1')
+    change('Confirm New Password', 'new-test-password1')
+    fireEvent.click(modal().getByRole('button', { name: 'Save Changes' }))
+    expect(await modal().findByRole('alert')).toHaveTextContent('The new password must be different from your current password.')
+    change('New Password', 'new-test-password2')
+    expect(modal().queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it.each([200, 503])(

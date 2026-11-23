@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiClient, ApiError, type ApiSession } from '../src/api'
 
@@ -34,9 +35,13 @@ function deferred<T>() {
   })
   return { promise, resolve }
 }
-afterEach(() => vi.useRealTimers())
+afterEach(() => {
+  window.sessionStorage.clear()
+  vi.restoreAllMocks()
+  vi.useRealTimers()
+})
 
-describe('memory-only API transport security', () => {
+describe('API transport security', () => {
   it.each([
     'http://api.example.test/api/v1',
     'https://user:password@example.test/api/v1',
@@ -84,7 +89,7 @@ describe('memory-only API transport security', () => {
       referrerPolicy: 'no-referrer',
     })
   })
-  it('keeps tokens out of browser storage and sends bearer/idempotency headers only to the configured API', async () => {
+  it('keeps the access token out of browser storage and sends bearer/idempotency headers only to the configured API', async () => {
     const persisted = vi.spyOn(Storage.prototype, 'setItem')
     const transport = vi.fn<typeof fetch>().mockResolvedValue(json({ ok: true }))
     const api = new ApiClient(base, transport)
@@ -94,13 +99,73 @@ describe('memory-only API transport security', () => {
       { amount: 25 },
       { idempotencyKey: 'stable-test-key' },
     )
-    expect(persisted).not.toHaveBeenCalled()
+    expect(persisted).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('refresh:'), session().refresh_token)
+    expect(window.localStorage).toHaveLength(0)
     const [url, init] = transport.mock.calls[0]
     expect(url).toBe(base + '/therapists/wallet/withdraw')
     expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer synthetic-access')
     expect(new Headers(init?.headers).get('Idempotency-Key')).toBe('stable-test-key')
     api.clear()
     expect(api.getUser()).toBeNull()
+    expect(window.sessionStorage).toHaveLength(0)
+  })
+
+  it('restores a reload once, gets the therapist identity using the new access token, and persists only the rotation', async () => {
+    const original = new ApiClient(base, vi.fn<typeof fetch>())
+    const { user, ...tokens } = session()
+    await original.establish({ user, ...tokens })
+    const transport = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(json({ ...tokens, refresh_token: 's'.repeat(64), access_token: 'replacement' }))
+      .mockResolvedValueOnce(json({ user: { ...user, patient: { private: true } } }))
+      .mockResolvedValueOnce(json({}))
+    const reloaded = new ApiClient(base, transport)
+    expect(reloaded.getUser()).toBeNull()
+    await Promise.all([reloaded.restore(), reloaded.restore()])
+    expect(transport).toHaveBeenCalledTimes(2)
+    expect(transport.mock.calls[0][0]).toBe(base + '/auth/refresh')
+    expect(JSON.parse(String(transport.mock.calls[0][1]?.body))).toEqual({ refresh_token: tokens.refresh_token })
+    expect(new Headers(transport.mock.calls[0][1]?.headers).get('Authorization')).toBeNull()
+    expect(transport.mock.calls[1][0]).toBe(base + '/auth/user')
+    expect(new Headers(transport.mock.calls[1][1]?.headers).get('Authorization')).toBe('Bearer replacement')
+    expect(reloaded.getUser()).toEqual(user)
+    expect(window.sessionStorage).toHaveLength(1)
+    expect(window.sessionStorage.getItem(window.sessionStorage.key(0)!)).toBe('s'.repeat(64))
+    await reloaded.logout()
+    expect(window.sessionStorage).toHaveLength(0)
+  })
+
+  it('does not retry or keep a refresh token after restoring fails', async () => {
+    const original = new ApiClient(base, vi.fn<typeof fetch>())
+    await original.establish(session())
+    const transport = vi.fn<typeof fetch>().mockResolvedValue(json({}, 422))
+    const reloaded = new ApiClient(base, transport)
+    await reloaded.restore()
+    await reloaded.restore()
+    expect(transport).toHaveBeenCalledTimes(1)
+    expect(reloaded.getUser()).toBeNull()
+    expect(window.sessionStorage).toHaveLength(0)
+  })
+
+  it('allows Render cold starts and times out after 60 seconds', async () => {
+    vi.useFakeTimers()
+    const transport = vi.fn<typeof fetch>().mockImplementation((_url, init) =>
+      new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+      }),
+    )
+    const api = new ApiClient(base, transport)
+    const request = api.request('/auth/login', 'POST', { public: true })
+    const failure = expect(request).rejects.toMatchObject({ status: 0 })
+    await vi.advanceTimersByTimeAsync(59999)
+    expect(transport.mock.calls[0][1]?.signal?.aborted).toBe(false)
+    await vi.advanceTimersByTimeAsync(1)
+    await failure
+  })
+
+  it('configures the production Netlify API proxy before the SPA catch-all', () => {
+    const config = readFileSync('netlify.toml', 'utf8')
+    expect(config).toMatch(/from\s*=\s*"\/api\/\*"\s+to\s*=\s*"https:\/\/sakina-api-po5b\.onrender\.com\/api\/:splat"\s+status\s*=\s*200/)
+    expect(config.indexOf('"/api/*"')).toBeLessThan(config.indexOf('"/*"'))
   })
   it('leaves multipart boundaries to fetch and reads authenticated binary data', async () => {
     const transport = vi
