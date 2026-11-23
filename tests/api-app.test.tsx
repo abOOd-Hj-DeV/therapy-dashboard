@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from '../src/App'
 import { api } from '../src/api'
@@ -108,6 +108,37 @@ describe('live routing boundaries', () => {
       expect(await screen.findByRole('heading', { name: 'Upcoming Sessions' })).toBeInTheDocument()
       expect(window.location.pathname).toBe('/dashboard')
       expect(screen.queryByLabelText('WhatsApp number')).not.toBeInTheDocument()
+    },
+  )
+
+  it.each(['pending', 'unavailable'])(
+    'keeps a selected license attached while rechecking and after a %s result',
+    async (result) => {
+      await api.establish({ ...tokens, user: identity })
+      window.history.replaceState({}, '', '/profile/approval')
+      const pending = () => json({
+        code: 'therapist_pending_approval',
+        meta: { approval_status: 'pending' },
+      }, 403)
+      let finishCheck!: (response: Response) => void
+      vi.stubGlobal('fetch', vi.fn<typeof globalThis.fetch>()
+        .mockResolvedValueOnce(pending())
+        .mockImplementationOnce(() => new Promise((resolve) => { finishCheck = resolve })))
+      render(<App />)
+      const license = await screen.findByLabelText<HTMLInputElement>('License')
+      const file = new File(['synthetic license'], 'license.pdf', { type: 'application/pdf' })
+      fireEvent.change(license, { target: { files: [file] } })
+      const check = screen.getByRole('button', { name: 'Check approval status' })
+      fireEvent.click(check)
+      expect(check).toBeDisabled()
+      expect(screen.getByLabelText('License')).toBe(license)
+      expect(license.files?.[0]).toBe(file)
+      await act(async () => finishCheck(result === 'pending' ? pending() : json({}, 503)))
+      expect(check).toBeEnabled()
+      expect(screen.getByLabelText('License')).toBe(license)
+      expect(license.files?.[0]).toBe(file)
+      if (result === 'unavailable')
+        expect(screen.getByRole('alert')).toHaveTextContent('Could not check approval status.')
     },
   )
 

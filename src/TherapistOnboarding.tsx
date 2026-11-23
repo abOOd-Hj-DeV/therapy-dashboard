@@ -2,7 +2,7 @@ import { useState, type FormEvent, type MouseEvent } from 'react'
 import { ApiClient, apiErrorMessage, apiId } from './api'
 import { useApiResource } from './api-hooks'
 
-type Status = 'pending' | 'rejected' | 'suspended'
+export type ApprovalStatus = 'pending' | 'rejected' | 'suspended'
 type Document = {
   id: string
   doc_type: string
@@ -37,12 +37,16 @@ export function TherapistOnboarding({
   path,
   status,
   navigate,
+  checkingApproval,
+  approvalCheckFailed,
   checkApproval,
 }: {
   api: ApiClient
   path: string
-  status: Status
+  status: ApprovalStatus
   navigate: (path: string) => void
+  checkingApproval: boolean
+  approvalCheckFailed: boolean
   checkApproval: () => void
 }) {
   const [submitted, setSubmitted] = useState(false)
@@ -212,8 +216,14 @@ export function TherapistOnboarding({
       )}
       {notice.error && <p role="alert">{notice.error}</p>}
       {notice.success && <p role="status">{notice.success}</p>}
+      {approvalCheckFailed && <p role="alert">Could not check approval status. Try again.</p>}
       <div className="approval-actions">
-        <button type="button" className="soft-button" disabled={busy} onClick={checkApproval}>
+        <button
+          type="button"
+          className="soft-button"
+          disabled={busy || checkingApproval}
+          onClick={checkApproval}
+        >
           Check approval status
         </button>
         <button type="button" className="soft-button" onClick={logout}>

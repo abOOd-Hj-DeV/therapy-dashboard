@@ -8,7 +8,7 @@ import { Profile } from './Profile'
 import { Wallet } from './Wallet'
 import { api } from './api'
 import { useApiResource, useApiUser } from './api-hooks'
-import { TherapistOnboarding } from './TherapistOnboarding'
+import { TherapistOnboarding, type ApprovalStatus } from './TherapistOnboarding'
 import { Clients } from './Clients'
 import { ClientProfile } from './ClientProfile'
 import { DemoClients } from './DemoClients'
@@ -23,6 +23,10 @@ export function App() {
   const client = demo ? undefined : api
   const [restoring, setRestoring] = useState(() => !!client?.hasStoredSession() && !user)
   const approval = useApiResource(client, user ? '/therapists/me/dashboard' : null)
+  const [recheckingFrom, setRecheckingFrom] = useState<{
+    sessionKey: number
+    status: ApprovalStatus
+  } | null>(null)
   const [location, setLocation] = useState(window.location.pathname + window.location.search)
   const requestedPath = location.split('?')[0]
   const approvedOnboardingPath =
@@ -69,19 +73,35 @@ export function App() {
   ].includes(path)
   if (restoring) return <main role="status">Restoring your session…</main>
   if (client && user && protectedPage) {
-    if (approval.loading) return <main role="status">Checking your therapist account…</main>
-    if (approval.error?.code === 'therapist_pending_approval') {
-      const status = approval.error.meta.approval_status
+    const sessionKey = client.getSessionKey()
+    const approvalStatus = approval.error?.meta.approval_status
+    const status =
+      approval.error?.code === 'therapist_pending_approval'
+        ? approvalStatus === 'rejected' || approvalStatus === 'suspended'
+          ? approvalStatus
+          : 'pending'
+        : !approval.data && recheckingFrom?.sessionKey === sessionKey
+          ? recheckingFrom.status
+          : null
+    if (status) {
       return (
         <TherapistOnboarding
           api={client}
           path={path}
-          status={status === 'rejected' || status === 'suspended' ? status : 'pending'}
+          status={status}
           navigate={navigate}
-          checkApproval={approval.reload}
+          checkingApproval={approval.loading}
+          approvalCheckFailed={
+            !!approval.error && approval.error.code !== 'therapist_pending_approval'
+          }
+          checkApproval={() => {
+            setRecheckingFrom({ sessionKey, status })
+            approval.reload()
+          }}
         />
       )
     }
+    if (approval.loading) return <main role="status">Checking your therapist account…</main>
   }
   if (!demo && protectedPage && !user)
     return (
