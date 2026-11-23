@@ -6,9 +6,9 @@ import { Sessions } from './Sessions'
 import { SessionDetails } from './SessionDetails'
 import { Profile } from './Profile'
 import { Wallet } from './Wallet'
-import { api } from './api'
+import { api, type ApiError } from './api'
 import { useApiResource, useApiUser } from './api-hooks'
-import { TherapistOnboarding, type ApprovalStatus } from './TherapistOnboarding'
+import { TherapistOnboarding } from './TherapistOnboarding'
 import { Clients } from './Clients'
 import { ClientProfile } from './ClientProfile'
 import { DemoClients } from './DemoClients'
@@ -25,7 +25,7 @@ export function App() {
   const approval = useApiResource(client, user ? '/therapists/me/dashboard' : null)
   const [recheckingFrom, setRecheckingFrom] = useState<{
     sessionKey: number
-    status: ApprovalStatus
+    response: ApiError
   } | null>(null)
   const [location, setLocation] = useState(window.location.pathname + window.location.search)
   const requestedPath = location.split('?')[0]
@@ -74,28 +74,25 @@ export function App() {
   if (restoring) return <main role="status">Restoring your session…</main>
   if (client && user && protectedPage) {
     const sessionKey = client.getSessionKey()
-    const approvalStatus = approval.error?.meta.approval_status
-    const status =
+    const approvalResponse =
       approval.error?.code === 'therapist_pending_approval'
-        ? approvalStatus === 'rejected' || approvalStatus === 'suspended'
-          ? approvalStatus
-          : 'pending'
+        ? approval.error
         : !approval.data && recheckingFrom?.sessionKey === sessionKey
-          ? recheckingFrom.status
+          ? recheckingFrom.response
           : null
-    if (status) {
+    if (approvalResponse) {
       return (
         <TherapistOnboarding
           api={client}
           path={path}
-          status={status}
+          approvalResponse={approvalResponse}
           navigate={navigate}
           checkingApproval={approval.loading}
           approvalCheckFailed={
             !!approval.error && approval.error.code !== 'therapist_pending_approval'
           }
           checkApproval={() => {
-            setRecheckingFrom({ sessionKey, status })
+            setRecheckingFrom({ sessionKey, response: approvalResponse })
             approval.reload()
           }}
         />

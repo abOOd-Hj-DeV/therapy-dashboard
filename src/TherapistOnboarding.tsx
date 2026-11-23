@@ -1,8 +1,7 @@
 import { useState, type FormEvent, type MouseEvent } from 'react'
-import { ApiClient, apiErrorMessage, apiId } from './api'
+import { ApiClient, apiErrorMessage, apiId, type ApiError } from './api'
 import { useApiResource } from './api-hooks'
 
-export type ApprovalStatus = 'pending' | 'rejected' | 'suspended'
 type Document = {
   id: string
   doc_type: string
@@ -35,7 +34,7 @@ const copy = {
 export function TherapistOnboarding({
   api,
   path,
-  status,
+  approvalResponse,
   navigate,
   checkingApproval,
   approvalCheckFailed,
@@ -43,20 +42,26 @@ export function TherapistOnboarding({
 }: {
   api: ApiClient
   path: string
-  status: ApprovalStatus
+  approvalResponse: ApiError
   navigate: (path: string) => void
   checkingApproval: boolean
   approvalCheckFailed: boolean
   checkApproval: () => void
 }) {
-  const [submitted, setSubmitted] = useState(false)
+  const [submittedAfter, setSubmittedAfter] = useState<ApiError | null>(null)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<{ error?: string; success?: string }>({})
   const documents = useApiResource<{ data: Document[] }>(
     api,
     path === '/profile/documents' ? '/therapists/me/documents' : null,
   )
-  const current = submitted && status === 'rejected' ? 'pending' : status
+  const status = approvalResponse.meta.approval_status
+  const current =
+    status === 'rejected' && submittedAfter !== approvalResponse
+      ? 'rejected'
+      : status === 'suspended'
+        ? 'suspended'
+        : 'pending'
 
   function link(event: MouseEvent<HTMLAnchorElement>, next: string) {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
@@ -83,7 +88,7 @@ export function TherapistOnboarding({
         if (license instanceof File && !license.size) data.delete('license')
         await api.mutate('/therapists/me/approval', data)
         form.reset()
-        setSubmitted(true)
+        setSubmittedAfter(approvalResponse)
         setNotice({ success: 'Profile submitted for approval.' })
       } else {
         const specialty = String(data.get('specialty')).trim()

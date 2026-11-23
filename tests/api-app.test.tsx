@@ -111,6 +111,35 @@ describe('live routing boundaries', () => {
     },
   )
 
+  it.each([
+    ['rejected', 'Your account was not approved'],
+    ['suspended', 'Your account is suspended'],
+  ])('shows the server’s %s decision after the therapist resubmits', async (status, heading) => {
+    await api.establish({ ...tokens, user: identity })
+    window.history.replaceState({}, '', '/profile/approval')
+    const approvalError = (approvalStatus: string) =>
+      json({
+        code: 'therapist_pending_approval',
+        meta: { approval_status: approvalStatus },
+      }, 403)
+    const fetch = vi.fn<typeof globalThis.fetch>()
+      .mockResolvedValueOnce(approvalError('rejected'))
+      .mockResolvedValueOnce(json({ data: { approval_status: 'pending' } }, 202))
+      .mockResolvedValueOnce(approvalError(status))
+    vi.stubGlobal('fetch', fetch)
+    render(<App />)
+
+    expect(await screen.findByRole('heading', { name: 'Your account was not approved' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Submit profile for review' }))
+    expect(await screen.findByText('Profile submitted for approval.')).toBeInTheDocument()
+    expect(screen.getByText('Status: pending')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Check approval status' }))
+    expect(await screen.findByRole('heading', { name: heading })).toBeInTheDocument()
+    expect(screen.getByText(`Status: ${status}`)).toBeInTheDocument()
+    expect(fetch).toHaveBeenCalledTimes(3)
+  })
+
   it.each(['pending', 'unavailable'])(
     'keeps a selected license attached while rechecking and after a %s result',
     async (result) => {
