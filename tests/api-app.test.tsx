@@ -84,6 +84,33 @@ describe('live routing boundaries', () => {
     expect(await screen.findByRole('heading', { name: 'Your account is awaiting admin approval' })).toBeInTheDocument()
   })
 
+  it.each(['/profile/approval', '/profile/documents'])(
+    'redirects an approved therapist from %s to their dashboard after rechecking',
+    async (path) => {
+      await api.establish({ ...tokens, user: identity })
+      window.history.replaceState({}, '', path)
+      let approved = false
+      const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) =>
+        String(input).endsWith('/therapists/me/dashboard')
+          ? approved
+            ? json({
+                therapist: { id: identity.id, full_name: identity.name, rating: 0, approval_status: 'approved' },
+                stats: { pending: 0, confirmed: 0, completed: 0, today: 0 },
+              })
+            : json({ code: 'therapist_pending_approval', meta: { approval_status: 'pending' } }, 403)
+          : json({ data: [], pagination: { last_page: 1 } }),
+      )
+      vi.stubGlobal('fetch', fetch)
+      render(<App />)
+      expect(await screen.findByRole('heading', { name: 'Your account is awaiting admin approval' })).toBeInTheDocument()
+      approved = true
+      fireEvent.click(screen.getByRole('button', { name: 'Check approval status' }))
+      expect(await screen.findByRole('heading', { name: 'Upcoming Sessions' })).toBeInTheDocument()
+      expect(window.location.pathname).toBe('/dashboard')
+      expect(screen.queryByLabelText('WhatsApp number')).not.toBeInTheDocument()
+    },
+  )
+
   it.each(['/dashboard', '/sessions', '/chats', '/clients', '/profile/settings', '/wallet'])(
     'requires a real session for a direct %s link',
     (path) => {

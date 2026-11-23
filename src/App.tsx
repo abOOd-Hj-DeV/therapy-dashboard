@@ -25,8 +25,11 @@ export function App() {
   const approval = useApiResource(client, user ? '/therapists/me/dashboard' : null)
   const [location, setLocation] = useState(window.location.pathname + window.location.search)
   const requestedPath = location.split('?')[0]
+  const approvedOnboardingPath =
+    !!approval.data && ['/profile/approval', '/profile/documents'].includes(requestedPath)
   const path =
-    client && user && ['/', '/login', '/activate', '/signup'].includes(requestedPath)
+    approvedOnboardingPath ||
+    (client && user && ['/', '/login', '/activate', '/signup'].includes(requestedPath))
       ? '/dashboard'
       : requestedPath
   const [verificationEmail, setVerificationEmail] = useState('henryford@Sakina.com')
@@ -45,6 +48,11 @@ export function App() {
       active = false
     }
   }, [client, restoring])
+  useEffect(() => {
+    if (!approvedOnboardingPath) return
+    window.history.replaceState({}, '', '/dashboard')
+    setLocation('/dashboard')
+  }, [approvedOnboardingPath])
   function navigate(next: string) {
     window.history.pushState({}, '', next)
     setLocation(window.location.pathname + window.location.search)
