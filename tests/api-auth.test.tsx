@@ -92,9 +92,31 @@ function expectPublicRequest(
 }
 
 beforeEach(() => window.history.replaceState({}, '', '/login'))
-afterEach(() => vi.useRealTimers())
+afterEach(() => {
+  vi.useRealTimers()
+  vi.unstubAllGlobals()
+})
 
 describe('live authentication public API integration', () => {
+  it('calls the default fetch transport without an illegal receiver', async () => {
+    vi.stubGlobal(
+      'fetch',
+      function (this: unknown) {
+        if (this !== undefined && this !== globalThis) throw new TypeError('Illegal invocation')
+        return Promise.resolve(
+          new Response(JSON.stringify({ ok: true }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        )
+      },
+    )
+    const api = new ApiClient('https://api.example.test/api/v1')
+    await expect(api.request('/auth/privacy-policy', 'GET', { public: true })).resolves.toEqual({
+      ok: true,
+    })
+  })
+
   it('preserves the original no-api demo login behavior in its isolated component', () => {
     vi.useFakeTimers()
     const navigate = vi.fn()

@@ -126,7 +126,7 @@ export class ApiClient {
 
   constructor(
     base = import.meta.env.VITE_API_BASE_URL || '/api/v1',
-    private readonly transport = fetch,
+    private readonly transport: typeof fetch = (input, init) => fetch(input, init),
   ) {
     this.base = baseUrl(base)
   }
