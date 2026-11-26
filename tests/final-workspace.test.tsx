@@ -22,7 +22,7 @@ describe('final Help phone shell', () => {
     expect(screen.getByPlaceholderText('Search...')).toBeDisabled()
     expect(screen.getByPlaceholderText('Search...')).toHaveAccessibleName('Search unavailable')
     const navigation = screen.getByRole('navigation', { name: 'Mobile navigation' })
-    expect(within(navigation).getAllByRole('button')).toHaveLength(7)
+    expect(within(navigation).getAllByRole('button')).toHaveLength(8)
     expect(within(navigation).getByRole('button', { name: 'Profile' })).toHaveAttribute('aria-current', 'page')
     await userEvent.click(within(navigation).getByRole('button', { name: 'Wallet' }))
     expect(navigate).toHaveBeenCalledExactlyOnceWith('/wallet')

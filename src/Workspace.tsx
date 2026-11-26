@@ -17,6 +17,7 @@ type WorkspaceProps = {
     | 'Profile'
     | 'Wallet'
     | 'Additional Content'
+    | 'RedFlags'
   navigate: (path: string) => void
   children: ReactNode
   offline?: boolean
@@ -32,6 +33,7 @@ const navigationIcons = [
   'part2-03-imgMessageCircleLinesAlt.svg',
   'part2-03-imgStars.svg',
   'part2-03-imgWallet.svg',
+  'part2-03-imgStars.svg',
 ]
 const mobileIcons = [
   'part2-06-imgHome.svg',
@@ -40,6 +42,7 @@ const mobileIcons = [
   'part2-06-imgFrame2147234899.svg',
   'part2-06-imgStars.svg',
   'part2-06-imgWalletAlt.svg',
+  'part2-06-imgStars.svg',
   'r4-chats-user-alt.svg',
 ]
 
@@ -130,7 +133,9 @@ export function Workspace({
   function openPage(label: string) {
     setExpanded(false)
     const route =
-      label === 'Dashboard'
+      label === 'حالات الخطر'
+        ? '/red-flags'
+        : label === 'Dashboard'
         ? '/dashboard'
         : label === 'Messages'
           ? '/chats'
@@ -154,7 +159,7 @@ export function Workspace({
       )
   }
 
-  const activeLabel = active === 'Clients' ? 'Patients' : active
+  const activeLabel = active === 'Clients' ? 'Patients' : active === 'RedFlags' ? 'حالات الخطر' : active
 
   return (
     <div

@@ -142,6 +142,8 @@ function DemoDashboard({ navigate }: DashboardProps) {
                           ? navigate('/wallet')
                           : item.label === 'Additional Content'
                             ? navigate('/homework')
+                            : item.label === 'حالات الخطر'
+                              ? navigate('/red-flags')
                             : unavailable(item.label)
                 }
               >

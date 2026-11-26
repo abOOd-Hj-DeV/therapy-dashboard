@@ -90,6 +90,7 @@ export const menu = [
   { label: 'Messages', icon: 'dashboard-imgMessageCircleLinesAlt.svg', badge: 5 },
   { label: 'Additional Content', icon: 'dashboard-imgStars.svg' },
   { label: 'Wallet', icon: 'dashboard-imgWallet.svg' },
+  { label: 'حالات الخطر', icon: 'dashboard-imgStars.svg' },
 ]
 
 export const notifications = [
