@@ -16,6 +16,7 @@ import { DemoClientProfile } from './DemoClientProfile'
 import { HomeworkLibrary } from './HomeworkLibrary'
 import { HomeworkWizard } from './HomeworkWizard'
 import { CarePlanInsertion } from './CarePlanInsertion'
+import { RedFlags } from './RedFlags'
 
 export function App() {
   const user = useApiUser(api)
@@ -129,6 +130,7 @@ export function App() {
   if (path === '/homework') return <HomeworkLibrary navigate={navigate} api={client} />
   if (path === '/homework/create') return <HomeworkWizard navigate={navigate} api={client} />
   if (path === '/homework/insert') return <CarePlanInsertion navigate={navigate} api={client} />
+  if (path === '/red-flags') return <RedFlags navigate={navigate} api={client} />
   if (demo && path === '/clients') return <DemoClients navigate={navigate} />
   if (demo && path === '/clients/profile') return <DemoClientProfile navigate={navigate} />
   if (path === '/clients' && client) return <Clients api={client} navigate={navigate} />
