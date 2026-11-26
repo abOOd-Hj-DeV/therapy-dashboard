@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ApiClient, apiId } from './api'
 import { useApiResource } from './api-hooks'
 import { Workspace } from './Workspace'
@@ -26,6 +26,30 @@ type RedFlag = {
 type RedFlagResponse = {
   data: RedFlag[]
   pagination: { current_page: number; last_page: number; per_page: number; total: number }
+}
+
+async function loadRemainingPages(
+  api: ApiClient,
+  firstPage: RedFlagResponse,
+  signal: AbortSignal,
+): Promise<RedFlag[]> {
+  const flags = [...firstPage.data]
+  let currentPage = firstPage.pagination.current_page
+  let lastPage = firstPage.pagination.last_page
+  let requestedPages = 1
+
+  while (currentPage < lastPage && requestedPages < 20) {
+    const page = await api.get<RedFlagResponse>(
+      `/therapists/red-flags?page=${currentPage + 1}`,
+      signal,
+    )
+    flags.push(...page.data)
+    currentPage = page.pagination.current_page
+    lastPage = page.pagination.last_page
+    requestedPages++
+  }
+
+  return flags
 }
 
 const dateFormatter = new Intl.DateTimeFormat('ar-SY-u-nu-latn', {
@@ -84,7 +108,44 @@ export function RedFlags({
 }) {
   const demo = import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === 'true' && !api
   const resource = useApiResource<RedFlagResponse>(api, demo ? null : '/therapists/red-flags')
-  const flags = demo ? demoFlags : resource.data?.data ?? []
+  const [allFlags, setAllFlags] = useState<RedFlag[] | null>(null)
+  const [paginationLoading, setPaginationLoading] = useState(false)
+  const [paginationError, setPaginationError] = useState(false)
+  useEffect(() => {
+    const firstPage = resource.data
+    if (!api || demo || !firstPage) {
+      setAllFlags(null)
+      setPaginationLoading(false)
+      setPaginationError(false)
+      return
+    }
+    const controller = new AbortController()
+    let active = true
+    setAllFlags(null)
+    setPaginationError(false)
+    setPaginationLoading(false)
+    if (firstPage.pagination.current_page >= firstPage.pagination.last_page) {
+      return () => controller.abort()
+    }
+    setPaginationLoading(true)
+    void loadRemainingPages(api, firstPage, controller.signal)
+      .then((flags) => {
+        if (active) setAllFlags(flags)
+      })
+      .catch(() => {
+        if (active && !controller.signal.aborted) setPaginationError(true)
+      })
+      .finally(() => {
+        if (active) setPaginationLoading(false)
+      })
+    return () => {
+      active = false
+      controller.abort()
+    }
+  }, [api, demo, resource.data])
+  const flags = demo ? demoFlags : allFlags ?? resource.data?.data ?? []
+  const loading = resource.loading || paginationLoading
+  const error = resource.error || paginationError
   const [decisions, setDecisions] = useState<Record<string, Decision>>({})
   const [notes, setNotes] = useState<Record<string, string>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -116,15 +177,15 @@ export function RedFlags({
     <Workspace title="حالات الخطر" active="RedFlags" navigate={navigate} api={api}>
       <section className="red-flags-page" aria-label="حالات الخطر">
         {demo && <p className="red-flags-demo-notice">عرض تجريبي — لا تُرسل الإجراءات إلى الخادم.</p>}
-        {!demo && resource.loading && <p role="status">جارٍ تحميل حالات الخطر...</p>}
-        {!demo && resource.error && (
+        {!demo && loading && <p role="status">جارٍ تحميل حالات الخطر...</p>}
+        {!demo && error && (
           <p className="red-flags-error" role="alert">
             تعذر تحميل حالات الخطر.
             <button type="button" onClick={resource.reload}>إعادة المحاولة</button>
           </p>
         )}
         {success && <p className="red-flags-success" role="status">{success}</p>}
-        {!demo && resource.data?.data.length === 0 && (
+        {!demo && !loading && !error && flags.length === 0 && (
           <p className="red-flags-empty">لا توجد حالات خطر مفتوحة لمرضاك.</p>
         )}
         {flags.map((flag) => {
