@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from '../src/App'
@@ -133,6 +133,36 @@ describe('live routing boundaries', () => {
     review = profileReview({ lifecycle_state: 'approved' })
     fireEvent(window, new Event('focus'))
     expect(await screen.findByRole('heading', { name: 'All Sessions' })).toBeInTheDocument()
+  })
+
+  it('releases the native profile dialog during an approval retry without losing edits', async () => {
+    await api.establish({ ...tokens, user: identity })
+    window.history.replaceState({}, '', '/profile')
+    let approvalAvailable = true
+    vi.stubGlobal('fetch', vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) => {
+      if (isProfile(input)) return json({ data: approvalAvailable ? profileReview() : {} })
+      if (String(input).endsWith('/auth/user')) return json({ user: identity })
+      return json({}, 404)
+    }))
+    const { container } = render(<App />)
+    const edit = await screen.findByRole('button', { name: 'تعديل الملف الشخصي' })
+    await waitFor(() => expect(edit).toBeEnabled())
+    fireEvent.click(edit)
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog).toHaveAttribute('open')
+    const draft = 'نبذة غير محفوظة'
+    change('النبذة التعريفية', draft)
+
+    approvalAvailable = false
+    fireEvent(window, new Event('focus'))
+    const retry = await screen.findByRole('button', { name: 'إعادة المحاولة' })
+    expect(retry).toBeVisible()
+    expect(container.querySelector('dialog[open]')).toBeNull()
+
+    approvalAvailable = true
+    fireEvent.click(retry)
+    expect(await screen.findByRole('dialog')).toHaveAttribute('open')
+    expect(screen.getByLabelText('النبذة التعريفية')).toHaveValue(draft)
   })
 
   it.each(['/dashboard', '/sessions', '/clients', '/red-flags'])(

@@ -156,6 +156,7 @@ export function App() {
         <div hidden={!!client && !approved} inert={!!client && !approved}>
           <Profile
             key="profile"
+            suspended={!!client && !approved}
             page={path.endsWith('/settings') ? 'settings' : path.endsWith('/help') ? 'help' : 'profile'}
             navigate={navigate}
             api={client}

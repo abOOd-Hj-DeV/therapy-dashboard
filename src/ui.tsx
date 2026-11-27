@@ -39,6 +39,7 @@ export function Modal({
   lang,
   dir,
   closeLabel = 'Close dialog',
+  suspended = false,
 }: {
   title: string
   children: ReactNode
@@ -48,10 +49,12 @@ export function Modal({
   lang?: string
   dir?: 'rtl' | 'ltr'
   closeLabel?: string
+  suspended?: boolean
 }) {
   const ref = useRef<HTMLDialogElement>(null)
   const pointerOrigin = useRef<{ startedInside: boolean; endedInside: boolean } | null>(null)
   useEffect(() => {
+    if (suspended) return
     const dialog = ref.current!
     const previousFocus = document.activeElement as HTMLElement | null
     let cancelled = false
@@ -84,7 +87,7 @@ export function Modal({
       dialog.close()
       previousFocus?.focus()
     }
-  }, [])
+  }, [suspended])
   return (
     <dialog
       ref={ref}
@@ -92,7 +95,10 @@ export function Modal({
       lang={lang}
       dir={dir}
       aria-labelledby="modal-title"
-      onCancel={onClose}
+      onCancel={(event) => {
+        if (suspended) event.preventDefault()
+        else onClose()
+      }}
       onPointerDownCapture={(event) => {
         pointerOrigin.current = { startedInside: isInsideDialog(event), endedInside: false }
       }}

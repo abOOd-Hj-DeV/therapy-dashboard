@@ -77,13 +77,15 @@ export function Profile({
   page,
   navigate,
   api,
+  suspended,
 }: {
   page: Page
   navigate: (path: string) => void
   api?: ApiClient
+  suspended?: boolean
 }) {
   return api ? (
-    <LiveProfile page={page} navigate={navigate} api={api} />
+    <LiveProfile page={page} navigate={navigate} api={api} suspended={suspended} />
   ) : (
     <DemoProfile page={page} navigate={navigate} />
   )

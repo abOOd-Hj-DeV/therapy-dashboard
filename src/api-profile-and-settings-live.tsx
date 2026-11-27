@@ -13,7 +13,7 @@ import { TherapistProfileForm } from './TherapistProfileForm'
 import { hasKnownTherapistLifecycle, profileReviewError, therapistLifecycle, therapistProfilePath, therapistSubmissionPath, type TherapistProfileResponse } from './therapist-profile-review'
 
 type Page = 'profile' | 'settings' | 'help'
-type Props = { page: Page; navigate: (path: string) => void; api?: ApiClient }
+type Props = { page: Page; navigate: (path: string) => void; api?: ApiClient; suspended?: boolean }
 type Therapist = {
   availability: Partial<Record<Day, string[]>> | [] | null
 }
@@ -119,6 +119,7 @@ function ProfileActor({
   user,
   page,
   navigate,
+  suspended,
 }: Omit<Props, 'api'> & { api: ApiClient; user: ApiUser }) {
   const identity = useApiResource<{ user: ApiUser }>(api, '/auth/user')
   const validIdentity =
@@ -411,6 +412,7 @@ function ProfileActor({
       {dialog && (
         <Modal
           title={titles[dialog]}
+          suspended={suspended}
           className={`remaining-modal ${dialog}-modal`}
           closeIcon={<RemainingIcon name="close" />}
           lang={reviewDialog ? 'ar' : undefined}
