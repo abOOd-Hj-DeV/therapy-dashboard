@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ApiClient, apiId } from './api'
+import { ApiClient, ApiError, apiId } from './api'
 import { useApiResource } from './api-hooks'
 import { trackCareMutation } from './api-resource-refresh'
 import { formatTimestamp } from './display-date'
@@ -7,6 +7,12 @@ import { Workspace } from './Workspace'
 import './red-flags.css'
 
 type Decision = 'reactivate' | 'keep_hold' | 'close'
+
+const decisionLabels: Record<Decision, string> = {
+  reactivate: 'إعادة تفعيل الحساب',
+  keep_hold: 'إبقاء الحساب معلّقًا',
+  close: 'إغلاق الحالة',
+}
 
 type RedFlag = {
   id: string
@@ -21,6 +27,7 @@ type RedFlag = {
   therapist_name?: string | null
   assessment_score?: number | null
   on_hold: boolean
+  allowed_decisions?: Decision[]
   hold_since?: string | null
   reactivation_requested_at?: string | null
   action_taken?: string | null
@@ -89,6 +96,7 @@ const demoFlags: RedFlag[] = [
     therapist_name: 'د. عيسى الحداد',
     assessment_score: 27,
     on_hold: true,
+    allowed_decisions: ['reactivate', 'keep_hold'],
     hold_since: '2025-03-14T08:30:00+03:00',
     reactivation_requested_at: '2025-03-14T09:15:00+03:00',
     action_taken: 'تم إرسال طلب إعادة التفعيل. بانتظار مراجعة الفريق.',
@@ -165,9 +173,16 @@ export function RedFlags({
   const [submitting, setSubmitting] = useState<Record<string, boolean>>({})
   const [success, setSuccess] = useState('')
 
+  function selectedDecisionFor(flag: RedFlag) {
+    const allowed = flag.allowed_decisions ?? []
+    const selected = decisions[flag.id]
+    return allowed.includes(selected) ? selected : allowed[0]
+  }
+
   async function submitDecision(flag: RedFlag) {
     const note = (notes[flag.id] ?? '').trim()
-    if (demo || !api || note.length < 3 || submitting[flag.id]) return
+    const decision = selectedDecisionFor(flag)
+    if (demo || !api || !decision || note.length < 3 || submitting[flag.id]) return
 
     setSubmitting((current) => ({ ...current, [flag.id]: true }))
     setErrors((current) => ({ ...current, [flag.id]: '' }))
@@ -175,13 +190,15 @@ export function RedFlags({
     trackCareMutation(api, 1)
     try {
       await api.mutate(`/therapists/red-flags/${apiId(flag.id)}/decision`, {
-        decision: flag.on_hold ? (decisions[flag.id] ?? 'reactivate') : 'close',
+        decision,
         note,
       })
       setSuccess('تم حفظ القرار وتحديث الحالات.')
       resource.reload()
-    } catch {
-      setErrors((current) => ({ ...current, [flag.id]: 'تعذر حفظ القرار. حاول مرة أخرى.' }))
+    } catch (cause) {
+      const conflict = cause instanceof ApiError && cause.status === 409
+      setErrors((current) => ({ ...current, [flag.id]: conflict ? 'تغيّرت حالة البلاغ. تحقّق من الخيارات المحدّثة.' : 'تعذر حفظ القرار. حاول مرة أخرى.' }))
+      if (conflict) resource.reload()
     } finally {
       trackCareMutation(api, -1)
       setSubmitting((current) => ({ ...current, [flag.id]: false }))
@@ -206,7 +223,8 @@ export function RedFlags({
         {flags.map((flag) => {
           const digits = phoneDigits(flag.patient_whatsapp)
           const note = notes[flag.id] ?? ''
-          const selectedDecision = decisions[flag.id] ?? 'reactivate'
+          const allowedDecisions = flag.allowed_decisions ?? []
+          const selectedDecision = selectedDecisionFor(flag)
           const isSubmitting = submitting[flag.id] ?? false
 
           return (
@@ -249,36 +267,28 @@ export function RedFlags({
                   </a>
                 ))}
 
-                <form className="red-flag-decision" onSubmit={(event) => {
+                {selectedDecision && <form className="red-flag-decision" onSubmit={(event) => {
                   event.preventDefault()
                   void submitDecision(flag)
                 }}>
-                  {flag.on_hold ? (
+                  {allowedDecisions.length > 1 ? (
                     <fieldset disabled={demo || isSubmitting}>
                       <legend>قرار الحالة</legend>
-                      <label>
-                        <input
-                          type="radio"
-                          name={`decision-${flag.id}`}
-                          value="reactivate"
-                          checked={selectedDecision === 'reactivate'}
-                          onChange={() => setDecisions((current) => ({ ...current, [flag.id]: 'reactivate' }))}
-                        />
-                        إعادة تفعيل الحساب
-                      </label>
-                      <label>
-                        <input
-                          type="radio"
-                          name={`decision-${flag.id}`}
-                          value="keep_hold"
-                          checked={selectedDecision === 'keep_hold'}
-                          onChange={() => setDecisions((current) => ({ ...current, [flag.id]: 'keep_hold' }))}
-                        />
-                        إبقاء الحساب معلّقًا
-                      </label>
+                      {allowedDecisions.map(option => (
+                        <label key={option}>
+                          <input
+                            type="radio"
+                            name={`decision-${flag.id}`}
+                            value={option}
+                            checked={selectedDecision === option}
+                            onChange={() => setDecisions((current) => ({ ...current, [flag.id]: option }))}
+                          />
+                          {decisionLabels[option]}
+                        </label>
+                      ))}
                     </fieldset>
                   ) : (
-                    <p className="red-flag-close-label">إغلاق الحالة</p>
+                    <p className="red-flag-close-label">{decisionLabels[selectedDecision]}</p>
                   )}
                   <label className="red-flag-note-label">
                     ملاحظة القرار
@@ -290,7 +300,6 @@ export function RedFlags({
                     />
                   </label>
                   <p className="red-flag-note-help">سجّل ما تم في التواصل مع المريض. تُحفظ الملاحظة في السجل.</p>
-                  {errors[flag.id] && <p className="red-flags-error" role="alert">{errors[flag.id]}</p>}
                   <button
                     className="red-flag-submit"
                     type="submit"
@@ -298,7 +307,8 @@ export function RedFlags({
                   >
                     {isSubmitting ? 'جارٍ الحفظ...' : 'حفظ القرار'}
                   </button>
-                </form>
+                </form>}
+                {errors[flag.id] && <p className="red-flags-error" role="alert">{errors[flag.id]}</p>}
               </div>
             </article>
           )

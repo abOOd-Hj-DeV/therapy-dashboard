@@ -67,6 +67,31 @@ describe('therapist red flags', () => {
     expect(screen.queryByText('أفكار لإيذاء النفس')).not.toBeInTheDocument()
   })
 
+  it('uses row capabilities when the same held patient has a safety and a non-safety flag', async () => {
+    vi.stubEnv('VITE_DEMO_MODE', 'false')
+    const user = { id: 'therapist-id' }
+    const flag = {
+      id: 'safety', patient_name: 'مريض اختباري', type: 'safety',
+      description: 'حالة للمراجعة', priority: 'high', status: 'open',
+      created_at: '2026-04-18T07:00:00Z', on_hold: true,
+      allowed_decisions: ['reactivate', 'keep_hold'],
+    }
+    const api = {
+      getUser: () => user,
+      getSessionKey: () => 1,
+      subscribe: () => () => undefined,
+      get: vi.fn().mockResolvedValue({
+        data: [flag, { ...flag, id: 'other', type: 'low_mood', allowed_decisions: [] }],
+        pagination: { current_page: 1, last_page: 1, per_page: 2, total: 2 },
+      }),
+    } as unknown as ApiClient
+
+    render(<RedFlags api={api} navigate={vi.fn()} />)
+    expect(await screen.findAllByText('الحساب معلّق')).toHaveLength(2)
+    expect(screen.getAllByRole('button', { name: 'حفظ القرار' })).toHaveLength(1)
+    expect(screen.getAllByRole('radio', { name: 'إعادة تفعيل الحساب' })).toHaveLength(1)
+  })
+
   it('links the dashboard local navigation to the page', () => {
     const navigate = vi.fn()
     render(<Dashboard navigate={navigate} />)
