@@ -46,6 +46,81 @@ async function flush() {
 afterEach(() => vi.useRealTimers())
 
 describe('background resource refresh', () => {
+  it('marks foreground useCareResource reloads stale while background refresh stays quiet', async () => {
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'visible',
+    })
+    const background = deferred<{ value: string }>()
+    const foreground = deferred<{ value: string }>()
+    const get = vi
+      .fn<(path: string, signal?: AbortSignal) => Promise<unknown>>()
+      .mockResolvedValueOnce({ value: 'initial' })
+      .mockReturnValueOnce(background.promise)
+      .mockReturnValueOnce(foreground.promise)
+    const api = makeApi(get)
+    const { result } = renderHook(() =>
+      useCareResource<{ value: string }>(api, '/resource', 'single', { interval: 0 }),
+    )
+
+    await flush()
+    expect(result.current.data).toEqual({ value: 'initial' })
+    expect(result.current.loading).toBe(false)
+
+    act(() => window.dispatchEvent(new Event('focus')))
+    expect(result.current.data).toEqual({ value: 'initial' })
+    expect(result.current.loading).toBe(false)
+    await act(async () => {
+      background.resolve({ value: 'background' })
+      await background.promise
+    })
+
+    act(() => result.current.reload())
+    expect(result.current.data).toEqual({ value: 'background' })
+    expect(result.current.loading).toBe(true)
+    await act(async () => {
+      foreground.resolve({ value: 'foreground' })
+      await foreground.promise
+    })
+    expect(result.current.data).toEqual({ value: 'foreground' })
+    expect(result.current.loading).toBe(false)
+  })
+
+  it('marks foreground useApiResource reloads loading while retaining data', async () => {
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'visible',
+    })
+    const background = deferred<{ value: string }>()
+    const foreground = deferred<{ value: string }>()
+    const get = vi
+      .fn<(path: string, signal?: AbortSignal) => Promise<unknown>>()
+      .mockResolvedValueOnce({ value: 'initial' })
+      .mockReturnValueOnce(background.promise)
+      .mockReturnValueOnce(foreground.promise)
+    const api = makeApi(get)
+    const { result } = renderHook(() => useApiResource<{ value: string }>(api, '/resource'))
+
+    await flush()
+    act(() => window.dispatchEvent(new Event('focus')))
+    expect(result.current.data).toEqual({ value: 'initial' })
+    expect(result.current.loading).toBe(false)
+    await act(async () => {
+      background.resolve({ value: 'background' })
+      await background.promise
+    })
+
+    act(() => result.current.reload())
+    expect(result.current.data).toEqual({ value: 'background' })
+    expect(result.current.loading).toBe(true)
+    await act(async () => {
+      foreground.resolve({ value: 'foreground' })
+      await foreground.promise
+    })
+    expect(result.current.data).toEqual({ value: 'foreground' })
+    expect(result.current.loading).toBe(false)
+  })
+
   it('refreshes useApiResource on focus and the visible polling interval without dropping data', async () => {
     vi.useFakeTimers()
     Object.defineProperty(document, 'visibilityState', {

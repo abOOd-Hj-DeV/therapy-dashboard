@@ -55,7 +55,7 @@ export function useApiResource<T>(
         path,
         data,
         error: sameScope ? current.error : null,
-        loading: background ? sameScope && current.loading : data === null,
+        loading: background ? sameScope && current.loading : true,
       }
     })
 

@@ -84,6 +84,7 @@ export function useCareResource<T>(
     const controller = new AbortController()
     activeRequest.current = controller
 
+    // Reload keeps real data/drafts mounted, but marks it stale and disables writes.
     setState((current) => {
       const currentData = current.path === path && current.actor === actor && current.shape === shape
         ? current.data
@@ -93,7 +94,7 @@ export function useCareResource<T>(
         actor,
         shape,
         data: currentData,
-        loading: background ? current.loading : currentData === null,
+        loading: background ? current.loading : true,
         error: current.path === path && current.actor === actor && current.shape === shape
           ? current.error
           : null,
