@@ -5,6 +5,7 @@ import { api } from '../src/api'
 
 beforeEach(() => {
   vi.stubEnv('VITE_DEMO_MODE', 'false')
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
   api.clear()
 })
 afterEach(() => {
@@ -33,39 +34,71 @@ describe('live routing boundaries', () => {
   }
   const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
+  const approvalError = (status: string | null, note?: string) => json({
+    code: 'therapist_pending_approval',
+    meta: { approval_status: status, approval_note: note },
+  }, 403)
+  const licenseField = 'ترخيص مزاولة المهنة'
+  const attach = (file = new File(['synthetic license'], 'license.pdf', { type: 'application/pdf' })) => {
+    fireEvent.change(screen.getByLabelText(licenseField), { target: { files: [file] } })
+    return file
+  }
 
-  it.each([
-    ['pending', '/dashboard', 'Your account is awaiting admin approval'],
-    ['rejected', '/sessions', 'Your account was not approved'],
-    ['suspended', '/clients', 'Your account is suspended'],
-  ])('gates %s on %s and links to working onboarding before calling operational routes', async (status, path, message) => {
+  it.each(['/dashboard', '/sessions', '/clients', '/red-flags'])(
+    'blocks a pending therapist who opens %s directly',
+    async (path) => {
+      await api.establish({ ...tokens, user: identity })
+      window.history.replaceState({}, '', path)
+      const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(approvalError('pending'))
+      vi.stubGlobal('fetch', fetch)
+      render(<App />)
+      const heading = await screen.findByRole('heading', { name: 'بانتظار الموافقة' })
+      expect(heading.closest('main')).toHaveAttribute('dir', 'rtl')
+      expect(screen.getByText('الحالة: بانتظار الموافقة')).toBeInTheDocument()
+      expect(screen.queryByLabelText(licenseField)).not.toBeInTheDocument()
+      expect(fetch).toHaveBeenCalledTimes(1)
+      expect(fetch.mock.calls[0][0]).toEqual(expect.stringMatching(/\/therapists\/me\/dashboard$/))
+    },
+  )
+
+  it.each([503, 403])('keeps dashboard routes closed when approval cannot be verified (%s)', async (status) => {
     await api.establish({ ...tokens, user: identity })
-    window.history.replaceState({}, '', path)
+    window.history.replaceState({}, '', '/red-flags')
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(json({}, status))
+    vi.stubGlobal('fetch', fetch)
+    render(<App />)
+    expect(await screen.findByRole('alert')).toHaveTextContent('تعذّر التحقق من حالة الموافقة')
+    expect(fetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows the not-submitted license form and links to working document and profile settings', async () => {
+    await api.establish({ ...tokens, user: identity })
+    window.history.replaceState({}, '', '/dashboard')
     vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
     const fetch = vi.fn<typeof globalThis.fetch>()
-      .mockResolvedValueOnce(json({
-        code: 'therapist_pending_approval',
-        meta: { approval_status: status },
-      }, 403))
+      .mockResolvedValueOnce(approvalError(null))
       .mockResolvedValueOnce(json({ data: [] }))
+      .mockResolvedValueOnce(json({}, 503))
       .mockResolvedValueOnce(json({ data: {} }))
     vi.stubGlobal('fetch', fetch)
     render(<App />)
-    expect(await screen.findByRole('heading', { name: message })).toBeInTheDocument()
-    expect(screen.getByText(`Status: ${status}`)).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'لم يُرسل الطلب' })).toBeInTheDocument()
+    expect(screen.getByText('الحالة: لم يُرسل الطلب')).toBeInTheDocument()
+    expect(screen.getByLabelText(licenseField)).toBeRequired()
     expect(fetch).toHaveBeenCalledTimes(1)
     expect(fetch.mock.calls[0][0]).toEqual(expect.stringMatching(/\/therapists\/me\/dashboard$/))
-    fireEvent.click(screen.getByRole('link', { name: 'Requested documents' }))
-    expect(await screen.findByText('No documents have been requested.')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('link', { name: 'المستندات المطلوبة' }))
+    expect(await screen.findByText('لا توجد مستندات مطلوبة.')).toBeInTheDocument()
     expect(fetch.mock.calls[1][0]).toEqual(expect.stringMatching(/\/therapists\/me\/documents$/))
-    fireEvent.click(screen.getByRole('link', { name: 'Profile settings' }))
-    fireEvent.change(screen.getByLabelText('Specialty'), { target: { value: 'Trauma care' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Save profile settings' }))
-    expect(await screen.findByText('Profile settings saved.')).toBeInTheDocument()
-    expect(fetch.mock.calls[2][0]).toEqual(expect.stringMatching(/\/therapists\/me\/settings$/))
-    expect(fetch.mock.calls[2][1]).toMatchObject({ method: 'PUT', body: '{"specialty":"Trauma care"}' })
-    expect(screen.getByRole('link', { name: 'Submit for approval' })).toHaveAttribute('href', '/profile/approval')
-    expect(fetch).toHaveBeenCalledTimes(3)
+    fireEvent.click(screen.getByRole('link', { name: 'إعدادات الملف الشخصي' }))
+    fireEvent.change(screen.getByLabelText('التخصص'), { target: { value: 'anxiety' } })
+    fireEvent.click(screen.getByRole('button', { name: 'حفظ إعدادات الملف الشخصي' }))
+    expect(await screen.findByText('تم حفظ إعدادات الملف الشخصي.')).toBeInTheDocument()
+    expect(fetch.mock.calls[2][0]).toEqual(expect.stringMatching(/\/meta\/therapist-options$/))
+    expect(fetch.mock.calls[3][0]).toEqual(expect.stringMatching(/\/therapists\/me\/settings$/))
+    expect(fetch.mock.calls[3][1]).toMatchObject({ method: 'PUT', body: '{"specialty":"anxiety"}' })
+    expect(screen.getByRole('link', { name: 'إرسال طلب الموافقة' })).toHaveAttribute('href', '/profile/approval')
+    expect(fetch).toHaveBeenCalledTimes(4)
   })
 
   it('restores a protected route before rendering login and handles the legacy approval response', async () => {
@@ -79,13 +112,13 @@ describe('live routing boundaries', () => {
       .mockResolvedValueOnce(json({ user: identity }))
       .mockResolvedValueOnce(json({ message: 'Your therapist profile has not been approved yet.' }, 403)))
     render(<App />)
-    expect(screen.getByText('Restoring your session…')).toBeInTheDocument()
+    expect(screen.getByText('جارٍ استعادة جلستك…')).toBeInTheDocument()
     expect(screen.queryByLabelText('WhatsApp number')).not.toBeInTheDocument()
-    expect(await screen.findByRole('heading', { name: 'Your account is awaiting admin approval' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'بانتظار الموافقة' })).toBeInTheDocument()
   })
 
   it.each(['/profile/approval', '/profile/documents'])(
-    'redirects an approved therapist from %s to their dashboard after rechecking',
+    'automatically redirects an approved therapist from %s to their dashboard on focus',
     async (path) => {
       await api.establish({ ...tokens, user: identity })
       window.history.replaceState({}, '', path)
@@ -102,74 +135,130 @@ describe('live routing boundaries', () => {
       )
       vi.stubGlobal('fetch', fetch)
       render(<App />)
-      expect(await screen.findByRole('heading', { name: 'Your account is awaiting admin approval' })).toBeInTheDocument()
+      expect(await screen.findByRole('heading', { name: 'بانتظار الموافقة' })).toBeInTheDocument()
       approved = true
-      fireEvent.click(screen.getByRole('button', { name: 'Check approval status' }))
+      fireEvent(window, new Event('focus'))
       expect(await screen.findByRole('heading', { name: 'Upcoming Sessions' })).toBeInTheDocument()
       expect(window.location.pathname).toBe('/dashboard')
       expect(screen.queryByLabelText('WhatsApp number')).not.toBeInTheDocument()
     },
   )
 
+  it('shows a new rejection reason when the background approval poll runs', async () => {
+    vi.useFakeTimers()
+    try {
+      await api.establish({ ...tokens, user: identity })
+      window.history.replaceState({}, '', '/dashboard')
+      vi.stubGlobal('fetch', vi.fn<typeof globalThis.fetch>()
+        .mockResolvedValueOnce(approvalError('pending'))
+        .mockResolvedValueOnce(approvalError('rejected', 'الترخيص منتهي الصلاحية')))
+      await act(async () => { render(<App />) })
+      expect(screen.getByRole('heading', { name: 'بانتظار الموافقة' })).toBeInTheDocument()
+
+      await act(async () => { await vi.advanceTimersByTimeAsync(30_000) })
+      expect(screen.getByText('الترخيص منتهي الصلاحية')).toBeInTheDocument()
+      expect(screen.getByLabelText(licenseField)).toBeRequired()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it.each([
-    ['rejected', 'Your account was not approved'],
-    ['suspended', 'Your account is suspended'],
-  ])('shows the server’s %s decision after the therapist resubmits', async (status, heading) => {
+    ['rejected', 'لم تتم الموافقة على طلبك', 'مرفوض'],
+    ['suspended', 'معلّق', 'معلّق'],
+  ])('shows the server’s %s decision after the therapist resubmits a license', async (status, heading, label) => {
     await api.establish({ ...tokens, user: identity })
     window.history.replaceState({}, '', '/profile/approval')
-    const approvalError = (approvalStatus: string) =>
-      json({
-        code: 'therapist_pending_approval',
-        meta: { approval_status: approvalStatus },
-      }, 403)
+    let finishCheck!: (response: Response) => void
     const fetch = vi.fn<typeof globalThis.fetch>()
-      .mockResolvedValueOnce(approvalError('rejected'))
+      .mockResolvedValueOnce(approvalError('rejected', 'يرجى رفع نسخة واضحة من الترخيص'))
       .mockResolvedValueOnce(json({ data: { approval_status: 'pending' } }, 202))
-      .mockResolvedValueOnce(approvalError(status))
+      .mockImplementationOnce(() => new Promise((resolve) => { finishCheck = resolve }))
     vi.stubGlobal('fetch', fetch)
     render(<App />)
 
-    expect(await screen.findByRole('heading', { name: 'Your account was not approved' })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Submit profile for review' }))
-    expect(await screen.findByText('Profile submitted for approval.')).toBeInTheDocument()
-    expect(screen.getByText('Status: pending')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'لم تتم الموافقة على طلبك' })).toBeInTheDocument()
+    expect(screen.getByText('يرجى رفع نسخة واضحة من الترخيص')).toBeInTheDocument()
+    const file = attach()
+    fireEvent.submit(screen.getByRole('button', { name: 'إعادة الإرسال للمراجعة' }).closest('form')!)
+    expect(await screen.findByText('تم إرسال طلبك للمراجعة.')).toBeInTheDocument()
+    expect(screen.getByText('الحالة: بانتظار الموافقة')).toBeInTheDocument()
+    expect(screen.queryByText('يرجى رفع نسخة واضحة من الترخيص')).not.toBeInTheDocument()
+    const [route, request] = fetch.mock.calls[1]
+    expect(route).toEqual(expect.stringMatching(/\/therapists\/me\/approval$/))
+    expect(request?.method).toBe('POST')
+    expect((request?.body as FormData).get('license')).toBe(file)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Check approval status' }))
+    await act(async () => finishCheck(approvalError(status, 'ملاحظة جديدة')))
     expect(await screen.findByRole('heading', { name: heading })).toBeInTheDocument()
-    expect(screen.getByText(`Status: ${status}`)).toBeInTheDocument()
+    expect(screen.getByText(`الحالة: ${label}`)).toBeInTheDocument()
+    if (status === 'rejected') expect(screen.getByText('ملاحظة جديدة')).toBeInTheDocument()
     expect(fetch).toHaveBeenCalledTimes(3)
   })
 
-  it.each(['pending', 'unavailable'])(
+  it.each(['not submitted', 'unavailable'])(
     'keeps a selected license attached while rechecking and after a %s result',
     async (result) => {
       await api.establish({ ...tokens, user: identity })
       window.history.replaceState({}, '', '/profile/approval')
-      const pending = () => json({
-        code: 'therapist_pending_approval',
-        meta: { approval_status: 'pending' },
-      }, 403)
       let finishCheck!: (response: Response) => void
       vi.stubGlobal('fetch', vi.fn<typeof globalThis.fetch>()
-        .mockResolvedValueOnce(pending())
+        .mockResolvedValueOnce(approvalError(null))
         .mockImplementationOnce(() => new Promise((resolve) => { finishCheck = resolve })))
       render(<App />)
-      const license = await screen.findByLabelText<HTMLInputElement>('License')
-      const file = new File(['synthetic license'], 'license.pdf', { type: 'application/pdf' })
-      fireEvent.change(license, { target: { files: [file] } })
-      const check = screen.getByRole('button', { name: 'Check approval status' })
+      const license = await screen.findByLabelText<HTMLInputElement>(licenseField)
+      const file = attach()
+      const check = screen.getByRole('button', { name: 'التحقق من حالة الموافقة' })
       fireEvent.click(check)
       expect(check).toBeDisabled()
-      expect(screen.getByLabelText('License')).toBe(license)
+      expect(screen.getByLabelText(licenseField)).toBe(license)
       expect(license.files?.[0]).toBe(file)
-      await act(async () => finishCheck(result === 'pending' ? pending() : json({}, 503)))
+      await act(async () => finishCheck(result === 'not submitted' ? approvalError(null) : json({}, 503)))
       expect(check).toBeEnabled()
-      expect(screen.getByLabelText('License')).toBe(license)
+      expect(screen.getByLabelText(licenseField)).toBe(license)
       expect(license.files?.[0]).toBe(file)
       if (result === 'unavailable')
-        expect(screen.getByRole('alert')).toHaveTextContent('Could not check approval status.')
+        expect(screen.getByRole('alert')).toHaveTextContent('تعذّر التحقق من حالة الموافقة.')
     },
   )
+
+  it.each([
+    ['license.txt', 'text/plain', 1, 'نوع الملف غير مدعوم'],
+    ['license.pdf', 'application/pdf', 5 * 1024 * 1024 + 1, 'حجم الملف يتجاوز الحد'],
+  ])('rejects an invalid license before uploading: %s', async (name, type, size, message) => {
+    await api.establish({ ...tokens, user: identity })
+    window.history.replaceState({}, '', '/profile/approval')
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(approvalError(null))
+    vi.stubGlobal('fetch', fetch)
+    render(<App />)
+    const submit = await screen.findByRole('button', { name: 'إرسال الطلب للمراجعة' })
+    attach(new File([new Uint8Array(size)], name, { type }))
+    fireEvent.submit(submit.closest('form')!)
+    expect(screen.getByRole('alert')).toHaveTextContent(message)
+    expect(fetch).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([
+    [413, 'حجم الملف يتجاوز الحد'],
+    [415, 'نوع الملف غير مدعوم'],
+    [429, 'تم إرسال طلبات كثيرة'],
+    [0, 'تعذّر الاتصال بالخادم'],
+  ])('explains an upload failure in Arabic (%s)', async (status, message) => {
+    await api.establish({ ...tokens, user: identity })
+    window.history.replaceState({}, '', '/profile/approval')
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(approvalError(null))
+    if (status) fetch.mockResolvedValueOnce(json({ message: 'Internal detail' }, status))
+    else fetch.mockRejectedValueOnce(new TypeError('Network unavailable'))
+    vi.stubGlobal('fetch', fetch)
+    render(<App />)
+    const submit = await screen.findByRole('button', { name: 'إرسال الطلب للمراجعة' })
+    const file = attach()
+    fireEvent.submit(submit.closest('form')!)
+    expect(await screen.findByRole('alert')).toHaveTextContent(message)
+    expect(screen.getByLabelText<HTMLInputElement>(licenseField).files?.[0]).toBe(file)
+    expect(submit).toBeEnabled()
+    expect(fetch).toHaveBeenCalledTimes(2)
+  })
 
   it.each(['/dashboard', '/sessions', '/chats', '/clients', '/profile/settings', '/wallet'])(
     'requires a real session for a direct %s link',

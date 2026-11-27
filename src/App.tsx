@@ -6,7 +6,7 @@ import { Sessions } from './Sessions'
 import { SessionDetails } from './SessionDetails'
 import { Profile } from './Profile'
 import { Wallet } from './Wallet'
-import { api, type ApiError } from './api'
+import { api, type ApiError, type TherapistApprovalStatus } from './api'
 import { useApiResource, useApiUser } from './api-hooks'
 import { TherapistOnboarding } from './TherapistOnboarding'
 import { Clients } from './Clients'
@@ -23,15 +23,20 @@ export function App() {
   const demo = import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === 'true'
   const client = demo ? undefined : api
   const [restoring, setRestoring] = useState(() => !!client?.hasStoredSession() && !user)
-  const approval = useApiResource(client, user ? '/therapists/me/dashboard' : null)
+  const approval = useApiResource<{ therapist?: { approval_status?: TherapistApprovalStatus } }>(
+    client,
+    user ? '/therapists/me/dashboard' : null,
+  )
   const [recheckingFrom, setRecheckingFrom] = useState<{
     sessionKey: number
     response: ApiError
   } | null>(null)
   const [location, setLocation] = useState(window.location.pathname + window.location.search)
   const requestedPath = location.split('?')[0]
+  const approved = !approval.error &&
+    approval.data?.therapist?.approval_status === 'approved'
   const approvedOnboardingPath =
-    !!approval.data && ['/profile/approval', '/profile/documents'].includes(requestedPath)
+    approved && ['/profile/approval', '/profile/documents'].includes(requestedPath)
   const path =
     approvedOnboardingPath ||
     (client && user && ['/', '/login', '/activate', '/signup'].includes(requestedPath))
@@ -72,18 +77,21 @@ export function App() {
     '/forgot-password',
     '/reset-password',
   ].includes(path)
-  if (restoring) return <main role="status">Restoring your session…</main>
-  if (client && user && protectedPage) {
+  if (restoring) return <main lang="ar" dir="rtl" role="status">جارٍ استعادة جلستك…</main>
+  if (client && user && protectedPage && !approved) {
     const sessionKey = client.getSessionKey()
     const approvalResponse =
       approval.error?.code === 'therapist_pending_approval'
         ? approval.error
-        : !approval.data && recheckingFrom?.sessionKey === sessionKey
+        : (!approval.error || approval.error.status === 0 || approval.error.status === 408 ||
+            approval.error.status === 429 || approval.error.status >= 500) &&
+          !approval.data && recheckingFrom?.sessionKey === sessionKey
           ? recheckingFrom.response
           : null
     if (approvalResponse) {
       return (
         <TherapistOnboarding
+          key={sessionKey}
           api={client}
           path={path}
           approvalResponse={approvalResponse}
@@ -99,7 +107,20 @@ export function App() {
         />
       )
     }
-    if (approval.loading) return <main role="status">Checking your therapist account…</main>
+    return (
+      <main className="approval-page" lang="ar" dir="rtl">
+        {approval.loading ? (
+          <p role="status">جارٍ التحقق من حالة الموافقة…</p>
+        ) : (
+          <>
+            <p role="alert">تعذّر التحقق من حالة الموافقة. حاول مرة أخرى.</p>
+            <button type="button" className="soft-button" onClick={approval.reload}>
+              إعادة المحاولة
+            </button>
+          </>
+        )}
+      </main>
+    )
   }
   if (!demo && protectedPage && !user)
     return (

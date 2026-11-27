@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { ApiClient, type ApiSession } from '../src/api'
 import { Profile } from '../src/Profile'
@@ -135,14 +136,15 @@ describe('live Profile API integration', () => {
   })
 
   it('sends only supported settings keys, permits clearing bio and uses the returned therapist', async () => {
+    const interaction = userEvent.setup()
     const { api, calls } = await client((call) =>
       call.method === 'PUT'
         ? json({
             data: {
               ...therapist,
               specialty: 'Server normalized specialty',
-              country: 'Germany',
-              languages: ['de'],
+              country: 'DE',
+              languages: ['de', 'ku'],
               bio: null,
             },
           })
@@ -154,19 +156,52 @@ describe('live Profile API integration', () => {
     expect(modal().getByLabelText('Professional name')).toBeDisabled()
     expect(modal().getByLabelText('Email')).toBeDisabled()
     expect(modal().getByLabelText('Mobile Number')).toBeDisabled()
-    change('Specialty', 'Trauma therapy')
-    change('Country', 'Germany')
-    change('Languages (comma-separated)', 'de')
+    change('التخصص', 'trauma')
+    change('البلد', 'DE')
+    const languages = modal().getByRole('listbox', { name: 'اللغات' })
+    await interaction.deselectOptions(languages, ['ar', 'en'])
+    await interaction.selectOptions(languages, ['de', 'ku'])
     change('Bio (optional)', '')
     fireEvent.click(modal().getByRole('button', { name: 'Save Changes' }))
     await screen.findByText('Profile settings updated on the server.')
     expect(calls.find((call) => call.method === 'PUT')).toMatchObject({
       path: '/therapists/me/settings',
-      body: { specialty: 'Trauma therapy', country: 'Germany', languages: ['de'], bio: null },
+      body: { specialty: 'trauma', country: 'DE', languages: ['ku', 'de'], bio: null },
     })
     expect(screen.getAllByText('Server normalized specialty').length).toBeGreaterThan(0)
     expect(screen.getByText('No bio provided.')).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('renders server option labels and preserves raw legacy values when editing the bio', async () => {
+    const legacy = { ...therapist, languages: ['ar', 'Legacy language'] }
+    const { api, calls } = await client((call) => {
+      if (call.path === '/meta/therapist-options') return json({
+        data: {
+          countries: [{ code: 'SY', name_ar: 'سورية' }],
+          languages: [{ code: 'ar', name_ar: 'اللغة العربية' }],
+          specialties: [{ code: 'general', name_ar: 'التخصص العام' }],
+        },
+      })
+      if (call.path === '/therapists/me/dashboard') return json({ ...dashboard, therapist: legacy })
+      if (call.method === 'PUT') return json({ data: { ...legacy, bio: 'New biography' } })
+    })
+    render(<Profile page="profile" api={api} navigate={vi.fn()} />)
+    await loaded()
+    expect(await screen.findByText('اللغة العربية، Legacy language')).toBeInTheDocument()
+    expect(screen.getAllByText('Counselling').length).toBeGreaterThan(0)
+    expect(screen.getByText('Jordan')).toBeInTheDocument()
+    expect(screen.getByText('حالة الموافقة: تمت الموافقة')).toHaveAttribute('dir', 'rtl')
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Profile' }))
+    expect(modal().getByRole('option', { name: 'سورية' })).toHaveValue('SY')
+    expect(modal().getByRole('option', { name: 'التخصص العام' })).toHaveValue('general')
+    expect(modal().getByLabelText('التخصص')).toHaveDisplayValue('Counselling')
+    expect(modal().getByLabelText('البلد')).toHaveDisplayValue('Jordan')
+    expect(modal().getByLabelText('اللغات')).toHaveDisplayValue(['اللغة العربية', 'Legacy language'])
+    change('Bio (optional)', 'New biography')
+    fireEvent.click(modal().getByRole('button', { name: 'Save Changes' }))
+    await screen.findByText('Profile settings updated on the server.')
+    expect(calls.find((call) => call.method === 'PUT')?.body).toEqual({ bio: 'New biography' })
   })
 
   it('preserves drafts on sanitized save errors and synchronously guards duplicate submissions', async () => {

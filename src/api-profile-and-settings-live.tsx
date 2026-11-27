@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { ApiClient, ApiError, apiErrorMessage, apiId, type ApiUser } from './api'
+import { ApiClient, ApiError, apiErrorMessage, apiId, type ApiUser, type TherapistApprovalStatus } from './api'
 import { useApiResource, useApiUser } from './api-hooks'
 import { Workspace } from './Workspace'
 import { passwordPolicyMessage, validNewPassword } from './auth-policy'
 import { Modal } from './ui'
 import { FaqSummary, RemainingIcon, SettingRow, type RemainingIconName } from './RemainingUI'
+import { approvalLabel } from './therapist-approval'
+import { optionName, useTherapistOptions, type TherapistOptions } from './therapist-options'
+import { TherapistOptionFields } from './TherapistOptionFields'
 
 type Page = 'profile' | 'settings' | 'help'
 type Props = { page: Page; navigate: (path: string) => void; api?: ApiClient }
@@ -16,7 +19,8 @@ type Therapist = {
   languages: string[] | Record<string, string> | null
   bio: string | null
   rating: number
-  approval_status: 'pending' | 'approved' | 'rejected' | null
+  approval_status: TherapistApprovalStatus
+  approval_note?: string | null
   has_license: boolean
   availability: Partial<Record<Day, string[]>> | [] | null
 }
@@ -181,6 +185,8 @@ function ProfileActor({
   )
   const [savedProfile, setSavedProfile] = useState<Therapist | null>(null)
   const therapist = savedProfile ?? dashboard.data?.therapist ?? null
+  const options = useTherapistOptions(api, !!therapist)
+  const approval = therapist && approvalLabel(therapist.approval_status)
   const timezone = dashboard.data?.timezone || identity.data?.user.timezone || user.timezone
   const [dialog, setDialog] = useState<Dialog>(() => {
     const requested = new URLSearchParams(window.location.search).get('state')
@@ -211,10 +217,8 @@ function ProfileActor({
             </span>
             <div>
               <h2>{name}</h2>
-              <p>
-                {therapist
-                  ? `Approval: ${therapist.approval_status ?? 'Not submitted'}`
-                  : 'Therapist account'}
+              <p lang="ar" dir="rtl">
+                {approval ? `حالة الموافقة: ${approval}` : 'حساب المعالج'}
               </p>
             </div>
           </div>
@@ -227,7 +231,7 @@ function ProfileActor({
           </button>
           <div className="profile-description">
             <h3>Description</h3>
-            <p>{therapist?.specialty || 'Professional profile unavailable.'}</p>
+            <p>{therapist?.specialty ? optionName(options.specialties, therapist.specialty) : 'Professional profile unavailable.'}</p>
           </div>
           {dashboard.data && (
             <div className="profile-counts">
@@ -296,14 +300,14 @@ function ProfileActor({
                 <section>
                   <h3>Professional Information</h3>
                   <div className="profile-info-rows">
-                    <Info icon="briefcase" label="Specialty" value={therapist?.specialty} />
-                    <Info icon="location" label="Country" value={therapist?.country} />
+                    <Info icon="briefcase" label="Specialty" value={therapist && optionName(options.specialties, therapist.specialty)} />
+                    <Info icon="location" label="Country" value={therapist && optionName(options.countries, therapist.country)} />
                     <Info
                       icon="user"
                       label="Languages"
                       value={
                         therapist?.languages
-                          ? Object.values(therapist.languages).join(', ')
+                          ? Object.values(therapist.languages).map((code) => optionName(options.languages, code)).join('، ')
                           : undefined
                       }
                     />
@@ -320,9 +324,13 @@ function ProfileActor({
                     />
                     <Info
                       icon="user"
-                      label="Approval status"
-                      value={therapist?.approval_status ?? undefined}
+                      label="حالة الموافقة"
+                      value={approval}
+                      arabic
                     />
+                    {therapist?.approval_status === 'rejected' && therapist.approval_note && (
+                      <Info icon="user" label="سبب الرفض" value={therapist.approval_note} arabic />
+                    )}
                   </div>
                 </section>
                 <section>
@@ -437,6 +445,7 @@ function ProfileActor({
                 api={api}
                 user={identity.data?.user || user}
                 therapist={therapist}
+                options={options}
                 close={close}
                 saved={(value) => saved(value, 'Profile settings updated on the server.')}
               />
@@ -537,17 +546,19 @@ function Info({
   icon,
   label,
   value,
+  arabic = false,
 }: {
   icon: RemainingIconName
   label: string
   value?: string | null
+  arabic?: boolean
 }) {
   return (
-    <div className="profile-info-row">
+    <div className="profile-info-row" dir={arabic ? 'rtl' : undefined} lang={arabic ? 'ar' : undefined}>
       <RemainingIcon name={icon} />
       <div>
         <small>{label}</small>
-        <p>{value || 'Not provided'}</p>
+        <p dir={arabic ? 'auto' : undefined}>{value || (arabic ? 'غير متوفرة' : 'Not provided')}</p>
       </div>
     </div>
   )
@@ -578,45 +589,42 @@ function EditSettings({
   api,
   user,
   therapist,
+  options,
   close,
   saved,
 }: {
   api: ApiClient
   user: ApiUser
   therapist: Therapist
+  options: TherapistOptions
   close: () => void
   saved: (therapist: Therapist) => void
 }) {
-  const [draft, setDraft] = useState({
-    specialty: therapist.specialty,
-    country: therapist.country,
-    languages: Object.values(therapist.languages ?? []).join(', '),
-    bio: therapist.bio ?? '',
-  })
   const [validation, setValidation] = useState('')
   const mutation = useMutation(api)
-  function submit(event: FormEvent) {
+  const currentLanguages = [...new Set(Object.values(therapist.languages ?? []))]
+  function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const languages = draft.languages
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean)
+    const form = new FormData(event.currentTarget)
+    const specialty = String(form.get('specialty'))
+    const country = String(form.get('country'))
+    const languages = form.getAll('languages').map(String)
+    const languagesChanged = languages.length !== currentLanguages.length ||
+      languages.some((code) => !currentLanguages.includes(code))
     if (
-      !draft.specialty.trim() ||
-      !draft.country.trim() ||
-      languages.some((item) => item.length > 10)
+      (specialty !== therapist.specialty && !specialty) ||
+      (country !== therapist.country && !country) ||
+      (languagesChanged && languages.some((code) => !options.languages.some((option) => option.code === code)))
     ) {
-      setValidation(
-        'Enter specialty and country; each comma-separated language must be at most 10 characters.',
-      )
+      setValidation('اختر التخصص والبلد من القائمة، وأزل أي لغة قديمة غير مدعومة عند تحديث اللغات.')
       return
     }
     setValidation('')
     const body = {
-      specialty: draft.specialty.trim(),
-      country: draft.country.trim(),
-      languages,
-      bio: draft.bio.trim() || null,
+      ...(specialty !== therapist.specialty && { specialty }),
+      ...(country !== therapist.country && { country }),
+      ...(languagesChanged && { languages }),
+      bio: String(form.get('bio')).trim() || null,
     }
     void mutation.run(
       (signal) =>
@@ -642,38 +650,22 @@ function EditSettings({
         </Field>
       </div>
       <fieldset disabled={mutation.pending}>
-        <Field label="Specialty">
-          <input
-            required
-            maxLength={255}
-            value={draft.specialty}
-            onChange={(event) => setDraft({ ...draft, specialty: event.target.value })}
-          />
-        </Field>
-        <Field label="Country">
-          <input
-            required
-            maxLength={100}
-            value={draft.country}
-            onChange={(event) => setDraft({ ...draft, country: event.target.value })}
-          />
-        </Field>
-        <Field label="Languages (comma-separated)">
-          <input
-            value={draft.languages}
-            onChange={(event) => setDraft({ ...draft, languages: event.target.value })}
-          />
-        </Field>
+        <TherapistOptionFields
+          options={options}
+          specialty={therapist.specialty}
+          country={therapist.country}
+          languages={currentLanguages}
+        />
         <Field label="Bio (optional)">
           <textarea
+            name="bio"
             maxLength={2000}
-            value={draft.bio}
-            onChange={(event) => setDraft({ ...draft, bio: event.target.value })}
+            defaultValue={therapist.bio ?? ''}
           />
         </Field>
       </fieldset>
       {validation && (
-        <p className="remaining-error" role="alert">
+        <p className="remaining-error" lang="ar" dir="rtl" role="alert">
           {validation}
         </p>
       )}

@@ -1,6 +1,9 @@
 import { useState, type FormEvent, type MouseEvent } from 'react'
-import { ApiClient, apiErrorMessage, apiId, type ApiError } from './api'
+import { ApiClient, apiId, type ApiError } from './api'
 import { useApiResource } from './api-hooks'
+import { approvalFileError, approvalFileTypes, approvalLabel, onboardingError } from './therapist-approval'
+import { useTherapistOptions } from './therapist-options'
+import { TherapistOptionFields } from './TherapistOptionFields'
 
 type Document = {
   id: string
@@ -12,23 +15,28 @@ type Document = {
 }
 
 const sections = {
-  '/profile/settings': 'Profile settings',
-  '/profile/approval': 'Submit for approval',
-  '/profile/documents': 'Requested documents',
+  '/profile/settings': 'إعدادات الملف الشخصي',
+  '/profile/documents': 'المستندات المطلوبة',
 }
 const copy = {
-  pending: {
-    title: 'Your account is awaiting admin approval',
-    next: 'Complete your profile and submit your license for review. An administrator will review your application before you can access the dashboard, sessions, or clients.',
-  },
-  rejected: {
-    title: 'Your account was not approved',
-    next: 'Review your profile and any document requests. Contact your administrator if you have questions, then resubmit your profile for review.',
-  },
-  suspended: {
-    title: 'Your account is suspended',
-    next: 'Contact your administrator to learn what is needed to restore dashboard access.',
-  },
+  not_submitted: 'ارفع ترخيص مزاولة المهنة وأرسل طلبك للمراجعة. ستتمكن من استخدام لوحة التحكم بعد الموافقة.',
+  pending: 'طلبك قيد المراجعة. ستتحدّث حالة الطلب تلقائيًا عند صدور القرار.',
+  rejected: 'يمكنك رفع ترخيص جديد وإعادة إرسال طلبك للمراجعة.',
+  suspended: 'تواصل مع الإدارة لمعرفة كيفية استعادة الوصول إلى لوحة التحكم.',
+}
+const documentTypes: Record<string, string> = {
+  license: 'ترخيص مزاولة المهنة',
+  identity: 'إثبات الهوية',
+  certificate: 'شهادة',
+  payment_proof: 'إثبات الدفع',
+  support_file: 'مستند داعم',
+  other: 'مستند آخر',
+}
+const documentStatuses: Record<string, string> = {
+  requested: 'مطلوب',
+  submitted: 'قيد المراجعة',
+  approved: 'تمت الموافقة',
+  rejected: 'مرفوض',
 }
 
 export function TherapistOnboarding({
@@ -55,13 +63,14 @@ export function TherapistOnboarding({
     api,
     path === '/profile/documents' ? '/therapists/me/documents' : null,
   )
+  const options = useTherapistOptions(api, path === '/profile/settings')
   const status = approvalResponse.meta.approval_status
   const current =
-    status === 'rejected' && submittedAfter !== approvalResponse
-      ? 'rejected'
-      : status === 'suspended'
-        ? 'suspended'
-        : 'pending'
+    submittedAfter === approvalResponse || status === undefined || status === 'approved'
+      ? 'pending'
+      : status
+  const canSubmit = current === null || current === 'rejected'
+  const showLicense = canSubmit && !Object.hasOwn(sections, path)
 
   function link(event: MouseEvent<HTMLAnchorElement>, next: string) {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
@@ -76,27 +85,33 @@ export function TherapistOnboarding({
     const form = event.currentTarget
     const data = new FormData(form)
     setNotice({})
+    const fileField = document ? 'file' : showLicense ? 'license' : null
+    if (fileField) {
+      const file = (form.elements.namedItem(fileField) as HTMLInputElement).files?.[0]
+      const fileError = approvalFileError(file)
+      if (fileError || !file) {
+        setNotice({ error: fileError })
+        return
+      }
+      data.set(fileField, file)
+    }
     setBusy(true)
     try {
       if (document) {
         await api.mutate(`/therapists/me/documents/${apiId(document.id)}/upload`, data)
         form.reset()
         documents.reload()
-        setNotice({ success: 'Document submitted for review.' })
-      } else if (path === '/profile/approval') {
-        const license = data.get('license')
-        if (license instanceof File && !license.size) data.delete('license')
+        setNotice({ success: 'تم إرسال المستند للمراجعة.' })
+      } else if (showLicense) {
         await api.mutate('/therapists/me/approval', data)
         form.reset()
         setSubmittedAfter(approvalResponse)
-        setNotice({ success: 'Profile submitted for approval.' })
+        setNotice({ success: 'تم إرسال طلبك للمراجعة.' })
+        checkApproval()
       } else {
-        const specialty = String(data.get('specialty')).trim()
-        const country = String(data.get('country')).trim()
-        const languages = String(data.get('languages'))
-          .split(',')
-          .map((item) => item.trim())
-          .filter(Boolean)
+        const specialty = String(data.get('specialty'))
+        const country = String(data.get('country'))
+        const languages = data.getAll('languages').map(String)
         const bio = String(data.get('bio')).trim()
         const body = {
           ...(specialty && { specialty }),
@@ -105,14 +120,14 @@ export function TherapistOnboarding({
           ...(bio && { bio }),
         }
         if (!Object.keys(body).length) {
-          setNotice({ error: 'Enter at least one profile detail to update.' })
+          setNotice({ error: 'أدخل بيانًا واحدًا على الأقل لتحديث الملف الشخصي.' })
           return
         }
         await api.request('/therapists/me/settings', 'PUT', { body })
-        setNotice({ success: 'Profile settings saved.' })
+        setNotice({ success: 'تم حفظ إعدادات الملف الشخصي.' })
       }
     } catch (error) {
-      setNotice({ error: apiErrorMessage(error) })
+      setNotice({ error: onboardingError(error, !!fileField) })
     } finally {
       setBusy(false)
     }
@@ -128,11 +143,23 @@ export function TherapistOnboarding({
   }
 
   return (
-    <main className="approval-page">
-      <h1>{copy[current].title}</h1>
-      <p>Status: {current}</p>
-      <p>{copy[current].next}</p>
-      <nav aria-label="Therapist onboarding">
+    <main className="approval-page" lang="ar" dir="rtl">
+      <h1>{current === 'rejected' ? 'لم تتم الموافقة على طلبك' : approvalLabel(current)}</h1>
+      <p>الحالة: {approvalLabel(current)}</p>
+      <p>{copy[current ?? 'not_submitted']}</p>
+      {current === 'rejected' && approvalResponse.meta.approval_note && (
+        <p>سبب الرفض: <bdi>{approvalResponse.meta.approval_note}</bdi></p>
+      )}
+      <nav aria-label="إعداد حساب المعالج">
+        {canSubmit && (
+          <a
+            href="/profile/approval"
+            aria-current={showLicense ? 'page' : undefined}
+            onClick={(event) => link(event, '/profile/approval')}
+          >
+            {current === 'rejected' ? 'إعادة إرسال الطلب' : 'إرسال طلب الموافقة'}
+          </a>
+        )}
         {Object.entries(sections).map(([href, label]) => (
           <a
             key={href}
@@ -146,74 +173,63 @@ export function TherapistOnboarding({
       </nav>
       {path === '/profile/settings' && (
         <form className="auth-form" onSubmit={save}>
-          <h2>Profile settings</h2>
-          <p>Enter only the details you want to update.</p>
+          <h2>إعدادات الملف الشخصي</h2>
+          <p>أدخل فقط البيانات التي ترغب في تحديثها.</p>
           <fieldset disabled={busy}>
+            <TherapistOptionFields options={options} />
             <label>
-              Specialty
-              <input name="specialty" maxLength={255} />
-            </label>
-            <label>
-              Country
-              <input name="country" maxLength={100} />
-            </label>
-            <label>
-              Language codes (comma-separated)
-              <input name="languages" />
-            </label>
-            <label>
-              Bio
+              النبذة التعريفية
               <textarea name="bio" maxLength={2000} />
             </label>
             <button className="primary-button" type="submit">
-              Save profile settings
+              حفظ إعدادات الملف الشخصي
             </button>
           </fieldset>
         </form>
       )}
-      {path === '/profile/approval' && (
+      {showLicense && (
         <form className="auth-form" onSubmit={save}>
-          <h2>Submit for approval</h2>
-          <p>Upload a license (JPG, PNG, or PDF, up to 5 MB) if one is not already on file.</p>
+          <h2>{current === 'rejected' ? 'إعادة إرسال الطلب' : 'إرسال طلب الموافقة'}</h2>
+          <p>الصيغ المقبولة: PDF أو JPG أو PNG. الحد الأقصى لحجم الملف ٥ ميغابايت.</p>
           <fieldset disabled={busy}>
             <label>
-              License
-              <input name="license" type="file" accept="image/jpeg,image/png,application/pdf" />
+              ترخيص مزاولة المهنة
+              <input name="license" type="file" accept={approvalFileTypes} required />
             </label>
             <button className="primary-button" type="submit">
-              Submit profile for review
+              {current === 'rejected' ? 'إعادة الإرسال للمراجعة' : 'إرسال الطلب للمراجعة'}
             </button>
           </fieldset>
         </form>
       )}
       {path === '/profile/documents' && (
         <section>
-          <h2>Requested documents</h2>
-          {documents.loading && <p role="status">Loading requests…</p>}
-          {documents.error && <p role="alert">{apiErrorMessage(documents.error)}</p>}
-          {documents.data?.data.length === 0 && !documents.error && (
-            <p>No documents have been requested.</p>
+          <h2>المستندات المطلوبة</h2>
+          {documents.loading && <p role="status">جارٍ تحميل طلبات المستندات…</p>}
+          {documents.error && <p role="alert">{onboardingError(documents.error)}</p>}
+          {documents.data?.data.length === 0 && !documents.error && !documents.loading && (
+            <p>لا توجد مستندات مطلوبة.</p>
           )}
           {documents.data?.data.map((document) => (
             <article key={document.id}>
-              <h3>{document.doc_type}</h3>
-              <p>Status: {document.status}</p>
-              {document.reason && <p>{document.reason}</p>}
-              {document.review_note && <p>{document.review_note}</p>}
+              <h3>{documentTypes[document.doc_type] ?? 'مستند'}</h3>
+              <p>الحالة: {documentStatuses[document.status] ?? 'غير معروفة'}</p>
+              {document.reason && <p>سبب الطلب: <bdi>{document.reason}</bdi></p>}
+              {document.review_note && <p>ملاحظة المراجعة: <bdi>{document.review_note}</bdi></p>}
               {document.accepts_upload && (
                 <form onSubmit={(event) => void save(event, document)}>
                   <label>
-                    Document for {document.doc_type}
+                    {documentTypes[document.doc_type] ?? 'المستند'}
                     <input
                       name="file"
                       type="file"
-                      accept="image/jpeg,image/png,application/pdf"
+                      accept={approvalFileTypes}
                       required
                       disabled={busy}
                     />
                   </label>
                   <button type="submit" disabled={busy}>
-                    Upload document
+                    رفع المستند
                   </button>
                 </form>
               )}
@@ -223,7 +239,7 @@ export function TherapistOnboarding({
       )}
       {notice.error && <p role="alert">{notice.error}</p>}
       {notice.success && <p role="status">{notice.success}</p>}
-      {approvalCheckFailed && <p role="alert">Could not check approval status. Try again.</p>}
+      {approvalCheckFailed && <p role="alert">تعذّر التحقق من حالة الموافقة. حاول مرة أخرى.</p>}
       <div className="approval-actions">
         <button
           type="button"
@@ -231,10 +247,10 @@ export function TherapistOnboarding({
           disabled={busy || checkingApproval}
           onClick={checkApproval}
         >
-          Check approval status
+          التحقق من حالة الموافقة
         </button>
         <button type="button" className="soft-button" onClick={logout}>
-          Log out
+          تسجيل الخروج
         </button>
       </div>
     </main>

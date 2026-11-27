@@ -420,6 +420,7 @@
   margin-bottom: 16px;
 }
 .remaining-field input,
+.remaining-field select,
 .remaining-field textarea {
   width: 100%;
   border: 0.8px solid #e5e7eb;
@@ -433,8 +434,11 @@
   height: 42px;
   color: #111;
 }
+.remaining-field select[multiple],
 .remaining-field textarea {
   height: 88px;
+}
+.remaining-field textarea {
   resize: vertical;
 }
 .remaining-field-grid {
