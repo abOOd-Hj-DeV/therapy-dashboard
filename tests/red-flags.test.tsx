@@ -100,7 +100,7 @@ describe('therapist red flags', () => {
     expect(navigate).toHaveBeenCalledWith('/red-flags')
   })
 
-  it('loads flags across every page reported by the API', async () => {
+  it('can reach page 21 without pretending the first page is the entire list', async () => {
     vi.stubEnv('DEV', false)
     vi.stubEnv('VITE_DEMO_MODE', 'false')
     const pageOne = {
@@ -116,7 +116,6 @@ describe('therapist red flags', () => {
       assessment_score: 18,
       on_hold: false,
     }
-    const pageTwo = { ...pageOne, id: 'flag-page-two', patient_name: 'مريض الصفحة الثانية' }
     const user = {
       id: 'therapist-id',
       name: 'د. سارة',
@@ -131,20 +130,28 @@ describe('therapist red flags', () => {
       getUser: () => user,
       getSessionKey: () => 1,
       subscribe: () => () => undefined,
-      get: vi.fn((path: string) => Promise.resolve(
-        path.includes('page=2')
-          ? { data: [pageTwo], pagination: { current_page: 2, last_page: 2, per_page: 1, total: 2 } }
-          : { data: [pageOne], pagination: { current_page: 1, last_page: 2, per_page: 1, total: 2 } },
-      )),
+      get: vi.fn((path: string) => {
+        const page = Number(new URL(path, window.location.origin).searchParams.get('page') ?? '1')
+        return Promise.resolve({
+          data: [{ ...pageOne, id: `flag-${page}`, patient_name: `مريض الصفحة ${page}` }],
+          pagination: { current_page: page, last_page: 21, per_page: 1, total: 21 },
+        })
+      }),
     } as unknown as ApiClient
 
     render(<RedFlags api={api} navigate={vi.fn()} />)
 
-    expect(await screen.findByRole('heading', { name: 'مريض الصفحة الثانية' })).toBeInTheDocument()
-    expect(api.get).toHaveBeenCalledWith('/therapists/red-flags?page=2', expect.any(AbortSignal))
+    expect(await screen.findByRole('heading', { name: 'مريض الصفحة 1' })).toBeInTheDocument()
+    expect(screen.getByText('الصفحة 1 من 21 · إجمالي البلاغات: 21')).toBeInTheDocument()
+    expect(api.get).toHaveBeenCalledTimes(1)
+    for (let page = 2; page <= 21; page++) {
+      fireEvent.click(screen.getByRole('button', { name: 'الصفحة التالية' }))
+      expect(await screen.findByRole('heading', { name: `مريض الصفحة ${page}` })).toBeInTheDocument()
+    }
+    expect(screen.getByRole('button', { name: 'الصفحة التالية' })).toBeDisabled()
   })
 
-  it('does not restart slow remaining-page loads on the 15-second refresh interval', async () => {
+  it('does not restart slow page loads or switch pages on the 15-second refresh interval', async () => {
     vi.useFakeTimers()
     vi.stubEnv('DEV', false)
     vi.stubEnv('VITE_DEMO_MODE', 'false')
@@ -189,6 +196,8 @@ describe('therapist red flags', () => {
       await Promise.resolve()
       await Promise.resolve()
     })
+    expect(api.get).toHaveBeenCalledTimes(1)
+    fireEvent.click(screen.getByRole('button', { name: 'الصفحة التالية' }))
     expect(api.get).toHaveBeenCalledTimes(2)
 
     await act(async () => { await vi.advanceTimersByTimeAsync(15_000) })
@@ -203,6 +212,9 @@ describe('therapist red flags', () => {
       await Promise.resolve()
       await Promise.resolve()
     })
+    expect(api.get).toHaveBeenCalledTimes(2)
+    expect(screen.getByRole('heading', { name: 'مريض الصفحة الثانية' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'الصفحة التالية' }))
     expect(api.get).toHaveBeenCalledTimes(3)
 
     await act(async () => { await vi.advanceTimersByTimeAsync(15_000) })
@@ -219,6 +231,32 @@ describe('therapist red flags', () => {
     })
     expect(screen.getByRole('heading', { name: 'مريض الصفحة الثالثة' })).toBeInTheDocument()
     expect(api.get).toHaveBeenCalledTimes(3)
+  })
+
+  it('reports a later page failure as partial and retries that page without duplicating rows', async () => {
+    const user = { id: 'therapist-id' }
+    let attempts = 0
+    const api = {
+      getUser: () => user,
+      getSessionKey: () => 1,
+      subscribe: () => () => undefined,
+      get: vi.fn(async (path: string) => {
+        const page = path.includes('page=2') ? 2 : 1
+        if (page === 2 && ++attempts === 1) throw new Error('offline')
+        return {
+          data: [{ id: String(page), patient_name: `مريض ${page}`, type: 'low_mood' }],
+          pagination: { current_page: page, last_page: 2, per_page: 1, total: 2 },
+        }
+      }),
+    } as unknown as ApiClient
+    render(<RedFlags api={api} navigate={vi.fn()} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'الصفحة التالية' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('البلاغات المتاحة غير مكتملة')
+    expect(screen.queryByText('لا توجد حالات خطر مفتوحة لمرضاك.')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'إعادة المحاولة' }))
+    expect(await screen.findByRole('heading', { name: 'مريض 2' })).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { name: 'مريض 2' })).toHaveLength(1)
+    expect(screen.queryByRole('heading', { name: 'مريض 1' })).not.toBeInTheDocument()
   })
 })
 

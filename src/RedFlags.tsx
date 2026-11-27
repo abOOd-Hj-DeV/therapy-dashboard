@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { ApiClient, ApiError, apiId } from './api'
 import { useApiResource } from './api-hooks'
 import { trackCareMutation } from './api-resource-refresh'
@@ -36,30 +36,6 @@ type RedFlag = {
 type RedFlagResponse = {
   data: RedFlag[]
   pagination: { current_page: number; last_page: number; per_page: number; total: number }
-}
-
-async function loadRemainingPages(
-  api: ApiClient,
-  firstPage: RedFlagResponse,
-  signal: AbortSignal,
-): Promise<RedFlag[]> {
-  const flags = [...firstPage.data]
-  let currentPage = firstPage.pagination.current_page
-  let lastPage = firstPage.pagination.last_page
-  let requestedPages = 1
-
-  while (currentPage < lastPage && requestedPages < 20) {
-    const page = await api.get<RedFlagResponse>(
-      `/therapists/red-flags?page=${currentPage + 1}`,
-      signal,
-    )
-    flags.push(...page.data)
-    currentPage = page.pagination.current_page
-    lastPage = page.pagination.last_page
-    requestedPages++
-  }
-
-  return flags
 }
 
 const typeLabels: Record<string, string> = {
@@ -116,57 +92,19 @@ export function RedFlags({
 }) {
   const demo = import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === 'true' && !api
   const timezone = api?.getUser()?.timezone || 'Asia/Damascus'
-  const paginationLoadingRef = useRef(false)
+  const actor = api?.getSessionKey()
+  const [navigation, setNavigation] = useState({ api, actor, page: 1 })
+  const page = navigation.api === api && navigation.actor === actor ? navigation.page : 1
+  const changePage = (next: number) => setNavigation({ api, actor, page: next })
   const resource = useApiResource<RedFlagResponse>(
     api,
-    demo ? null : '/therapists/red-flags',
-    { interval: 15_000, shouldSkipBackground: () => paginationLoadingRef.current },
+    demo ? null : page === 1 ? '/therapists/red-flags' : `/therapists/red-flags?page=${page}`,
+    { interval: 15_000 },
   )
-  const [allFlags, setAllFlags] = useState<RedFlag[] | null>(null)
-  const [paginationLoading, setPaginationLoading] = useState(false)
-  const [paginationError, setPaginationError] = useState(false)
-  useEffect(() => {
-    const firstPage = resource.data
-    if (!api || demo || !firstPage) {
-      paginationLoadingRef.current = false
-      setAllFlags(null)
-      setPaginationLoading(false)
-      setPaginationError(false)
-      return
-    }
-    const controller = new AbortController()
-    let active = true
-    paginationLoadingRef.current = false
-    setPaginationError(false)
-    setPaginationLoading(false)
-    if (firstPage.pagination.current_page >= firstPage.pagination.last_page) {
-      setAllFlags(firstPage.data)
-      return () => controller.abort()
-    }
-    paginationLoadingRef.current = true
-    setPaginationLoading(true)
-    void loadRemainingPages(api, firstPage, controller.signal)
-      .then((flags) => {
-        if (active) setAllFlags(flags)
-      })
-      .catch(() => {
-        if (active && !controller.signal.aborted) setPaginationError(true)
-      })
-      .finally(() => {
-        if (active) {
-          paginationLoadingRef.current = false
-          setPaginationLoading(false)
-        }
-      })
-    return () => {
-      active = false
-      paginationLoadingRef.current = false
-      controller.abort()
-    }
-  }, [api, demo, resource.data])
-  const flags = demo ? demoFlags : allFlags ?? resource.data?.data ?? []
-  const loading = resource.loading || (paginationLoading && allFlags === null)
-  const error = resource.error || paginationError
+  const flags = demo ? demoFlags : resource.data?.data ?? []
+  const pagination = resource.data?.pagination
+  const loading = resource.loading
+  const error = resource.error
   const [decisions, setDecisions] = useState<Record<string, Decision>>({})
   const [notes, setNotes] = useState<Record<string, string>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -212,13 +150,16 @@ export function RedFlags({
         {!demo && loading && <p role="status">جارٍ تحميل حالات الخطر...</p>}
         {!demo && error && (
           <p className="red-flags-error" role="alert">
-            تعذر تحميل حالات الخطر.
+            {page > 1 ? `تعذر تحميل الصفحة ${page}؛ البلاغات المتاحة غير مكتملة.` : 'تعذر تحميل حالات الخطر.'}
             <button type="button" onClick={resource.reload}>إعادة المحاولة</button>
           </p>
         )}
         {success && <p className="red-flags-success" role="status">{success}</p>}
-        {!demo && !loading && !error && flags.length === 0 && (
+        {!demo && !loading && !error && pagination?.total === 0 && (
           <p className="red-flags-empty">لا توجد حالات خطر مفتوحة لمرضاك.</p>
+        )}
+        {!demo && !loading && !error && pagination && pagination.total > 0 && flags.length === 0 && (
+          <p className="red-flags-empty">لا توجد بلاغات في هذه الصفحة.</p>
         )}
         {flags.map((flag) => {
           const digits = phoneDigits(flag.patient_whatsapp)
@@ -313,6 +254,15 @@ export function RedFlags({
             </article>
           )
         })}
+        {!demo && (page > 1 || (pagination?.last_page ?? 1) > 1) && (
+          <nav aria-label="صفحات البلاغات">
+            <button type="button" disabled={page === 1} onClick={() => changePage(page - 1)}>الصفحة السابقة</button>
+            {pagination && page <= pagination.last_page && (
+              <span>الصفحة {page} من {pagination.last_page} · إجمالي البلاغات: {pagination.total}</span>
+            )}
+            <button type="button" disabled={!pagination || page >= pagination.last_page} onClick={() => changePage(page + 1)}>الصفحة التالية</button>
+          </nav>
+        )}
       </section>
     </Workspace>
   )
