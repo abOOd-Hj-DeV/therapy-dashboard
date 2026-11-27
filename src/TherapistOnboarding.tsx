@@ -5,7 +5,7 @@ import { useMutation } from './api-mutation'
 import { documentFileError, documentFileTypes, documentError, approvalLabel } from './therapist-approval'
 import { useTherapistOptions } from './therapist-options'
 import { TherapistProfileForm, TherapistProfileSummary } from './TherapistProfileForm'
-import type { ProfileRevision, TherapistProfileResponse, TherapistProfileReview } from './therapist-profile-review'
+import type { TherapistProfileResponse, TherapistProfileReview } from './therapist-profile-review'
 
 type Document = {
   id: string
@@ -44,14 +44,12 @@ export function TherapistOnboarding({
   saved: (response: TherapistProfileResponse) => void
 }) {
   const [editing, setEditing] = useState(false)
-  const [latestInitial, setLatestInitial] = useState<ProfileRevision | null>(null)
   const showDocuments = path === '/profile/documents'
   const status = review.approval_status
   const pending = review.pending_revision
   const last = review.last_review
-  if (pending?.kind === 'initial' && latestInitial?.id !== pending.id) setLatestInitial(pending)
-  const previous = status === 'rejected' && latestInitial?.id === last?.revision_id ? latestInitial : null
-  const initial = pending?.data ?? previous?.data ?? {
+  const rejectedReview = status === 'rejected' && last?.status === 'rejected' ? last : null
+  const initial = pending?.data ?? rejectedReview?.data ?? {
     ...review.published,
     email: review.published.email ?? review.account.email,
   }
@@ -98,7 +96,7 @@ export function TherapistOnboarding({
         )}
         {shownForm && (
           <TherapistProfileForm
-            key={pending?.id ?? previous?.id ?? status ?? 'initial'}
+            key={`${status}:${pending?.id ?? rejectedReview?.revision_id ?? ''}`}
             api={api}
             initial={initial}
             phone={review.account.whatsapp_number}

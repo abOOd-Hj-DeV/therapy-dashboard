@@ -41,6 +41,7 @@ export type TherapistProfileReview = {
     status: 'approved' | 'rejected'
     note: string | null
     reviewed_at: string
+    data?: ReviewedProfile
   } | null
 }
 export type TherapistProfileResponse = { data: TherapistProfileReview }

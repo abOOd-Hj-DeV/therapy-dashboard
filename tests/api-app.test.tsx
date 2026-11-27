@@ -305,7 +305,7 @@ describe('live routing boundaries', () => {
       .toEqual({ ...validProfile, job_title: changed })
   })
 
-  it('shows a new rejection reason and prefills the last observed revision after polling', async () => {
+  it('shows a new rejection reason and falls back to published data when the review has no profile', async () => {
     vi.useFakeTimers()
     try {
       await api.establish({ ...tokens, user: identity })
@@ -319,26 +319,35 @@ describe('live routing boundaries', () => {
       review = rejected
       await act(async () => { await vi.advanceTimersByTimeAsync(30_000) })
       expect(screen.getByText('يرجى تحديث المسمى الوظيفي')).toBeInTheDocument()
-      expect(screen.getByLabelText('المسمى الوظيفي')).toHaveValue(validProfile.job_title)
+      expect(screen.getByLabelText('الاسم')).toHaveValue(notSubmitted.published.full_name)
+      expect(screen.getByLabelText('المسمى الوظيفي')).toHaveValue('')
     } finally {
       vi.useRealTimers()
     }
   })
 
-  it('prefills available data for a rejected therapist returning to the app and allows resubmission', async () => {
+  it.each([true, false])('prefills a returning rejected therapist and allows resubmission (review data present: %s)', async (hasReviewData) => {
     await api.establish({ ...tokens, user: identity })
     window.history.replaceState({}, '', '/profile/approval')
+    const submitted = { ...validProfile, full_name: 'Rejected Revision Name' }
+    const review = {
+      ...rejected,
+      published: validProfile,
+      last_review: { ...rejected.last_review, ...(hasReviewData && { data: submitted }) },
+    }
     const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) =>
-      isProfile(input) ? json({ data: { ...rejected, published: validProfile } }) :
+      isProfile(input) ? json({ data: review }) :
         isSubmit(input) ? json({ data: pending }, 201) : json({}, 404),
     )
     vi.stubGlobal('fetch', fetch)
     render(<App />)
     expect(await screen.findByText('يرجى تحديث المسمى الوظيفي')).toBeInTheDocument()
-    expect(screen.getByLabelText('الاسم')).toHaveValue(validProfile.full_name)
+    const expected = hasReviewData ? submitted : validProfile
+    expect(screen.getByLabelText('الاسم')).toHaveValue(expected.full_name)
     fireEvent.click(screen.getByRole('button', { name: 'إعادة إرسال الطلب للمراجعة' }))
     expect(await screen.findByRole('heading', { name: 'بانتظار الموافقة' })).toBeInTheDocument()
     expect(screen.queryByText('يرجى تحديث المسمى الوظيفي')).not.toBeInTheDocument()
+    expect(JSON.parse(String(fetch.mock.calls.find(([url]) => isSubmit(url))?.[1]?.body))).toEqual(expected)
   })
 
   it.each(['/dashboard', '/sessions', '/chats', '/clients', '/profile/settings', '/wallet'])(
