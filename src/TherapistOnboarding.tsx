@@ -44,6 +44,7 @@ export function TherapistOnboarding({
   path,
   approvalResponse,
   navigate,
+  logout,
   checkingApproval,
   approvalCheckFailed,
   checkApproval,
@@ -52,6 +53,7 @@ export function TherapistOnboarding({
   path: string
   approvalResponse: ApiError
   navigate: (path: string) => void
+  logout: () => Promise<void>
   checkingApproval: boolean
   approvalCheckFailed: boolean
   checkApproval: () => void
@@ -130,15 +132,6 @@ export function TherapistOnboarding({
       setNotice({ error: onboardingError(error, !!fileField) })
     } finally {
       setBusy(false)
-    }
-  }
-
-  async function logout() {
-    try {
-      await api.logout()
-      navigate('/login')
-    } catch {
-      navigate('/login?logout=revocation-unknown')
     }
   }
 

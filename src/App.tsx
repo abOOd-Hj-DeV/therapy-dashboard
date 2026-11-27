@@ -68,6 +68,14 @@ export function App() {
     setLocation(window.location.pathname + window.location.search)
     window.scrollTo({ top: 0 })
   }
+  async function logout() {
+    try {
+      await client?.logout()
+      navigate('/login')
+    } catch {
+      navigate('/login?logout=revocation-unknown')
+    }
+  }
   const protectedPage = ![
     '/',
     '/login',
@@ -96,6 +104,7 @@ export function App() {
           path={path}
           approvalResponse={approvalResponse}
           navigate={navigate}
+          logout={logout}
           checkingApproval={approval.loading}
           approvalCheckFailed={
             !!approval.error && approval.error.code !== 'therapist_pending_approval'
@@ -114,9 +123,14 @@ export function App() {
         ) : (
           <>
             <p role="alert">تعذّر التحقق من حالة الموافقة. حاول مرة أخرى.</p>
-            <button type="button" className="soft-button" onClick={approval.reload}>
-              إعادة المحاولة
-            </button>
+            <div className="approval-actions">
+              <button type="button" className="soft-button" onClick={approval.reload}>
+                إعادة المحاولة
+              </button>
+              <button type="button" className="soft-button" onClick={logout}>
+                تسجيل الخروج
+              </button>
+            </div>
           </>
         )}
       </main>

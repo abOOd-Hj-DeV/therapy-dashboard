@@ -71,6 +71,24 @@ describe('live routing boundaries', () => {
     expect(fetch).toHaveBeenCalledTimes(1)
   })
 
+  it('lets a therapist sign out when the approval check persistently returns a generic 403', async () => {
+    await api.establish({ ...tokens, user: identity })
+    window.history.replaceState({}, '', '/login')
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+    const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) =>
+      String(input).endsWith('/auth/logout') ? json({}) : json({}, 403),
+    )
+    vi.stubGlobal('fetch', fetch)
+    render(<App />)
+    expect(await screen.findByRole('alert')).toHaveTextContent('تعذّر التحقق من حالة الموافقة')
+    expect(screen.queryByLabelText('WhatsApp number')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'تسجيل الخروج' }))
+    expect(await screen.findByLabelText('WhatsApp number')).toBeInTheDocument()
+    expect(api.getUser()).toBeNull()
+    expect(fetch).toHaveBeenCalledWith(expect.stringMatching(/\/auth\/logout$/), expect.objectContaining({ method: 'POST' }))
+  })
+
   it('shows the not-submitted license form and links to working document and profile settings', async () => {
     await api.establish({ ...tokens, user: identity })
     window.history.replaceState({}, '', '/dashboard')
