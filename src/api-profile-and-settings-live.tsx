@@ -9,7 +9,7 @@ import { FaqSummary, RemainingIcon, SettingRow, type RemainingIconName } from '.
 import { approvalLabel } from './therapist-approval'
 import { optionName, useTherapistOptions } from './therapist-options'
 import { TherapistProfileForm } from './TherapistProfileForm'
-import { profileReviewError, therapistLifecycle, therapistProfilePath, therapistSubmissionPath, type ReviewedProfile, type TherapistProfileResponse } from './therapist-profile-review'
+import { profileReviewError, therapistLifecycle, therapistProfilePath, therapistSubmissionPath, type TherapistProfileResponse } from './therapist-profile-review'
 
 type Page = 'profile' | 'settings' | 'help'
 type Props = { page: Page; navigate: (path: string) => void; api?: ApiClient }
@@ -145,10 +145,15 @@ function ProfileActor({
   })
   const reviewDialog = dialog === 'edit' || dialog === 'withdrawProfile'
   const [notice, setNotice] = useState('')
+  const [withdrawalRevisionId, setWithdrawalRevisionId] = useState<string | null>(null)
+  const [withdrawalConflict, setWithdrawalConflict] = useState(false)
   // Keys and uncertain submissions are kept only for this actor, across modal closes.
   const periodKeys = useRef(new Map<string, string>())
   const uncertainPeriod = useRef<PeriodBody | null>(null)
-  const close = () => setDialog('')
+  const close = () => {
+    setWithdrawalRevisionId(null)
+    setDialog('')
+  }
   const name = published?.full_name || identity.data?.user.name || user.name
   const settings = page === 'settings'
   return (
@@ -233,9 +238,16 @@ function ProfileActor({
               {pendingUpdate && (
                 <>
                   <p role="status">تعديلات ملفك المهني بانتظار المراجعة. يظل الملف المنشور دون تغيير حتى الموافقة.</p>
-                  <button type="button" className="remaining-cancel" disabled={!published} onClick={() => setDialog('withdrawProfile')}>
-                    سحب التعديلات
-                  </button>
+                  {pending?.kind === 'update' && (
+                    <button type="button" className="remaining-cancel" onClick={() => {
+                      setWithdrawalRevisionId(pending.id)
+                      setWithdrawalConflict(false)
+                      setNotice('')
+                      setDialog('withdrawProfile')
+                    }}>
+                      سحب التعديلات
+                    </button>
+                  )}
                 </>
               )}
               {rejectedUpdate && (
@@ -380,6 +392,11 @@ function ProfileActor({
           )}
         </section>
       </div>
+      {withdrawalConflict && (
+        <p lang="ar" dir="rtl" className="remaining-error" role="alert">
+          تعذّر سحب التعديلات لأن الطلب لم يعد متاحًا. تحقّق من حالة طلبك بعد تحديث الملف المهني.
+        </p>
+      )}
       {notice && (
         <p className="remaining-notice" role="status">
           {notice}
@@ -419,12 +436,22 @@ function ProfileActor({
               </>
             ))}
           {dialog === 'withdrawProfile' && (
-            pendingUpdate && published ? (
-              <WithdrawProfileUpdate api={api} published={published} close={close} saved={(response) => {
-                profile.replace(response)
-                close()
-                setNotice('تم سحب التعديلات. لم يتغيّر الملف المنشور.')
-              }} />
+            withdrawalRevisionId ? (
+              <WithdrawProfileUpdate
+                api={api}
+                revisionId={withdrawalRevisionId}
+                close={close}
+                saved={(response) => {
+                  profile.replace(response)
+                  close()
+                  setNotice('تم سحب التعديلات. لم يتغيّر الملف المنشور.')
+                }}
+                conflicted={() => {
+                  close()
+                  setWithdrawalConflict(true)
+                  profile.reload()
+                }}
+              />
             ) : (
               <>
                 <p role="status">{published
@@ -523,20 +550,23 @@ function ProfileActor({
     </Workspace>
   )
 }
-function WithdrawProfileUpdate({ api, published, close, saved }: {
+function WithdrawProfileUpdate({ api, revisionId, close, saved, conflicted }: {
   api: ApiClient
-  published: ReviewedProfile
+  revisionId: string
   close: () => void
   saved: (response: TherapistProfileResponse) => void
+  conflicted: () => void
 }) {
   const mutation = useMutation(api)
 
   function withdraw() {
-    void mutation.run(async (signal) => {
-      const response = await api.mutate<TherapistProfileResponse>(therapistSubmissionPath, published, { signal })
-      if (response.data.pending_revision) throw new ApiError(409)
-      return response
-    }, saved)
+    void mutation.run(
+      (signal) => api.request<TherapistProfileResponse>(`${therapistSubmissionPath}/${apiId(revisionId)}`, 'DELETE', { signal }),
+      saved,
+      (error) => {
+        if (error instanceof ApiError && (error.status === 409 || error.status === 404)) conflicted()
+      },
+    )
   }
 
   return (

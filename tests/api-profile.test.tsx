@@ -16,6 +16,8 @@ vi.mock('../src/Workspace', () => ({
 }))
 const userId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 const periodId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+const revisionA = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'
+const revisionB = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd'
 const user = {
   id: userId,
   name: 'Real Account Name',
@@ -107,6 +109,16 @@ function change(label: string, value: string) {
 }
 async function loaded() {
   await screen.findByRole('heading', { name: 'Real Professional Name' })
+}
+const withdrawalSuccess = 'تم سحب التعديلات. لم يتغيّر الملف المنشور.'
+function pendingProfile(id: string) {
+  return profileReview({
+    lifecycle_state: 'update_pending',
+    pending_revision: {
+      id, kind: 'update', status: 'pending', submitted_at: '2026-11-27T12:00:00Z',
+      data: { ...validProfile, full_name: 'Unpublished Name' },
+    },
+  })
 }
 beforeEach(() => {
   window.history.replaceState({}, '', '/profile')
@@ -204,31 +216,79 @@ describe('live Profile API integration', () => {
     expect(modal().getByLabelText('التخصص')).toHaveValue('trauma')
   })
 
-  it('withdraws a pending profile update only on confirmation, using the published fields', async () => {
-    const pending = profileReview({
-      lifecycle_state: 'update_pending',
-      pending_revision: {
-        id: periodId, kind: 'update', status: 'pending', submitted_at: '2026-11-27T12:00:00Z',
-        data: { ...validProfile, full_name: 'Unpublished Name' },
-      },
-    })
+  it('withdraws by revision only on confirmation, even when the published profile has null fields', async () => {
+    const published = { ...validProfile, job_title: null, city: null }
     const { api, calls } = await client((call) => {
-      if (call.path === '/therapists/me/profile') return json({ data: pending })
-      if (call.path.endsWith('/profile-submission')) return json({ data: profileReview({ lifecycle_state: 'approved' }) })
+      if (call.path === '/therapists/me/profile') return json({ data: { ...pendingProfile(revisionA), published } })
+      if (call.method === 'DELETE') return json({ data: profileReview({ lifecycle_state: 'approved', published }) })
     })
     render(<Profile page="settings" api={api} navigate={vi.fn()} />)
     fireEvent.click(await screen.findByRole('button', { name: 'سحب التعديلات' }))
     expect(modal().getByText(/ستبقى بيانات ملفك المنشور كما هي/)).toBeInTheDocument()
     fireEvent.click(modal().getByRole('button', { name: 'إلغاء' }))
-    expect(calls.some(({ method }) => method === 'POST')).toBe(false)
+    expect(calls.every(({ method }) => method === 'GET')).toBe(true)
     fireEvent.click(screen.getByRole('button', { name: 'سحب التعديلات' }))
     fireEvent.click(modal().getByRole('button', { name: 'تأكيد السحب' }))
-    expect(await screen.findByText('تم سحب التعديلات. لم يتغيّر الملف المنشور.')).toBeInTheDocument()
-    expect(calls.filter(({ method }) => method === 'POST')).toMatchObject([
-      { path: '/therapists/me/profile-submission', body: validProfile },
+    expect(await screen.findByText(withdrawalSuccess)).toBeInTheDocument()
+    expect(calls.filter(({ method }) => method !== 'GET')).toMatchObject([
+      { method: 'DELETE', path: `/therapists/me/profile-submission/${revisionA}`, body: undefined },
     ])
     expect(screen.queryByRole('button', { name: 'سحب التعديلات' })).not.toBeInTheDocument()
     expect(screen.queryByText('Unpublished Name')).not.toBeInTheDocument()
+  })
+
+  it.each([409, 404])('targets the pinned revision after a refresh and handles withdrawal %s without reporting success', async (status) => {
+    const profilePath = '/therapists/me/profile'
+    let review = pendingProfile(revisionA)
+    const { api, calls } = await client((call) => {
+      if (call.path === profilePath) return json({ data: review })
+      if (call.method === 'DELETE') {
+        review = { ...review, published: { ...validProfile, full_name: 'Latest Published Name' } }
+        return json({}, status)
+      }
+    })
+    render(<Profile page="settings" api={api} navigate={vi.fn()} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'سحب التعديلات' }))
+    review = {
+      ...pendingProfile(revisionB),
+      last_review: {
+        revision_id: periodId, kind: 'update', status: 'rejected', note: 'سبب المراجعة السابقة',
+        reviewed_at: '2026-11-27T12:00:00Z',
+      },
+    }
+    fireEvent(window, new Event('focus'))
+    expect(await screen.findByText('سبب المراجعة السابقة')).toBeInTheDocument()
+    const previousReads = calls.filter(({ path }) => path === profilePath).length
+
+    fireEvent.click(modal().getByRole('button', { name: 'تأكيد السحب' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('تعذّر سحب التعديلات')
+    expect(calls.filter(({ method }) => method !== 'GET')).toMatchObject([
+      { method: 'DELETE', path: `/therapists/me/profile-submission/${revisionA}`, body: undefined },
+    ])
+    expect(await screen.findByRole('heading', { name: 'Latest Published Name' })).toBeInTheDocument()
+    expect(calls.filter(({ path }) => path === profilePath)).toHaveLength(previousReads + 1)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'سحب التعديلات' })).toBeInTheDocument()
+    expect(screen.queryByText(withdrawalSuccess)).not.toBeInTheDocument()
+  })
+
+  it.each([
+    [0, 'تعذّر الاتصال بالخادم'],
+    [503, 'تعذّر إكمال الطلب'],
+  ])('shows withdrawal error %s in the confirmation without reporting success', async (status, message) => {
+    const { api } = await client((call) => {
+      if (call.path === '/therapists/me/profile') return json({ data: pendingProfile(revisionA) })
+      if (call.method === 'DELETE') {
+        if (!status) throw new TypeError('Offline')
+        return json({}, status)
+      }
+    })
+    render(<Profile page="settings" api={api} navigate={vi.fn()} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'سحب التعديلات' }))
+    fireEvent.click(modal().getByRole('button', { name: 'تأكيد السحب' }))
+    expect(await modal().findByRole('alert')).toHaveTextContent(message)
+    expect(modal().getByRole('button', { name: 'تأكيد السحب' })).toBeEnabled()
+    expect(screen.queryByText(withdrawalSuccess)).not.toBeInTheDocument()
   })
 
   it('renders server option labels and displays raw legacy values', async () => {
