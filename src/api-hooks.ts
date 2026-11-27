@@ -81,6 +81,8 @@ export function useApiResource<T>(
       })
       .catch((error) => {
         if (!current()) return
+        const apiError = error instanceof ApiError ? error : new ApiError(0)
+        if (background && (apiError.status === 0 || apiError.status >= 500)) return
         setState((currentState) => {
           const sameScope =
             currentState.client === client &&
@@ -90,8 +92,10 @@ export function useApiResource<T>(
             client,
             actor,
             path,
-            data: sameScope ? currentState.data : null,
-            error: error instanceof ApiError ? error : new ApiError(0),
+            data: sameScope && !(apiError.status >= 400 && apiError.status < 500)
+              ? currentState.data
+              : null,
+            error: apiError,
             loading: false,
           }
         })

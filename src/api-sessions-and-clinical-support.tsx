@@ -144,6 +144,8 @@ export function useCareResource<T>(
       })
       .catch((error: unknown) => {
         if (!current()) return
+        const apiError = error instanceof ApiError ? error : new ApiError(0)
+        if (background && (apiError.status === 0 || apiError.status >= 500)) return
         setState((currentState) => {
           const inScope =
             currentState.path === path &&
@@ -153,9 +155,11 @@ export function useCareResource<T>(
             actor,
             shape,
             path,
-            data: inScope ? currentState.data : null,
+            data: inScope && !(apiError.status >= 400 && apiError.status < 500)
+              ? currentState.data
+              : null,
             loading: false,
-            error,
+            error: apiError,
           }
         })
       })

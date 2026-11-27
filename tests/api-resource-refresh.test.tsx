@@ -175,6 +175,157 @@ describe('background resource refresh', () => {
     expect(get).toHaveBeenCalledTimes(3)
   })
 
+  it('skips useApiResource background refreshes offline and resumes on the online event', async () => {
+    vi.useFakeTimers()
+    setOnline(false)
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'visible',
+    })
+    const get = vi.fn()
+      .mockResolvedValueOnce({ value: 'initial' })
+      .mockResolvedValueOnce({ value: 'online' })
+    const api = makeApi(get)
+    const { result } = renderHook(() => useApiResource<{ value: string }>(api, '/resource'))
+
+    await flush()
+    act(() => window.dispatchEvent(new Event('focus')))
+    await act(async () => { await vi.advanceTimersByTimeAsync(30_000) })
+    expect(get).toHaveBeenCalledTimes(1)
+
+    setOnline(true)
+    await act(async () => {
+      window.dispatchEvent(new Event('online'))
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    expect(get).toHaveBeenCalledTimes(2)
+    expect(result.current.data).toEqual({ value: 'online' })
+  })
+
+  it('skips useCareResource background refreshes offline and resumes on the online event', async () => {
+    vi.useFakeTimers()
+    setOnline(false)
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'visible',
+    })
+    const get = vi.fn()
+      .mockResolvedValueOnce({ value: 'initial' })
+      .mockResolvedValueOnce({ value: 'online' })
+    const api = makeApi(get)
+    const { result } = renderHook(() =>
+      useCareResource<{ value: string }>(api, '/resource', 'single'),
+    )
+
+    await flush()
+    act(() => window.dispatchEvent(new Event('focus')))
+    await act(async () => { await vi.advanceTimersByTimeAsync(30_000) })
+    expect(get).toHaveBeenCalledTimes(1)
+
+    setOnline(true)
+    await act(async () => {
+      window.dispatchEvent(new Event('online'))
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    expect(get).toHaveBeenCalledTimes(2)
+    expect(result.current.data).toEqual({ value: 'online' })
+  })
+
+  it('keeps the pending-approval error when useApiResource polling fails transiently', async () => {
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'visible',
+    })
+    const pendingApproval = new ApiError(403, {}, 0, 'therapist_pending_approval', {
+      approval_status: 'pending',
+    })
+    const get = vi.fn()
+      .mockRejectedValueOnce(pendingApproval)
+      .mockRejectedValueOnce(new ApiError(503))
+    const api = makeApi(get)
+    const { result } = renderHook(() => useApiResource(api, '/therapists/me/dashboard'))
+
+    await flush()
+    expect(result.current.error).toBe(pendingApproval)
+    act(() => window.dispatchEvent(new Event('focus')))
+    await flush()
+
+    expect(result.current.data).toBeNull()
+    expect(result.current.error).toBe(pendingApproval)
+  })
+
+  it('clears stale approved data after an authoritative useApiResource 4xx', async () => {
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'visible',
+    })
+    const suspended = new ApiError(403, {}, 0, 'therapist_pending_approval', {
+      approval_status: 'suspended',
+    })
+    const get = vi.fn()
+      .mockResolvedValueOnce({ therapist: { approval_status: 'approved' } })
+      .mockRejectedValueOnce(suspended)
+    const api = makeApi(get)
+    const { result } = renderHook(() => useApiResource<{ therapist: { approval_status: string } }>(
+      api,
+      '/therapists/me/dashboard',
+    ))
+
+    await flush()
+    expect(result.current.data?.therapist.approval_status).toBe('approved')
+    act(() => window.dispatchEvent(new Event('focus')))
+    await flush()
+
+    expect(result.current.data).toBeNull()
+    expect(result.current.error).toBe(suspended)
+  })
+
+  it('keeps a useCareResource error unchanged after a transient background failure', async () => {
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'visible',
+    })
+    const pendingApproval = new ApiError(403, {}, 0, 'therapist_pending_approval')
+    const get = vi.fn()
+      .mockRejectedValueOnce(pendingApproval)
+      .mockRejectedValueOnce(new ApiError(503))
+    const api = makeApi(get)
+    const { result } = renderHook(() =>
+      useCareResource<{ value: string }>(api, '/resource', 'single', { interval: 0 }),
+    )
+
+    await flush()
+    act(() => window.dispatchEvent(new Event('focus')))
+    await flush()
+
+    expect(result.current.error).toBe(pendingApproval)
+    expect(result.current.data).toBeNull()
+  })
+
+  it('clears useCareResource data after an authoritative background 4xx', async () => {
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'visible',
+    })
+    const suspended = new ApiError(403, {}, 0, 'therapist_suspended')
+    const get = vi.fn()
+      .mockResolvedValueOnce({ value: 'approved' })
+      .mockRejectedValueOnce(suspended)
+    const api = makeApi(get)
+    const { result } = renderHook(() =>
+      useCareResource<{ value: string }>(api, '/resource', 'single', { interval: 0 }),
+    )
+
+    await flush()
+    act(() => window.dispatchEvent(new Event('focus')))
+    await flush()
+
+    expect(result.current.data).toBeNull()
+    expect(result.current.error).toBe(suspended)
+  })
+
   it('drops stale responses and preserves the last data on refresh errors', async () => {
     Object.defineProperty(document, 'visibilityState', {
       configurable: true,
@@ -204,7 +355,7 @@ describe('background resource refresh', () => {
     act(() => window.dispatchEvent(new Event('focus')))
     await flush()
     expect(result.current.data).toEqual({ value: 'newest' })
-    expect(result.current.error).toBeInstanceOf(ApiError)
+    expect(result.current.error).toBeNull()
   })
 
   it('keeps drafts during background updates and pauses polling during a care mutation', async () => {
