@@ -52,13 +52,16 @@ export type CareResource<T> = {
   reload: () => void
 }
 type Shape = 'single' | 'pages' | 'content'
-type ResourceOptions = { interval?: number }
+type ResourceOptions = {
+  interval?: number
+  shouldSkipBackground?: () => boolean
+}
 
 export function useCareResource<T>(
   api: ApiClient,
   path: string | null,
   shape: Shape = 'single',
-  { interval = 30_000 }: ResourceOptions = {},
+  { interval = 30_000, shouldSkipBackground }: ResourceOptions = {},
 ): CareResource<T> {
   const [state, setState] = useState<{
     actor: number
@@ -75,8 +78,13 @@ export function useCareResource<T>(
   const actor = api.getSessionKey()
 
   runRef.current = (background) => {
-    if (!path || (background && isCareMutationInFlight(api)) || (background && activeRequest.current))
-      return
+    if (!path) return
+    if (background && (
+      navigator.onLine === false ||
+      shouldSkipBackground?.() ||
+      isCareMutationInFlight(api) ||
+      activeRequest.current
+    )) return
     const resourcePath = path
 
     const id = ++requestId.current
@@ -166,7 +174,7 @@ export function useCareResource<T>(
       if (active && document.visibilityState === 'visible') runRef.current(true)
     }
     const onOnline = () => {
-      if (active) runRef.current(true)
+      if (active && document.visibilityState === 'visible') runRef.current(true)
     }
     window.addEventListener('focus', onRefresh)
     window.addEventListener('online', onOnline)

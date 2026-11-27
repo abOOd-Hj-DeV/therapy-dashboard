@@ -43,7 +43,20 @@ async function flush() {
   })
 }
 
-afterEach(() => vi.useRealTimers())
+const originalOnlineDescriptor = Object.getOwnPropertyDescriptor(window.navigator, 'onLine')
+
+function setOnline(online: boolean) {
+  Object.defineProperty(window.navigator, 'onLine', { configurable: true, value: online })
+}
+
+afterEach(() => {
+  vi.useRealTimers()
+  if (originalOnlineDescriptor) {
+    Object.defineProperty(window.navigator, 'onLine', originalOnlineDescriptor)
+  } else {
+    Reflect.deleteProperty(window.navigator, 'onLine')
+  }
+})
 
 describe('background resource refresh', () => {
   it('marks foreground useCareResource reloads stale while background refresh stays quiet', async () => {

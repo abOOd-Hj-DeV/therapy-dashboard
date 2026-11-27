@@ -12,7 +12,10 @@ const noUser = () => null
 export function useApiResource<T>(
   client: ApiClient | undefined,
   path: string | null,
-  { interval = 30_000 }: { interval?: number } = {},
+  {
+    interval = 30_000,
+    shouldSkipBackground,
+  }: { interval?: number; shouldSkipBackground?: () => boolean } = {},
 ) {
   const user = useSyncExternalStore(
     client?.subscribe ?? noSubscribe,
@@ -36,7 +39,12 @@ export function useApiResource<T>(
 
   runRef.current = (background) => {
     if (!enabled || !client || !path) return
-    if (background && (isCareMutationInFlight(client) || activeRequest.current)) return
+    if (background && (
+      navigator.onLine === false ||
+      shouldSkipBackground?.() ||
+      isCareMutationInFlight(client) ||
+      activeRequest.current
+    )) return
 
     const id = ++requestId.current
     activeRequest.current?.abort()
@@ -103,7 +111,7 @@ export function useApiResource<T>(
       if (active && document.visibilityState === 'visible') runRef.current(true)
     }
     const onOnline = () => {
-      if (active) runRef.current(true)
+      if (active && document.visibilityState === 'visible') runRef.current(true)
     }
     window.addEventListener('focus', onRefresh)
     window.addEventListener('online', onOnline)
