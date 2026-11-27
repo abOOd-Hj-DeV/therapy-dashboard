@@ -109,6 +109,11 @@ describe('live routing boundaries', () => {
     expect(await screen.findByText('لا توجد مستندات مطلوبة.')).toBeInTheDocument()
     expect(fetch.mock.calls[1][0]).toEqual(expect.stringMatching(/\/therapists\/me\/documents$/))
     fireEvent.click(screen.getByRole('link', { name: 'إعدادات الملف الشخصي' }))
+    const countries = Array.from(screen.getByLabelText<HTMLSelectElement>('البلد').options)
+    expect(countries.slice(1).map((option) => option.value)).toEqual(
+      'SY LB JO PS IQ SA AE QA KW BH OM YE EG SD LY TN DZ MA MR SO DJ KM TR DE GB US CA FR SE NL'.split(' '),
+    )
+    expect(countries[1]).toHaveTextContent('سوريا')
     fireEvent.change(screen.getByLabelText('التخصص'), { target: { value: 'anxiety' } })
     fireEvent.click(screen.getByRole('button', { name: 'حفظ إعدادات الملف الشخصي' }))
     expect(await screen.findByText('تم حفظ إعدادات الملف الشخصي.')).toBeInTheDocument()
