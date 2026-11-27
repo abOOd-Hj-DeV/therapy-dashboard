@@ -1,23 +1,19 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { ApiClient, ApiError, apiErrorMessage, apiId, type ApiUser } from './api'
 import { useApiResource, useApiUser } from './api-hooks'
+import { useMutation } from './api-mutation'
 import { Workspace } from './Workspace'
 import { passwordPolicyMessage, validNewPassword } from './auth-policy'
 import { Modal } from './ui'
 import { FaqSummary, RemainingIcon, SettingRow, type RemainingIconName } from './RemainingUI'
+import { approvalLabel } from './therapist-approval'
+import { optionName, useTherapistOptions } from './therapist-options'
+import { TherapistProfileForm } from './TherapistProfileForm'
+import { profileReviewError, therapistProfilePath, type TherapistProfileResponse } from './therapist-profile-review'
 
 type Page = 'profile' | 'settings' | 'help'
 type Props = { page: Page; navigate: (path: string) => void; api?: ApiClient }
 type Therapist = {
-  id: string
-  full_name: string
-  specialty: string
-  country: string
-  languages: string[] | Record<string, string> | null
-  bio: string | null
-  rating: number
-  approval_status: 'pending' | 'approved' | 'rejected' | null
-  has_license: boolean
   availability: Partial<Record<Day, string[]>> | [] | null
 }
 type Dashboard = {
@@ -31,7 +27,7 @@ type PeriodBody = { start_date: string; end_date: string | null; reason: string 
 const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const
 type Day = (typeof days)[number]
 const titles = {
-  edit: 'Edit Profile',
+  edit: 'تعديل الملف الشخصي',
   hours: 'Work Hours Management',
   holidays: 'Vacations and Breaks',
   password: 'Change Password',
@@ -42,10 +38,6 @@ const titles = {
 }
 type Dialog = keyof typeof titles | ''
 const fieldLabels: Record<string, string> = {
-  specialty: 'Specialty',
-  country: 'Country',
-  languages: 'Languages',
-  bio: 'Bio',
   availability: 'Working hours',
   current_password: 'Current password',
   password: 'New password',
@@ -81,49 +73,6 @@ function Failure({ error }: { error: unknown }) {
       ))}
     </div>
   )
-}
-
-// A synchronous lock prevents double clicks before React updates. Aborting/unmounting
-// and actor checks also protect against transports that resolve despite cancellation.
-function useMutation(api: ApiClient) {
-  const [pending, setPending] = useState(false)
-  const [error, setError] = useState<unknown>(null)
-  const active = useRef(false)
-  const request = useRef<AbortController | null>(null)
-  useEffect(() => {
-    active.current = true
-    return () => {
-      active.current = false
-      request.current?.abort()
-    }
-  }, [api])
-  async function run<T>(
-    work: (signal: AbortSignal) => Promise<T>,
-    success: (value: T) => void,
-    failed?: (error: unknown) => void,
-  ) {
-    if (request.current || !active.current || !api.getUser()) return
-    const actor = api.getUser()?.id
-    const controller = new AbortController()
-    request.current = controller
-    setPending(true)
-    setError(null)
-    const current = () =>
-      active.current && !controller.signal.aborted && api.getUser()?.id === actor
-    try {
-      const value = await work(controller.signal)
-      if (current()) success(value)
-    } catch (cause) {
-      if (current()) {
-        setError(cause)
-        failed?.(cause)
-      }
-    } finally {
-      if (request.current === controller) request.current = null
-      if (current()) setPending(false)
-    }
-  }
-  return { pending, error, run }
 }
 
 function Actions({
@@ -179,8 +128,13 @@ function ProfileActor({
     api,
     validIdentity ? '/therapists/me/dashboard' : null,
   )
-  const [savedProfile, setSavedProfile] = useState<Therapist | null>(null)
-  const therapist = savedProfile ?? dashboard.data?.therapist ?? null
+  const profile = useApiResource<TherapistProfileResponse>(api, validIdentity ? therapistProfilePath : null)
+  const review = profile.data?.data
+  const published = review?.published
+  const pending = review?.pending_revision
+  const last = review?.last_review
+  const options = useTherapistOptions(api, !!published)
+  const approval = review && approvalLabel(review.approval_status)
   const timezone = dashboard.data?.timezone || identity.data?.user.timezone || user.timezone
   const [dialog, setDialog] = useState<Dialog>(() => {
     const requested = new URLSearchParams(window.location.search).get('state')
@@ -191,12 +145,7 @@ function ProfileActor({
   const periodKeys = useRef(new Map<string, string>())
   const uncertainPeriod = useRef<PeriodBody | null>(null)
   const close = () => setDialog('')
-  function saved(value: Therapist, message: string) {
-    setSavedProfile(value)
-    close()
-    setNotice(message)
-  }
-  const name = therapist?.full_name || identity.data?.user.name || user.name
+  const name = published?.full_name || identity.data?.user.name || user.name
   return (
     <Workspace title="Profile" active="Profile" navigate={navigate} api={api}>
       <div className={`profile-layout profile-${page}`}>
@@ -211,23 +160,21 @@ function ProfileActor({
             </span>
             <div>
               <h2>{name}</h2>
-              <p>
-                {therapist
-                  ? `Approval: ${therapist.approval_status ?? 'Not submitted'}`
-                  : 'Therapist account'}
+              <p lang="ar" dir="rtl">
+                {approval ? `حالة الموافقة: ${approval}` : 'حساب المعالج'}
               </p>
             </div>
           </div>
           <button
             className="remaining-primary profile-edit"
-            disabled={!therapist}
+            disabled={!published}
             onClick={() => setDialog('edit')}
           >
-            Edit Profile
+            {titles.edit}
           </button>
           <div className="profile-description">
             <h3>Description</h3>
-            <p>{therapist?.specialty || 'Professional profile unavailable.'}</p>
+            <p>{published?.specialty ? optionName(options.specialties, published.specialty) : 'Professional profile unavailable.'}</p>
           </div>
           {dashboard.data && (
             <div className="profile-counts">
@@ -256,25 +203,32 @@ function ProfileActor({
               </button>
             ))}
           </nav>
-          {(identity.loading || dashboard.loading) && <p role="status">Loading profile…</p>}
+          {(identity.loading || dashboard.loading || profile.loading) && <p role="status">Loading profile…</p>}
           <Failure error={identity.error || dashboard.error} />
-          {(identity.error || dashboard.error) && (
+          {(identity.error || dashboard.error || profile.error) && (
             <>
-              <p>
-                Professional profile unavailable. Approval or care permissions may be required; the
-                API has no unrestricted self-profile read. No sample profile is substituted.
-              </p>
+              {profile.error && <p role="alert" lang="ar" dir="rtl">{profileReviewError(profile.error)}</p>}
               <button
                 className="remaining-cancel"
                 onClick={() => {
-                  setSavedProfile(null)
                   identity.reload()
                   dashboard.reload()
+                  profile.reload()
                 }}
               >
                 Retry profile
               </button>
             </>
+          )}
+          {(pending?.kind === 'update' || (last?.kind === 'update' && last.status === 'rejected')) && (
+            <div className="profile-review-banner" lang="ar" dir="rtl">
+              {pending?.kind === 'update' && (
+                <p role="status">تعديلات ملفك المهني بانتظار المراجعة. يظل الملف المنشور دون تغيير حتى الموافقة.</p>
+              )}
+              {last?.kind === 'update' && last.status === 'rejected' && (
+                <p>لم تُعتمد آخر تعديلات ملفك المهني.{last.note && <> سبب الرفض: <bdi>{last.note}</bdi></>}</p>
+              )}
+            </div>
           )}
           {identity.data && !validIdentity && (
             <p role="alert">
@@ -287,8 +241,8 @@ function ProfileActor({
               <section className="profile-about">
                 <h3>About Me</h3>
                 <p>
-                  {therapist
-                    ? therapist.bio || 'No bio provided.'
+                  {published
+                    ? published.bio || 'No bio provided.'
                     : 'Professional profile unavailable.'}
                 </p>
               </section>
@@ -296,32 +250,27 @@ function ProfileActor({
                 <section>
                   <h3>Professional Information</h3>
                   <div className="profile-info-rows">
-                    <Info icon="briefcase" label="Specialty" value={therapist?.specialty} />
-                    <Info icon="location" label="Country" value={therapist?.country} />
+                    <Info icon="briefcase" label="المسمى الوظيفي" value={published?.job_title} arabic />
+                    <Info icon="briefcase" label="التخصص" value={published?.specialty && optionName(options.specialties, published.specialty)} arabic />
+                    <Info icon="location" label="المدينة" value={published?.city} arabic />
+                    <Info icon="location" label="البلد" value={published?.country && optionName(options.countries, published.country)} arabic />
                     <Info
                       icon="user"
-                      label="Languages"
-                      value={
-                        therapist?.languages
-                          ? Object.values(therapist.languages).join(', ')
-                          : undefined
-                      }
+                      label="اللغات"
+                      value={published?.languages?.map((code) => optionName(options.languages, code)).join('، ')}
+                      arabic
                     />
                     <Info
                       icon="award"
-                      label="License file"
-                      value={
-                        therapist
-                          ? therapist.has_license
-                            ? 'On file (not independent verification)'
-                            : 'Not on file'
-                          : undefined
-                      }
+                      label="سنوات الخبرة"
+                      value={published?.years_of_experience == null ? undefined : String(published.years_of_experience)}
+                      arabic
                     />
                     <Info
                       icon="user"
-                      label="Approval status"
-                      value={therapist?.approval_status ?? undefined}
+                      label="حالة الموافقة"
+                      value={approval}
+                      arabic
                     />
                   </div>
                 </section>
@@ -333,11 +282,12 @@ function ProfileActor({
                       label="Account name"
                       value={identity.data?.user.name || user.name}
                     />
-                    <Info icon="mail" label="Email" value={identity.data?.user.email ?? user.email} />
+                    <Info icon="mail" label="البريد الإلكتروني" value={published?.email} arabic />
                     <Info
                       icon="phone"
-                      label="Mobile Number"
-                      value={identity.data?.user.whatsapp_number || user.whatsapp_number}
+                      label="رقم الجوال"
+                      value={review?.account.whatsapp_number ?? user.whatsapp_number}
+                      arabic
                     />
                     <Info icon="clock" label="Scheduling timezone" value={timezone} />
                   </div>
@@ -367,7 +317,8 @@ function ProfileActor({
               </section>
               <section className="profile-account">
                 <h3>Account Settings</h3>
-                <SettingRow icon="user" title="Edit Profile" onClick={() => setDialog('edit')} />
+                <SettingRow icon="user" title={titles.edit} onClick={() => setDialog('edit')} />
+                <SettingRow icon="briefcase" title="المستندات المطلوبة" onClick={() => navigate('/profile/documents')} />
                 <SettingRow
                   icon="lock"
                   title="Change Password"
@@ -429,33 +380,43 @@ function ProfileActor({
           title={titles[dialog]}
           className={`remaining-modal ${dialog}-modal`}
           closeIcon={<RemainingIcon name="close" />}
+          lang={dialog === 'edit' ? 'ar' : undefined}
+          dir={dialog === 'edit' ? 'rtl' : undefined}
+          closeLabel={dialog === 'edit' ? 'إغلاق نافذة التعديل' : undefined}
           onClose={close}
         >
           {dialog === 'edit' &&
-            (therapist ? (
-              <EditSettings
+            (published && review ? (
+              <TherapistProfileForm
                 api={api}
-                user={identity.data?.user || user}
-                therapist={therapist}
+                initial={pending?.kind === 'update' ? pending.data : published}
+                phone={review.account.whatsapp_number}
+                options={options}
                 close={close}
-                saved={(value) => saved(value, 'Profile settings updated on the server.')}
+                submitLabel="إرسال التعديلات للمراجعة"
+                saved={(response) => {
+                  profile.replace(response)
+                  close()
+                }}
               />
             ) : (
-              <Unavailable close={close} />
+              <>
+                <p role="alert">بيانات الملف المهني غير متاحة الآن.</p>
+                <button className="remaining-cancel" onClick={close}>إغلاق</button>
+              </>
             ))}
           {dialog === 'hours' &&
-            (therapist && timezone ? (
+            (dashboard.data?.therapist && timezone ? (
               <WorkingHours
                 api={api}
-                therapist={therapist}
+                therapist={dashboard.data.therapist}
                 timezone={timezone}
                 close={close}
-                saved={(value) =>
-                  saved(
-                    value,
-                    'Working hours updated on the server. Existing appointments have not been cancelled.',
-                  )
-                }
+                saved={(value) => {
+                  if (dashboard.data) dashboard.replace({ ...dashboard.data, therapist: value })
+                  close()
+                  setNotice('Working hours updated on the server. Existing appointments have not been cancelled.')
+                }}
               />
             ) : (
               <Unavailable close={close} />
@@ -537,17 +498,19 @@ function Info({
   icon,
   label,
   value,
+  arabic = false,
 }: {
   icon: RemainingIconName
   label: string
   value?: string | null
+  arabic?: boolean
 }) {
   return (
-    <div className="profile-info-row">
+    <div className="profile-info-row" dir={arabic ? 'rtl' : undefined} lang={arabic ? 'ar' : undefined}>
       <RemainingIcon name={icon} />
       <div>
         <small>{label}</small>
-        <p>{value || 'Not provided'}</p>
+        <p dir={arabic ? 'auto' : undefined}>{value || (arabic ? 'غير متوفرة' : 'Not provided')}</p>
       </div>
     </div>
   )
@@ -556,8 +519,7 @@ function Unavailable({ close }: { close: () => void }) {
   return (
     <>
       <p role="alert">
-        Professional profile is unavailable. Wait for loading or resolve approval/access issues
-        before editing. The API does not provide a self-profile read for all onboarding accounts.
+        Working hours are unavailable. Wait for loading or resolve access issues before editing.
       </p>
       <button className="remaining-cancel" onClick={close}>
         Close
@@ -571,115 +533,6 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
       {label}
       {children}
     </label>
-  )
-}
-
-function EditSettings({
-  api,
-  user,
-  therapist,
-  close,
-  saved,
-}: {
-  api: ApiClient
-  user: ApiUser
-  therapist: Therapist
-  close: () => void
-  saved: (therapist: Therapist) => void
-}) {
-  const [draft, setDraft] = useState({
-    specialty: therapist.specialty,
-    country: therapist.country,
-    languages: Object.values(therapist.languages ?? []).join(', '),
-    bio: therapist.bio ?? '',
-  })
-  const [validation, setValidation] = useState('')
-  const mutation = useMutation(api)
-  function submit(event: FormEvent) {
-    event.preventDefault()
-    const languages = draft.languages
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean)
-    if (
-      !draft.specialty.trim() ||
-      !draft.country.trim() ||
-      languages.some((item) => item.length > 10)
-    ) {
-      setValidation(
-        'Enter specialty and country; each comma-separated language must be at most 10 characters.',
-      )
-      return
-    }
-    setValidation('')
-    const body = {
-      specialty: draft.specialty.trim(),
-      country: draft.country.trim(),
-      languages,
-      bio: draft.bio.trim() || null,
-    }
-    void mutation.run(
-      (signal) =>
-        api.request<{ data: Therapist }>('/therapists/me/settings', 'PUT', { body, signal }),
-      (result) => saved(result.data),
-    )
-  }
-  return (
-    <form onSubmit={submit}>
-      <p className="remaining-muted">
-        Identity and contact details are server-owned and cannot be changed here. Only specialty,
-        country, languages and bio are supported.
-      </p>
-      <Field label="Professional name">
-        <input disabled value={therapist.full_name} />
-      </Field>
-      <div className="remaining-field-grid">
-        <Field label="Email">
-          <input disabled value={user.email ?? ''} />
-        </Field>
-        <Field label="Mobile Number">
-          <input disabled value={user.whatsapp_number} />
-        </Field>
-      </div>
-      <fieldset disabled={mutation.pending}>
-        <Field label="Specialty">
-          <input
-            required
-            maxLength={255}
-            value={draft.specialty}
-            onChange={(event) => setDraft({ ...draft, specialty: event.target.value })}
-          />
-        </Field>
-        <Field label="Country">
-          <input
-            required
-            maxLength={100}
-            value={draft.country}
-            onChange={(event) => setDraft({ ...draft, country: event.target.value })}
-          />
-        </Field>
-        <Field label="Languages (comma-separated)">
-          <input
-            value={draft.languages}
-            onChange={(event) => setDraft({ ...draft, languages: event.target.value })}
-          />
-        </Field>
-        <Field label="Bio (optional)">
-          <textarea
-            maxLength={2000}
-            value={draft.bio}
-            onChange={(event) => setDraft({ ...draft, bio: event.target.value })}
-          />
-        </Field>
-      </fieldset>
-      {validation && (
-        <p className="remaining-error" role="alert">
-          {validation}
-        </p>
-      )}
-      <Failure error={mutation.error} />
-      <Actions pending={mutation.pending} close={close} />
-    </form>
   )
 }
 
@@ -966,7 +819,9 @@ function BlockedPeriods({
       >
         Refresh blocked periods
       </button>
-      {!periods.loading && periods.data?.data.length === 0 && <p>No blocked periods.</p>}
+      {!periods.loading && !periods.error && periods.data?.data.length === 0 && (
+        <p>No blocked periods.</p>
+      )}
       <div className="holiday-list">
         {periods.data?.data.map((period) => (
           <article key={period.id}>
@@ -1221,7 +1076,7 @@ function Faqs({ api }: { api: ApiClient }) {
           Retry FAQs
         </button>
       )}
-      {state?.data.length === 0 && <p>No published FAQs.</p>}
+      {state?.data.length === 0 && !error && <p>No published FAQs.</p>}
       {state?.data.map((faq, index) => (
         <details key={faq.id} open={index === 0}>
           <FaqSummary>{faq.question}</FaqSummary>

@@ -200,7 +200,7 @@ function ActorChats({
                 </span>
               </button>
             ))}
-            {list.data && conversations.length === 0 && (
+            {list.data && !list.error && conversations.length === 0 && (
               <p className="empty-result">No conversations found.</p>
             )}
           </div>
@@ -281,7 +281,9 @@ function OwnedClients({
             {client.full_name || 'Client'}
           </button>
         ))}
-      {resource.data?.data.length === 0 && <p>No currently assigned clients.</p>}
+      {resource.data?.data.length === 0 && !resource.error && (
+        <p>No currently assigned clients.</p>
+      )}
       {resource.data && (
         <nav aria-label="Assigned client pages">
           <button
@@ -611,7 +613,7 @@ function ChatThread({
           </p>
         )}
         {!!resource.retryAt && <p role="status">Waiting before retrying the server.</p>}
-        {resource.data && messages.length === 0 && <p>No messages yet.</p>}
+        {resource.data && !resource.error && messages.length === 0 && <p>No messages yet.</p>}
         {!resource.error &&
           messages.map((message) => (
             <div

@@ -1,6 +1,11 @@
 import { useState, type FormEvent, type MouseEvent } from 'react'
-import { ApiClient, apiErrorMessage, apiId, type ApiError } from './api'
+import { apiId, type ApiClient } from './api'
 import { useApiResource } from './api-hooks'
+import { useMutation } from './api-mutation'
+import { documentFileError, documentFileTypes, documentError, approvalLabel } from './therapist-approval'
+import { useTherapistOptions } from './therapist-options'
+import { TherapistProfileForm, TherapistProfileSummary } from './TherapistProfileForm'
+import type { TherapistProfileResponse, TherapistProfileReview } from './therapist-profile-review'
 
 type Document = {
   id: string
@@ -10,231 +15,167 @@ type Document = {
   review_note: string | null
   accepts_upload: boolean
 }
-
-const sections = {
-  '/profile/settings': 'Profile settings',
-  '/profile/approval': 'Submit for approval',
-  '/profile/documents': 'Requested documents',
+const documentTypes: Record<string, string> = {
+  license: 'ترخيص مزاولة المهنة',
+  identity: 'إثبات الهوية',
+  certificate: 'شهادة',
+  payment_proof: 'إثبات الدفع',
+  support_file: 'مستند داعم',
+  other: 'مستند آخر',
 }
-const copy = {
-  pending: {
-    title: 'Your account is awaiting admin approval',
-    next: 'Complete your profile and submit your license for review. An administrator will review your application before you can access the dashboard, sessions, or clients.',
-  },
-  rejected: {
-    title: 'Your account was not approved',
-    next: 'Review your profile and any document requests. Contact your administrator if you have questions, then resubmit your profile for review.',
-  },
-  suspended: {
-    title: 'Your account is suspended',
-    next: 'Contact your administrator to learn what is needed to restore dashboard access.',
-  },
+const documentStatuses: Record<string, string> = {
+  requested: 'مطلوب',
+  submitted: 'قيد المراجعة',
+  approved: 'تمت الموافقة',
+  rejected: 'مرفوض',
 }
 
 export function TherapistOnboarding({
-  api,
-  path,
-  approvalResponse,
-  navigate,
-  checkingApproval,
-  approvalCheckFailed,
-  checkApproval,
+  api, path, review, navigate, logout, checkingApproval, approvalCheckFailed, checkApproval, saved,
 }: {
   api: ApiClient
   path: string
-  approvalResponse: ApiError
+  review: TherapistProfileReview
   navigate: (path: string) => void
+  logout: () => Promise<void>
   checkingApproval: boolean
   approvalCheckFailed: boolean
   checkApproval: () => void
+  saved: (response: TherapistProfileResponse) => void
 }) {
-  const [submittedAfter, setSubmittedAfter] = useState<ApiError | null>(null)
-  const [busy, setBusy] = useState(false)
-  const [notice, setNotice] = useState<{ error?: string; success?: string }>({})
-  const documents = useApiResource<{ data: Document[] }>(
-    api,
-    path === '/profile/documents' ? '/therapists/me/documents' : null,
-  )
-  const status = approvalResponse.meta.approval_status
-  const current =
-    status === 'rejected' && submittedAfter !== approvalResponse
-      ? 'rejected'
-      : status === 'suspended'
-        ? 'suspended'
-        : 'pending'
+  const [editing, setEditing] = useState(false)
+  const showDocuments = path === '/profile/documents'
+  const status = review.approval_status
+  const pending = review.pending_revision
+  const last = review.last_review
+  const rejectedReview = status === 'rejected' && last?.status === 'rejected' ? last : null
+  const initial = pending?.data ?? rejectedReview?.data ?? {
+    ...review.published,
+    email: review.published.email ?? review.account.email,
+  }
+  const shownForm = status === null || status === 'rejected' || (status === 'pending' && editing && !!pending)
+  const options = useTherapistOptions(api, !showDocuments || shownForm)
 
   function link(event: MouseEvent<HTMLAnchorElement>, next: string) {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
     event.preventDefault()
-    setNotice({})
     navigate(next)
   }
 
-  async function save(event: FormEvent<HTMLFormElement>, document?: Document) {
+  return (
+    <main className="approval-page" lang="ar" dir="rtl">
+      <h1>{showDocuments ? 'المستندات المطلوبة' : status === null ? 'أكمل ملفك المهني' : approvalLabel(status)}</h1>
+      <nav aria-label="إعداد حساب المعالج">
+        {status === 'approved' ? (
+          <a href="/dashboard" onClick={(event) => link(event, '/dashboard')}>لوحة التحكم</a>
+        ) : (
+          <a href="/profile/approval" aria-current={!showDocuments ? 'page' : undefined} onClick={(event) => link(event, '/profile/approval')}>
+            طلب مراجعة الملف المهني
+          </a>
+        )}
+        <a href="/profile/documents" aria-current={showDocuments ? 'page' : undefined} onClick={(event) => link(event, '/profile/documents')}>
+          المستندات المطلوبة
+        </a>
+      </nav>
+      {showDocuments && <RequestedDocuments api={api} />}
+      <div hidden={showDocuments}>
+        {status === null && <p>أكمل بيانات ملفك المهني ثم أرسله للمراجعة.</p>}
+        {status === 'pending' && <p>طلبك قيد المراجعة. ستتحدّث الحالة تلقائيًا عند صدور القرار.</p>}
+        {status === 'rejected' && (
+          <>
+            {last?.status === 'rejected' && last.note && <p>سبب الرفض: <bdi>{last.note}</bdi></p>}
+            <p>عدّل بيانات ملفك المهني وأعد إرساله للمراجعة.</p>
+          </>
+        )}
+        {status === 'pending' && !editing && pending && (
+          <section aria-labelledby="submitted-profile">
+            <h2 id="submitted-profile">البيانات المرسلة للمراجعة</h2>
+            <TherapistProfileSummary profile={pending.data} phone={review.account.whatsapp_number} options={options} />
+            <button type="button" className="soft-button" onClick={() => setEditing(true)}>تعديل الطلب</button>
+          </section>
+        )}
+        {shownForm && (
+          <TherapistProfileForm
+            key={`${status}:${pending?.id ?? rejectedReview?.revision_id ?? ''}`}
+            api={api}
+            initial={initial}
+            phone={review.account.whatsapp_number}
+            options={options}
+            submitLabel={status === null ? 'إرسال الملف للمراجعة' : 'إعادة إرسال الطلب للمراجعة'}
+            saved={(response) => {
+              setEditing(false)
+              saved(response)
+            }}
+            close={status === 'pending' ? () => setEditing(false) : undefined}
+          />
+        )}
+      </div>
+      {approvalCheckFailed && <p role="alert">تعذّر تحديث حالة المراجعة. حاول مرة أخرى.</p>}
+      <div className="approval-actions">
+        <button type="button" className="soft-button" disabled={checkingApproval} onClick={checkApproval}>
+          التحقق من حالة المراجعة
+        </button>
+        <button type="button" className="soft-button" onClick={logout}>تسجيل الخروج</button>
+      </div>
+    </main>
+  )
+}
+
+function RequestedDocuments({ api }: { api: ApiClient }) {
+  const documents = useApiResource<{ data: Document[] }>(api, '/therapists/me/documents')
+  const mutation = useMutation(api)
+  const [notice, setNotice] = useState<{ error?: string; success?: string }>({})
+
+  function submit(event: FormEvent<HTMLFormElement>, id: string) {
     event.preventDefault()
-    if (busy) return
+    if (mutation.pending) return
     const form = event.currentTarget
-    const data = new FormData(form)
+    const file = (form.elements.namedItem('file') as HTMLInputElement).files?.[0]
+    const error = documentFileError(file)
+    if (error || !file) {
+      setNotice({ error })
+      return
+    }
+    const data = new FormData()
+    data.set('file', file)
     setNotice({})
-    setBusy(true)
-    try {
-      if (document) {
-        await api.mutate(`/therapists/me/documents/${apiId(document.id)}/upload`, data)
+    void mutation.run(
+      (signal) => api.mutate(`/therapists/me/documents/${apiId(id)}/upload`, data, { signal }),
+      () => {
         form.reset()
         documents.reload()
-        setNotice({ success: 'Document submitted for review.' })
-      } else if (path === '/profile/approval') {
-        const license = data.get('license')
-        if (license instanceof File && !license.size) data.delete('license')
-        await api.mutate('/therapists/me/approval', data)
-        form.reset()
-        setSubmittedAfter(approvalResponse)
-        setNotice({ success: 'Profile submitted for approval.' })
-      } else {
-        const specialty = String(data.get('specialty')).trim()
-        const country = String(data.get('country')).trim()
-        const languages = String(data.get('languages'))
-          .split(',')
-          .map((item) => item.trim())
-          .filter(Boolean)
-        const bio = String(data.get('bio')).trim()
-        const body = {
-          ...(specialty && { specialty }),
-          ...(country && { country }),
-          ...(languages.length && { languages }),
-          ...(bio && { bio }),
-        }
-        if (!Object.keys(body).length) {
-          setNotice({ error: 'Enter at least one profile detail to update.' })
-          return
-        }
-        await api.request('/therapists/me/settings', 'PUT', { body })
-        setNotice({ success: 'Profile settings saved.' })
-      }
-    } catch (error) {
-      setNotice({ error: apiErrorMessage(error) })
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function logout() {
-    try {
-      await api.logout()
-      navigate('/login')
-    } catch {
-      navigate('/login?logout=revocation-unknown')
-    }
+        setNotice({ success: 'تم إرسال المستند للمراجعة.' })
+      },
+      (cause) => setNotice({ error: documentError(cause, true) }),
+    )
   }
 
   return (
-    <main className="approval-page">
-      <h1>{copy[current].title}</h1>
-      <p>Status: {current}</p>
-      <p>{copy[current].next}</p>
-      <nav aria-label="Therapist onboarding">
-        {Object.entries(sections).map(([href, label]) => (
-          <a
-            key={href}
-            href={href}
-            aria-current={path === href ? 'page' : undefined}
-            onClick={(event) => link(event, href)}
-          >
-            {label}
-          </a>
-        ))}
-      </nav>
-      {path === '/profile/settings' && (
-        <form className="auth-form" onSubmit={save}>
-          <h2>Profile settings</h2>
-          <p>Enter only the details you want to update.</p>
-          <fieldset disabled={busy}>
-            <label>
-              Specialty
-              <input name="specialty" maxLength={255} />
-            </label>
-            <label>
-              Country
-              <input name="country" maxLength={100} />
-            </label>
-            <label>
-              Language codes (comma-separated)
-              <input name="languages" />
-            </label>
-            <label>
-              Bio
-              <textarea name="bio" maxLength={2000} />
-            </label>
-            <button className="primary-button" type="submit">
-              Save profile settings
-            </button>
-          </fieldset>
-        </form>
+    <section>
+      {documents.loading && <p role="status">جارٍ تحميل طلبات المستندات…</p>}
+      {documents.error && <p role="alert">{documentError(documents.error)}</p>}
+      {documents.data?.data.length === 0 && !documents.error && !documents.loading && (
+        <p>لا توجد مستندات مطلوبة.</p>
       )}
-      {path === '/profile/approval' && (
-        <form className="auth-form" onSubmit={save}>
-          <h2>Submit for approval</h2>
-          <p>Upload a license (JPG, PNG, or PDF, up to 5 MB) if one is not already on file.</p>
-          <fieldset disabled={busy}>
-            <label>
-              License
-              <input name="license" type="file" accept="image/jpeg,image/png,application/pdf" />
-            </label>
-            <button className="primary-button" type="submit">
-              Submit profile for review
-            </button>
-          </fieldset>
-        </form>
-      )}
-      {path === '/profile/documents' && (
-        <section>
-          <h2>Requested documents</h2>
-          {documents.loading && <p role="status">Loading requests…</p>}
-          {documents.error && <p role="alert">{apiErrorMessage(documents.error)}</p>}
-          {documents.data?.data.length === 0 && <p>No documents have been requested.</p>}
-          {documents.data?.data.map((document) => (
-            <article key={document.id}>
-              <h3>{document.doc_type}</h3>
-              <p>Status: {document.status}</p>
-              {document.reason && <p>{document.reason}</p>}
-              {document.review_note && <p>{document.review_note}</p>}
-              {document.accepts_upload && (
-                <form onSubmit={(event) => void save(event, document)}>
-                  <label>
-                    Document for {document.doc_type}
-                    <input
-                      name="file"
-                      type="file"
-                      accept="image/jpeg,image/png,application/pdf"
-                      required
-                      disabled={busy}
-                    />
-                  </label>
-                  <button type="submit" disabled={busy}>
-                    Upload document
-                  </button>
-                </form>
-              )}
-            </article>
-          ))}
-        </section>
-      )}
+      {documents.data?.data.map((document) => (
+        <article key={document.id}>
+          <h2>{documentTypes[document.doc_type] ?? 'مستند'}</h2>
+          <p>الحالة: {documentStatuses[document.status] ?? 'غير معروفة'}</p>
+          {document.reason && <p>سبب الطلب: <bdi>{document.reason}</bdi></p>}
+          {document.review_note && <p>ملاحظة المراجعة: <bdi>{document.review_note}</bdi></p>}
+          {document.accepts_upload && (
+            <form onSubmit={(event) => submit(event, document.id)}>
+              <label>
+                {documentTypes[document.doc_type] ?? 'المستند'}
+                <input name="file" type="file" accept={documentFileTypes} required disabled={mutation.pending} />
+              </label>
+              <button type="submit" disabled={mutation.pending}>رفع المستند</button>
+            </form>
+          )}
+        </article>
+      ))}
       {notice.error && <p role="alert">{notice.error}</p>}
       {notice.success && <p role="status">{notice.success}</p>}
-      {approvalCheckFailed && <p role="alert">Could not check approval status. Try again.</p>}
-      <div className="approval-actions">
-        <button
-          type="button"
-          className="soft-button"
-          disabled={busy || checkingApproval}
-          onClick={checkApproval}
-        >
-          Check approval status
-        </button>
-        <button type="button" className="soft-button" onClick={logout}>
-          Log out
-        </button>
-      </div>
-    </main>
+    </section>
   )
 }

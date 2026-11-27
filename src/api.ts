@@ -25,6 +25,13 @@ export type LoginChallenge = {
   request_reference: string
 }
 
+export type TherapistApprovalStatus = 'pending' | 'approved' | 'rejected' | 'suspended' | null
+
+export function isTherapistApprovalStatus(value: unknown): value is TherapistApprovalStatus {
+  return value === null || value === 'pending' || value === 'approved' ||
+    value === 'rejected' || value === 'suspended'
+}
+
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
@@ -32,7 +39,8 @@ export class ApiError extends Error {
     public readonly retryAfter = 0,
     public readonly code?: string,
     public readonly meta: {
-      approval_status?: string
+      approval_status?: TherapistApprovalStatus
+      approval_note?: string | null
       attempts_left?: number
       retry_after?: number
     } = {},
@@ -403,6 +411,7 @@ export class ApiClient {
         const seconds = value?.meta?.retry_after
         const attempts = value?.meta?.attempts_left
         const approval = value?.meta?.approval_status
+        const approvalNote = value?.meta?.approval_note
         const retry = response.headers.get('Retry-After')
         const delay = retry
           ? /^\d+$/.test(retry)
@@ -417,8 +426,12 @@ export class ApiClient {
           {
             ...(Number.isInteger(attempts) && attempts >= 0 && { attempts_left: attempts }),
             ...(Number.isInteger(seconds) && seconds > 0 && { retry_after: seconds }),
-            ...(['pending', 'approved', 'rejected', 'suspended'].includes(approval) && {
+            ...(code === 'therapist_pending_approval' && isTherapistApprovalStatus(approval) && {
               approval_status: approval,
+              ...(approval === 'rejected' &&
+                (typeof approvalNote === 'string' || approvalNote === null) && {
+                  approval_note: approvalNote,
+                }),
             }),
           },
         )

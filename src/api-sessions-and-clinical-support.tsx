@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiClient, ApiError, apiErrorMessage, safeExternalUrl } from './api'
+import { isCareMutationInFlight, trackCareMutation } from './api-resource-refresh'
 import './visual-sessions-clinical.css'
 
 export type CareSession = {
@@ -51,44 +52,75 @@ export type CareResource<T> = {
   reload: () => void
 }
 type Shape = 'single' | 'pages' | 'content'
+type ResourceOptions = {
+  interval?: number
+  shouldSkipBackground?: () => boolean
+}
 
-// Reload keeps real data/drafts mounted, but marks it stale and disables writes.
-// Route and actor changes use a new scope; no sensitive state is persisted.
 export function useCareResource<T>(
   api: ApiClient,
   path: string | null,
   shape: Shape = 'single',
+  { interval = 30_000, shouldSkipBackground }: ResourceOptions = {},
 ): CareResource<T> {
-  const [revision, setRevision] = useState(0)
   const [state, setState] = useState<{
+    actor: number
+    shape: Shape
     path: string | null
     data: T | null
     loading: boolean
     error: unknown | null
-  }>({ path, data: null, loading: !!path, error: null })
-  const reload = useCallback(() => {
-    setState((current) => ({ ...current, loading: !!current.path, error: null }))
-    setRevision((value) => value + 1)
-  }, [])
-  useEffect(() => {
+  }>({ actor: api.getSessionKey(), shape, path, data: null, loading: !!path, error: null })
+  const activeRequest = useRef<AbortController | null>(null)
+  const requestId = useRef(0)
+  const mounted = useRef(false)
+  const runRef = useRef<(background: boolean) => void>(() => {})
+  const actor = api.getSessionKey()
+
+  runRef.current = (background) => {
     if (!path) return
+    if (background && (
+      navigator.onLine === false ||
+      shouldSkipBackground?.() ||
+      isCareMutationInFlight(api) ||
+      activeRequest.current
+    )) return
+    const resourcePath = path
+
+    const id = ++requestId.current
+    activeRequest.current?.abort()
     const controller = new AbortController()
-    let active = true
-    setState((current) => ({
-      path,
-      data: current.path === path ? current.data : null,
-      loading: true,
-      error: null,
-    }))
+    activeRequest.current = controller
+
+    // Reload keeps real data/drafts mounted, but marks it stale and disables writes.
+    setState((current) => {
+      const currentData = current.path === path && current.actor === actor && current.shape === shape
+        ? current.data
+        : null
+      return {
+        path,
+        actor,
+        shape,
+        data: currentData,
+        loading: background ? current.loading : true,
+        error: current.path === path && current.actor === actor && current.shape === shape
+          ? current.error
+          : null,
+      }
+    })
+
     async function load(): Promise<T> {
-      if (shape === 'single') return api.get<T>(path!, controller.signal)
+      if (shape === 'single') return api.get<T>(resourcePath, controller.signal)
       const items: unknown[] = []
       let lastPage = 1
       for (let page = 1; page <= lastPage; page++) {
         const result = await api.get<{
           data: unknown[] | { data: unknown[]; last_page: number }
           pagination?: { last_page: number }
-        }>(`${path}${path!.includes('?') ? '&' : '?'}page=${page}`, controller.signal)
+        }>(
+          `${resourcePath}${resourcePath.includes('?') ? '&' : '?'}page=${page}`,
+          controller.signal,
+        )
         const paginator =
           shape === 'content' ? (result.data as { data: unknown[]; last_page: number }) : null
         const rows = paginator ? paginator.data : result.data
@@ -99,26 +131,85 @@ export function useCareResource<T>(
       }
       return items as unknown as T
     }
+
+    const current = () =>
+      mounted.current &&
+      id === requestId.current &&
+      !controller.signal.aborted &&
+      api.getSessionKey() === actor
+
     void load()
       .then((data) => {
-        if (active && !controller.signal.aborted)
-          setState({ path, data, loading: false, error: null })
+        if (current()) setState({ actor, shape, path, data, loading: false, error: null })
       })
       .catch((error: unknown) => {
-        if (active && !controller.signal.aborted)
-          setState((current) => ({
+        if (!current()) return
+        const apiError = error instanceof ApiError ? error : new ApiError(0)
+        if (
+          background &&
+          (apiError.status === 0 ||
+            apiError.status === 408 ||
+            apiError.status === 429 ||
+            apiError.status >= 500)
+        ) return
+        setState((currentState) => {
+          const inScope =
+            currentState.path === path &&
+            currentState.actor === actor &&
+            currentState.shape === shape
+          return {
+            actor,
+            shape,
             path,
-            data: current.path === path ? current.data : null,
+            data: inScope && !(apiError.status >= 400 && apiError.status < 500)
+              ? currentState.data
+              : null,
             loading: false,
-            error,
-          }))
+            error: apiError,
+          }
+        })
       })
+      .finally(() => {
+        if (activeRequest.current === controller) activeRequest.current = null
+      })
+  }
+
+  const reload = useCallback(() => runRef.current(false), [])
+
+  useEffect(() => {
+    if (!path) return
+    let active = true
+    mounted.current = true
+    const onRefresh = () => {
+      if (active && document.visibilityState === 'visible') runRef.current(true)
+    }
+    const onOnline = () => {
+      if (active && document.visibilityState === 'visible') runRef.current(true)
+    }
+    window.addEventListener('focus', onRefresh)
+    window.addEventListener('online', onOnline)
+    document.addEventListener('visibilitychange', onRefresh)
+    const timer = interval > 0 ? window.setInterval(onRefresh, interval) : undefined
+    runRef.current(false)
+
     return () => {
       active = false
-      controller.abort()
+      requestId.current += 1
+      activeRequest.current?.abort()
+      activeRequest.current = null
+      mounted.current = false
+      window.removeEventListener('focus', onRefresh)
+      window.removeEventListener('online', onOnline)
+      document.removeEventListener('visibilitychange', onRefresh)
+      if (timer !== undefined) window.clearInterval(timer)
     }
-  }, [api, path, shape, revision])
-  return { ...(state.path === path ? state : { data: null, loading: !!path, error: null }), reload }
+  }, [api, path, shape, actor, interval])
+  return {
+    ...(state.path === path && state.actor === actor && state.shape === shape
+      ? state
+      : { data: null, loading: !!path, error: null }),
+    reload,
+  }
 }
 
 export function ResourceStatus({
@@ -199,6 +290,7 @@ export function useCareMutation(api: ApiClient, refresh: () => void) {
       return false
     const controller = new AbortController()
     pending.current = controller
+    trackCareMutation(api, 1)
     setBusy(true)
     setError('')
     setNotice('')
@@ -263,6 +355,7 @@ export function useCareMutation(api: ApiClient, refresh: () => void) {
       }
       return false
     } finally {
+      trackCareMutation(api, -1)
       if (pending.current === controller) pending.current = null
       if (current()) setBusy(false)
     }

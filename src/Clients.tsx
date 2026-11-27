@@ -89,7 +89,7 @@ function ClientList({ api, navigate }: { api: ApiClient; navigate: (path: string
         )}
         {resource.data && (
           <>
-            {resource.data.data.length === 0 && <p>No clients found.</p>}
+            {resource.data.data.length === 0 && !resource.error && <p>No clients found.</p>}
             <div className="clients-grid">
                   {resource.data.data.map((client) => (
                     <article className="client-card" key={client.id}>
