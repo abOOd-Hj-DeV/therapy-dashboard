@@ -17,7 +17,7 @@ describe('therapist red flags', () => {
 
     expect(screen.getByRole('heading', { name: 'حالات الخطر' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'مريم صالح' })).toBeInTheDocument()
-    expect(screen.getByText('أفكار لإيذاء النفس')).toBeInTheDocument()
+    expect(screen.getByText('إشارة سلامة من تقييم')).toBeInTheDocument()
     expect(screen.getByText('الحساب معلّق')).toBeInTheDocument()
     expect(screen.getByText(/طلب إعادة تفعيل/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'تواصل عبر واتساب' })).toBeDisabled()
@@ -37,6 +37,34 @@ describe('therapist red flags', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'حالات الخطر' }))
     expect(navigate).toHaveBeenCalledWith('/red-flags')
+  })
+
+  it('labels manual, assessment and legacy safety flags without guessing from the type', async () => {
+    vi.stubEnv('VITE_DEMO_MODE', 'false')
+    const data = ['manual_support', 'assessment', undefined, 'future_source'].map((source, index) => ({
+      id: `source-${index}`,
+      patient_name: `مريض ${index}`,
+      type: 'safety',
+      source,
+      description: 'تفاصيل للمراجعة',
+      priority: 'high',
+      status: 'open',
+      created_at: '2026-04-18T07:00:00Z',
+      on_hold: false,
+    }))
+    const user = { id: 'therapist-id' }
+    const api = {
+      getUser: () => user,
+      getSessionKey: () => 1,
+      subscribe: () => () => undefined,
+      get: vi.fn().mockResolvedValue({ data, pagination: { current_page: 1, last_page: 1, per_page: 4, total: 4 } }),
+    } as unknown as ApiClient
+
+    render(<RedFlags api={api} navigate={vi.fn()} />)
+    expect(await screen.findByText('طلب دعم عاجل من التطبيق')).toBeInTheDocument()
+    expect(screen.getByText('إشارة سلامة من تقييم')).toBeInTheDocument()
+    expect(screen.getAllByText('بلاغ سلامة يحتاج إلى مراجعة')).toHaveLength(2)
+    expect(screen.queryByText('أفكار لإيذاء النفس')).not.toBeInTheDocument()
   })
 
   it('links the dashboard local navigation to the page', () => {

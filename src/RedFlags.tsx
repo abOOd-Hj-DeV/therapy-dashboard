@@ -13,6 +13,7 @@ type RedFlag = {
   patient_name: string
   patient_whatsapp?: string | null
   type: string
+  source?: string | null
   description: string
   priority: 'high' | 'medium' | 'low'
   status: string
@@ -55,9 +56,17 @@ async function loadRemainingPages(
 }
 
 const typeLabels: Record<string, string> = {
-  safety: 'أفكار لإيذاء النفس',
   low_mood: 'درجة اكتئاب أو قلق مرتفعة',
   non_compliance: 'عدم التزام بالخطة العلاجية',
+}
+
+function redFlagLabel(type: string, source?: string | null): string {
+  if (type !== 'safety') return typeLabels[type] ?? 'تنبيه سريري'
+  switch (source) {
+    case 'assessment': return 'إشارة سلامة من تقييم'
+    case 'manual_support': return 'طلب دعم عاجل من التطبيق'
+    default: return 'بلاغ سلامة يحتاج إلى مراجعة'
+  }
 }
 
 const priorityLabels: Record<RedFlag['priority'], string> = {
@@ -72,6 +81,7 @@ const demoFlags: RedFlag[] = [
     patient_name: 'مريم صالح',
     patient_whatsapp: '+963944123456',
     type: 'safety',
+    source: 'assessment',
     description: 'أشار المريض في السؤال التاسع من PHQ-9 إلى أفكار لإيذاء النفس.',
     priority: 'high',
     status: 'open',
@@ -217,7 +227,7 @@ export function RedFlags({
               </header>
 
               <div className="red-flag-reason">
-                <strong>{typeLabels[flag.type] ?? 'حالة للمراجعة'}</strong>
+                <strong>{redFlagLabel(flag.type, flag.source)}</strong>
                 <p>{flag.description}</p>
                 {flag.assessment_score != null && <p>الدرجة: {flag.assessment_score}</p>}
               </div>
