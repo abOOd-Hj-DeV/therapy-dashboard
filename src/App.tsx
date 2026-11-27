@@ -28,7 +28,7 @@ export function App() {
   const [location, setLocation] = useState(window.location.pathname + window.location.search)
   const requestedPath = location.split('?')[0]
   const review = approval.data?.data
-  const approved = !approval.error && review?.approval_status === 'approved'
+  const approved = review?.approval_status === 'approved'
   const approvedOnboardingPath =
     approved && requestedPath === '/profile/approval'
   const path =
@@ -81,7 +81,7 @@ export function App() {
   ].includes(path)
   if (restoring) return <main lang="ar" dir="rtl" role="status">جارٍ استعادة جلستك…</main>
   if (client && user && protectedPage && (!approved || path === '/profile/documents')) {
-    if (review && (!approval.error || review.approval_status !== 'approved')) {
+    if (review) {
       return (
         <TherapistOnboarding
           key={client.getSessionKey()}

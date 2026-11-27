@@ -259,6 +259,32 @@ describe('live routing boundaries', () => {
     expect(screen.queryByLabelText('WhatsApp number')).not.toBeInTheDocument()
   })
 
+  it.each([503, 403])('handles a self-profile refresh returning %s on the approved sessions page', async (status) => {
+    await api.establish({ ...tokens, user: identity })
+    window.history.replaceState({}, '', '/sessions')
+    let profileRequests = 0
+    vi.stubGlobal('fetch', vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) => {
+      if (!isProfile(input)) return json({ data: [], pagination: { last_page: 1 } })
+      if (++profileRequests === 1) return json({ data: profileReview() })
+      return json(status === 403
+        ? { code: 'therapist_pending_approval', meta: { approval_status: 'pending' } }
+        : {}, status)
+    }))
+    render(<App />)
+    const heading = await screen.findByRole('heading', { name: 'All Sessions' })
+
+    await act(async () => { fireEvent(window, new Event('focus')) })
+    expect(profileRequests).toBe(2)
+
+    if (status === 503) {
+      expect(screen.getByRole('heading', { name: 'All Sessions' })).toBe(heading)
+      expect(screen.queryByText(/تعذّر التحقق من حالة الموافقة/)).not.toBeInTheDocument()
+    } else {
+      expect(screen.queryByRole('heading', { name: 'All Sessions' })).not.toBeInTheDocument()
+      expect(screen.getByRole('alert')).toHaveTextContent('تعذّر التحقق من حالة الموافقة')
+    }
+  })
+
   it('lets a pending therapist supersede the previous submission using its prefilled data', async () => {
     await api.establish({ ...tokens, user: identity })
     window.history.replaceState({}, '', '/profile/approval')
