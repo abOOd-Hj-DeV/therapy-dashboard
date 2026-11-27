@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'rea
 import { ApiClient, ApiError, apiErrorMessage, apiId, type ApiUser } from './api'
 import { useApiResource, useApiUser } from './api-hooks'
 import { useMutation } from './api-mutation'
+import { formatCalendarDate } from './display-date'
 import { Workspace } from './Workspace'
 import { passwordPolicyMessage, validNewPassword } from './auth-policy'
 import { Modal } from './ui'
@@ -916,12 +917,12 @@ function BlockedPeriods({
             <span className="holiday-clock"><RemainingIcon name="pendingMobile" /></span>
             <div className="holiday-copy">
               <strong>{period.reason || 'No reason provided'}</strong>
-              <p>{period.start_date} – {period.end_date}</p>
+              <p>{formatCalendarDate(period.start_date) || 'Date unavailable'} – {formatCalendarDate(period.end_date) || 'Date unavailable'}</p>
             </div>
             <button
               className="icon-button holiday-remove"
               disabled={busy || locked}
-              aria-label={`Remove blocked period ${period.start_date}`}
+              aria-label={`Remove blocked period ${formatCalendarDate(period.start_date)}`.trimEnd()}
               onClick={() => remove(period.id)}
             >
               <RemainingIcon name="close" />

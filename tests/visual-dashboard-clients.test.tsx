@@ -28,7 +28,7 @@ async function clientsHarness(failFirst = false) {
     return json({
       data: url.searchParams.get('search') ? [] : [
         { id: clientId, full_name: 'Current client', status: 'active', completed_sessions_count: 7, next_session_date: null },
-        { id: '33333333-3333-4333-8333-333333333333', full_name: 'Past client', status: 'past', completed_sessions_count: 3, next_session_date: null },
+        { id: '33333333-3333-4333-8333-333333333333', full_name: 'Past client', status: 'past', completed_sessions_count: 3, next_session_date: '2026-01-02' },
       ],
       pagination: { current_page: page, last_page: 2, total: 2 },
     })
@@ -122,6 +122,7 @@ describe('clients functional presentation', () => {
     const past = screen.getByText('Past client').closest('article')!
     expect(within(current).getByText('7')).toBeInTheDocument()
     expect(within(current).getByText('None scheduled')).toBeInTheDocument()
+    expect(within(past).getByText('Next · 2 Jan 2026')).toBeInTheDocument()
     expect(within(past).queryByRole('button', { name: 'Message' })).not.toBeInTheDocument()
     fireEvent.click(within(current).getByRole('button', { name: 'Current client' }))
     expect(navigate).toHaveBeenLastCalledWith(`/clients/profile?id=${clientId}`)

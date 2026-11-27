@@ -17,6 +17,7 @@ import type { AuthPage } from './Auth'
 import { Icon } from './ui'
 import { AuthCardShell } from './AuthCardShell'
 import { passwordPolicyMessage, validNewPassword } from './auth-policy'
+import { formatTimestamp } from './display-date'
 
 type Phase = 'login' | 'activate' | 'forgot' | 'reset' | 'otp'
 type Challenge = LoginChallenge & { phone: string }
@@ -503,6 +504,7 @@ export function LiveAuthentication({
     if (error === rejectedCredentials) setError('')
   }
 
+  const challengeExpiry = formatTimestamp(challenge?.challenge_expires_at, undefined)
   const title =
     phase === 'activate'
       ? 'تفعيل دعوة المعالج'
@@ -582,11 +584,10 @@ export function LiveAuthentication({
                 <p>{challenge.phone}</p>
                 <p>Request reference: {challenge.request_reference}</p>
                 <p>
-                  Challenge expires at{' '}
-                  <time dateTime={challenge.challenge_expires_at}>
-                    {new Date(challenge.challenge_expires_at).toLocaleString()}
-                  </time>
-                  . Resending does not extend this expiry.
+                  {challengeExpiry ? (
+                    <>Challenge expires at <time dateTime={challenge.challenge_expires_at}>{challengeExpiry}</time>.</>
+                  ) : 'Challenge expiry is unavailable.'}{' '}
+                  Resending does not extend this expiry.
                 </p>
               </div>
             )}

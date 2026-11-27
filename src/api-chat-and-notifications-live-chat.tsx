@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { ApiClient, ApiError, apiErrorMessage, apiId } from './api'
 import { useApiUser } from './api-hooks'
+import { formatTimestamp } from './display-date'
 import { DesignIcon, Workspace } from './Workspace'
 import {
   chatCanRefresh,
@@ -62,9 +63,6 @@ function initialCounterpart() {
   } catch {
     return null
   }
-}
-function timestamp(value: string | null) {
-  return value && Number.isFinite(Date.parse(value)) ? new Date(value).toLocaleString() : ''
 }
 function mergeMessages(previous: Message[], incoming: Message[]) {
   const unique = new Map(previous.map((message) => [message.id, message]))
@@ -187,7 +185,7 @@ function ActorChats({
                 <span className="conversation-copy">
                   <span>
                     <strong>{item.patient.name || 'Client'}</strong>
-                    <time>{timestamp(item.last_message_at)}</time>
+                    <time>{formatTimestamp(item.last_message_at, api.getUser()?.timezone || 'UTC')}</time>
                   </span>
                   <span>
                     <small>
@@ -631,7 +629,7 @@ function ChatThread({
                 </button>
               )}
               <time>
-                {timestamp(message.sent_at)}
+                {formatTimestamp(message.sent_at, api.getUser()?.timezone || 'UTC')}
                 {message.sender_id === actor ? (message.is_read ? ' · Read' : ' · Sent') : ''}
               </time>
             </div>

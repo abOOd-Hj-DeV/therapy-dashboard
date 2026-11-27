@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiClient, ApiError, apiErrorMessage, safeExternalUrl } from './api'
 import { isCareMutationInFlight, trackCareMutation } from './api-resource-refresh'
+import { formatTimestamp, formatWallDateTime } from './display-date'
 import './visual-sessions-clinical.css'
 
 export type CareSession = {
@@ -441,17 +442,15 @@ export function careDate(
 ): string {
   const instant = careInstant(session)
   if (instant !== null) {
-    try {
-      return `${new Intl.DateTimeFormat('en-GB', { timeZone: timezone, dateStyle: 'medium', timeStyle: 'short' }).format(instant)} · ${timezone}`
-    } catch {
-      /* Explicit server-local/UTC fallback below. */
-    }
+    const label = formatTimestamp(instant, timezone)
+    if (label) return `${label} · ${timezone}`
   }
-  if (session.local)
-    return `${session.local.date} ${session.local.time} · ${session.local.timezone}`
-  return session.session_date
-    ? `${session.session_date.slice(0, 10)} ${session.session_time} · UTC`
-    : 'Schedule unavailable'
+  if (session.local) {
+    const label = formatWallDateTime(session.local.date, session.local.time)
+    if (label) return `${label} · ${session.local.timezone}`
+  }
+  const label = formatWallDateTime(session.session_date?.slice(0, 10) ?? null, session.session_time)
+  return label ? `${label} · UTC` : 'Schedule unavailable'
 }
 export function careMeetingUrl(session: CareSession): string | null {
   if (session.status !== 'confirmed') return null

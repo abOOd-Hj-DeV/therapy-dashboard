@@ -3,6 +3,7 @@ import { ApiClient, apiId } from './api'
 import { useApiResource, useApiUser } from './api-hooks'
 import { DesignIcon, Workspace } from './Workspace'
 import { CareAvatar } from './api-sessions-and-clinical-support'
+import { formatCalendarDate } from './display-date'
 import './visual-clients.css'
 
 type Client = {
@@ -91,32 +92,35 @@ function ClientList({ api, navigate }: { api: ApiClient; navigate: (path: string
           <>
             {resource.data.data.length === 0 && !resource.error && <p>No clients found.</p>}
             <div className="clients-grid">
-                  {resource.data.data.map((client) => (
-                    <article className="client-card" key={client.id}>
-                      <header>
-                        <button className="client-card-identity" onClick={() => navigate(`/clients/profile?id=${apiId(client.id)}`)}>
-                          <CareAvatar name={client.full_name} />
-                          <span><strong>{client.full_name}</strong>{client.age != null && <small>{client.age} yrs</small>}</span>
-                        </button>
-                        <span className={`client-card-status ${client.status}`}>{client.status}</span>
-                      </header>
-                      <div className="client-card-activity"><span>Activity · past month</span><small>Not supplied by the API</small></div>
-                      <div className="client-card-metrics"><span>Completed sessions</span><strong>{client.completed_sessions_count}</strong></div>
-                      <div className="client-card-next"><DesignIcon name="part2-07-imgCalendarAlt.svg" /><span>{client.next_session_date ? `Next · ${client.next_session_date}` : 'None scheduled'}</span></div>
-                      <footer>
-                        <button
-                          onClick={() => navigate(`/sessions/upcoming?client=${apiId(client.id)}`)}
-                        >
-                          Clinical record
-                        </button>
-                        {client.status === 'active' && (
-                          <button onClick={() => navigate(`/chats?client=${apiId(client.id)}`)}>
-                            Message
+                  {resource.data.data.map((client) => {
+                    const nextDate = formatCalendarDate(client.next_session_date)
+                    return (
+                      <article className="client-card" key={client.id}>
+                        <header>
+                          <button className="client-card-identity" onClick={() => navigate(`/clients/profile?id=${apiId(client.id)}`)}>
+                            <CareAvatar name={client.full_name} />
+                            <span><strong>{client.full_name}</strong>{client.age != null && <small>{client.age} yrs</small>}</span>
                           </button>
-                        )}
-                      </footer>
-                    </article>
-                  ))}
+                          <span className={`client-card-status ${client.status}`}>{client.status}</span>
+                        </header>
+                        <div className="client-card-activity"><span>Activity · past month</span><small>Not supplied by the API</small></div>
+                        <div className="client-card-metrics"><span>Completed sessions</span><strong>{client.completed_sessions_count}</strong></div>
+                        <div className="client-card-next"><DesignIcon name="part2-07-imgCalendarAlt.svg" /><span>{nextDate ? `Next · ${nextDate}` : 'None scheduled'}</span></div>
+                        <footer>
+                          <button
+                            onClick={() => navigate(`/sessions/upcoming?client=${apiId(client.id)}`)}
+                          >
+                            Clinical record
+                          </button>
+                          {client.status === 'active' && (
+                            <button onClick={() => navigate(`/chats?client=${apiId(client.id)}`)}>
+                              Message
+                            </button>
+                          )}
+                        </footer>
+                      </article>
+                    )
+                  })}
             </div>
             <nav aria-label="Client pages">
               <button disabled={page <= 1 || resource.loading} onClick={() => setPage(page - 1)}>

@@ -2,6 +2,7 @@ import { useState, type ReactElement } from 'react'
 import { asset } from './assets'
 import { DesignIcon, Workspace } from './Workspace'
 import type { ApiClient } from './api'
+import { formatCalendarDate } from './display-date'
 
 // Development design fixtures ONLY. Transcribed from the round-5 Figma
 // references r5-102..r5-112 ("Ahmed care plan — insertion point"): a numbered
@@ -184,7 +185,7 @@ function DemoCarePlanInsertion({ navigate }: { navigate: (path: string) => void 
                 </div>
                 <div>
                   <dt>Start</dt>
-                  <dd>2024-01-15</dd>
+                  <dd>{formatCalendarDate('2024-01-15')}</dd>
                 </div>
                 <div>
                   <dt>Next Session</dt>

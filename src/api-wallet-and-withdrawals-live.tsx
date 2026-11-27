@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type ComponentProps } from 'react'
 import { ApiClient, ApiError, apiErrorMessage, apiId } from './api'
 import { useApiResource, useApiUser } from './api-hooks'
+import { formatTimestamp } from './display-date'
 import { Workspace } from './Workspace'
 import { RemainingIcon } from './RemainingUI'
 import { Modal } from './ui'
@@ -353,9 +354,7 @@ function LiveWallet({ api, navigate }: LiveProps) {
                         <strong>{methodLabel(payoutField(item, 'method'))}</strong>
                         <small>
                           {maskAccount(payoutField(item, 'account'))} ·{' '}
-                          {item.created_at
-                            ? new Date(item.created_at).toLocaleString()
-                            : 'Date unavailable'}
+                          {formatTimestamp(item.created_at, api.getUser()?.timezone || 'UTC') || 'Date unavailable'}
                         </small>
                         {item.status === 'rejected' && item.note && (
                           <small>Review note: {item.note}</small>

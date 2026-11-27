@@ -200,8 +200,8 @@ describe('profile/wallet designed component regression contracts', () => {
     await screen.findByText('Annual leave')
     const card = container.querySelector('.holiday-list article')
     expect(card?.querySelector('.holiday-clock')).not.toBeNull()
-    expect(card).toHaveTextContent('2030-06-10 – 2030-06-15')
-    expect(screen.getByRole('button', { name: 'Remove blocked period 2030-06-10' })).toHaveClass('holiday-remove')
+    expect(card).toHaveTextContent('10 Jun 2030 – 15 Jun 2030')
+    expect(screen.getByRole('button', { name: 'Remove blocked period 10 Jun 2030' })).toHaveClass('holiday-remove')
     expect(container.querySelector('.holidays-list')).toBeNull()
   })
 

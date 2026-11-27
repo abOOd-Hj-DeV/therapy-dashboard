@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { readFileSync } from 'node:fs'
 import { Wallet } from '../src/Wallet'
 import { closurePortraitAssets } from '../src/closure-portrait-assets'
+import { formatCalendarDate } from '../src/display-date'
 
 vi.mock('../src/Workspace', () => ({
   Workspace: ({ children }: { children: ReactNode }) => <main>{children}</main>,
@@ -25,7 +26,7 @@ describe('final wallet-owned closure regressions', () => {
     closurePortraitAssets.wallet.earnings.forEach((portrait, index) => {
       expect(rows[index]).toHaveTextContent(portrait.target.name)
       expect(rows[index]).toHaveTextContent(`+${portrait.target.amount} SP`)
-      expect(rows[index]).toHaveTextContent(portrait.target.date!)
+      expect(rows[index]).toHaveTextContent(formatCalendarDate(portrait.target.date))
       expect(rows[index].querySelector('img')).toHaveAttribute('src', `/assets/${portrait.image}`)
       expect(rows[index].querySelector('img')).toHaveAttribute('data-artwork', portrait.artwork)
     })

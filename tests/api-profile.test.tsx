@@ -539,7 +539,7 @@ describe('live Profile API integration', () => {
       reason: 'Travel',
     })
     const remove = await screen.findByRole('button', {
-      name: `Remove blocked period ${period.start_date}`,
+      name: 'Remove blocked period 1 Jan 2090',
     })
     fireEvent.click(remove)
     await screen.findByRole('alert')

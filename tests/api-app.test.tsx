@@ -192,12 +192,14 @@ describe('live routing boundaries', () => {
     expect(screen.getByLabelText('WhatsApp number')).toBe(phone)
   })
 
-  it('submits the initial reviewed profile, but not the read-only WhatsApp number', async () => {
+  it('submits the initial profile without the read-only number or a requested licence', async () => {
     await api.establish({ ...tokens, user: identity })
     window.history.replaceState({}, '', '/dashboard')
     const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) =>
       isProfile(input) ? json({ data: { ...notSubmitted, lifecycle_state: 'awaiting_profile' } }) :
-        isSubmit(input) ? json({ data: { ...pending, lifecycle_state: 'pending_review' } }, 201) : json({}, 503),
+        isSubmit(input) ? json({ data: { ...pending, lifecycle_state: 'pending_review' } }, 201) :
+          String(input).endsWith('/me/documents') ? json({ data: [{ ...requestedDocument, doc_type: 'license' }] }) :
+            json({}, 503),
     )
     vi.stubGlobal('fetch', fetch)
     render(<App />)
@@ -205,6 +207,7 @@ describe('live routing boundaries', () => {
     expect(screen.getByLabelText('الاسم')).toHaveValue(identity.name)
     expect(screen.getByLabelText('رقم الجوال')).toHaveAttribute('readonly')
     expect(screen.getByLabelText('رقم الجوال')).toHaveValue(identity.whatsapp_number)
+    expect(await screen.findByRole('link', { name: 'المستندات المطلوبة' })).toBeInTheDocument()
     expect(document.querySelector('input[type="file"]')).not.toBeInTheDocument()
     const countries = Array.from(screen.getByLabelText<HTMLSelectElement>('البلد').options)
     expect(countries.slice(1).map((option) => option.value)).toEqual(
