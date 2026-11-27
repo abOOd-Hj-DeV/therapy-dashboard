@@ -205,7 +205,7 @@ export function LiveCareRecord({ api, navigate }: Props) {
                       {entry.to_status}
                     </strong>
                     <small>
-                      {formatTimestamp(entry.created_at, timezone)} {entry.actor?.name ? `· ${entry.actor.name}` : ''}
+                      {formatTimestamp(entry.created_at, timezone) || formatCalendarDate(entry.created_at)} {entry.actor?.name ? `· ${entry.actor.name}` : ''}
                     </small>
                   </span>
                 </div>

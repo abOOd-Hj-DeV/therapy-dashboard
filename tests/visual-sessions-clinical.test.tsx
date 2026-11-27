@@ -35,7 +35,7 @@ const json = (data: unknown) => new Response(JSON.stringify(data), {
   headers: { 'Content-Type': 'application/json' },
 })
 
-async function careApi() {
+async function careApi(timezone = credentials.user.timezone) {
   const writes: string[] = []
   const transport = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(String(input))
@@ -62,7 +62,7 @@ async function careApi() {
     return new Response('{}', { status: 404 })
   })
   const api = new ApiClient('https://api.example.test/api/v1', transport as typeof fetch)
-  await api.establish(credentials)
+  await api.establish({ ...credentials, user: { ...credentials.user, timezone } })
   return { api, writes }
 }
 
@@ -72,6 +72,13 @@ beforeEach(() => {
 })
 
 describe('sessions and clinical visual markup contracts', () => {
+  it('shows a date-only status history entry on its stated day in a zone west of UTC', async () => {
+    const { api } = await careApi('America/Los_Angeles')
+    render(<SessionDetails api={api} navigate={vi.fn()} />)
+    const history = await screen.findByRole('heading', { name: 'Session status history' })
+    expect(within(history.parentElement!).getByText('1 Jan 2025')).toBeInTheDocument()
+  })
+
   it('places the live sessions header outside the scrolling table and uses contextual initials', async () => {
     const { api } = await careApi()
     window.history.replaceState({}, '', '/sessions')
