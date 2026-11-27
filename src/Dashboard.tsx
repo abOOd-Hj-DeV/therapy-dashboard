@@ -30,7 +30,7 @@ function DemoDashboard({ navigate }: DashboardProps) {
     initial === 'meeting' || initial === 'notifications' ? initial : null,
   )
   const [searchOpen, setSearchOpen] = useState(initial === 'search')
-  const [query, setQuery] = useState(initial === 'search' ? 'Fa' : '')
+  const [query, setQuery] = useState(initial === 'search' ? 'فا' : '')
   // Only the explicit design-preview URL uses the two rows in Figma 1:1629.
   // Editing the query restores search across all demo patients.
   const [searchPreview, setSearchPreview] = useState(initial === 'search')

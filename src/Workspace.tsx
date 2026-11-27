@@ -385,7 +385,7 @@ export function Workspace({
                       <button
                         className="soft-button"
                         onClick={() =>
-                          item.action === 'Accept'
+                          item.action === 'قبول'
                             ? setDismissed([...dismissed, item.id])
                             : setNotice('عرض تجريبي فقط: لا توجد خدمة إشعارات متصلة.')
                         }
