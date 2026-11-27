@@ -232,6 +232,7 @@
 
 .auth-page.live-auth .auth-form select,
 .approval-page input,
+.approval-page select,
 .approval-page textarea {
   width: 100%;
   padding: 0.7rem;
@@ -244,6 +245,7 @@
   max-width: 44rem;
   margin: 2rem auto;
   padding: 1.5rem;
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
 }
 
 .approval-page nav,
@@ -260,6 +262,32 @@
   margin: 0;
   padding: 0;
   border: 0;
+}
+
+.reviewed-profile-form fieldset {
+  min-inline-size: 0;
+  border: none;
+  padding: 0;
+  margin-inline: 0;
+}
+
+.approval-page .reviewed-profile-form fieldset {
+  display: block;
+}
+
+.reviewed-profile-summary {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.reviewed-profile-summary dt {
+  font-weight: 600;
+}
+
+.reviewed-profile-summary dd {
+  margin-inline-start: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 .visual-auth-shell .secondary-search input:disabled,

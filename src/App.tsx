@@ -6,7 +6,7 @@ import { Sessions } from './Sessions'
 import { SessionDetails } from './SessionDetails'
 import { Profile } from './Profile'
 import { Wallet } from './Wallet'
-import { api, type ApiError } from './api'
+import { api } from './api'
 import { useApiResource, useApiUser } from './api-hooks'
 import { TherapistOnboarding } from './TherapistOnboarding'
 import { Clients } from './Clients'
@@ -17,21 +17,20 @@ import { HomeworkLibrary } from './HomeworkLibrary'
 import { HomeworkWizard } from './HomeworkWizard'
 import { CarePlanInsertion } from './CarePlanInsertion'
 import { RedFlags } from './RedFlags'
+import { therapistProfilePath, type TherapistProfileResponse } from './therapist-profile-review'
 
 export function App() {
   const user = useApiUser(api)
   const demo = import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === 'true'
   const client = demo ? undefined : api
   const [restoring, setRestoring] = useState(() => !!client?.hasStoredSession() && !user)
-  const approval = useApiResource(client, user ? '/therapists/me/dashboard' : null)
-  const [recheckingFrom, setRecheckingFrom] = useState<{
-    sessionKey: number
-    response: ApiError
-  } | null>(null)
+  const approval = useApiResource<TherapistProfileResponse>(client, user ? therapistProfilePath : null)
   const [location, setLocation] = useState(window.location.pathname + window.location.search)
   const requestedPath = location.split('?')[0]
+  const review = approval.data?.data
+  const approved = review?.approval_status === 'approved'
   const approvedOnboardingPath =
-    !!approval.data && ['/profile/approval', '/profile/documents'].includes(requestedPath)
+    approved && requestedPath === '/profile/approval'
   const path =
     approvedOnboardingPath ||
     (client && user && ['/', '/login', '/activate', '/signup'].includes(requestedPath))
@@ -63,6 +62,14 @@ export function App() {
     setLocation(window.location.pathname + window.location.search)
     window.scrollTo({ top: 0 })
   }
+  async function logout() {
+    try {
+      await client?.logout()
+      navigate('/login')
+    } catch {
+      navigate('/login?logout=revocation-unknown')
+    }
+  }
   const protectedPage = ![
     '/',
     '/login',
@@ -72,34 +79,43 @@ export function App() {
     '/forgot-password',
     '/reset-password',
   ].includes(path)
-  if (restoring) return <main role="status">Restoring your session…</main>
-  if (client && user && protectedPage) {
-    const sessionKey = client.getSessionKey()
-    const approvalResponse =
-      approval.error?.code === 'therapist_pending_approval'
-        ? approval.error
-        : !approval.data && recheckingFrom?.sessionKey === sessionKey
-          ? recheckingFrom.response
-          : null
-    if (approvalResponse) {
+  if (restoring) return <main lang="ar" dir="rtl" role="status">جارٍ استعادة جلستك…</main>
+  if (client && user && protectedPage && (!approved || path === '/profile/documents')) {
+    if (review) {
       return (
         <TherapistOnboarding
+          key={client.getSessionKey()}
           api={client}
           path={path}
-          approvalResponse={approvalResponse}
+          review={review}
+          saved={approval.replace}
           navigate={navigate}
+          logout={logout}
           checkingApproval={approval.loading}
-          approvalCheckFailed={
-            !!approval.error && approval.error.code !== 'therapist_pending_approval'
-          }
-          checkApproval={() => {
-            setRecheckingFrom({ sessionKey, response: approvalResponse })
-            approval.reload()
-          }}
+          approvalCheckFailed={!!approval.error}
+          checkApproval={approval.reload}
         />
       )
     }
-    if (approval.loading) return <main role="status">Checking your therapist account…</main>
+    return (
+      <main className="approval-page" lang="ar" dir="rtl">
+        {approval.loading ? (
+          <p role="status">جارٍ التحقق من حالة الموافقة…</p>
+        ) : (
+          <>
+            <p role="alert">تعذّر التحقق من حالة الموافقة. حاول مرة أخرى.</p>
+            <div className="approval-actions">
+              <button type="button" className="soft-button" onClick={approval.reload}>
+                إعادة المحاولة
+              </button>
+              <button type="button" className="soft-button" onClick={logout}>
+                تسجيل الخروج
+              </button>
+            </div>
+          </>
+        )}
+      </main>
+    )
   }
   if (!demo && protectedPage && !user)
     return (

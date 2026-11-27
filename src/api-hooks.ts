@@ -113,6 +113,14 @@ export function useApiResource<T>(
 
   const reload = useCallback(() => runRef.current(false), [])
 
+  function replace(data: T) {
+    if (!enabled || !client || client.getSessionKey() !== actor || !mounted.current) return
+    requestId.current += 1
+    activeRequest.current?.abort()
+    activeRequest.current = null
+    setState({ client, actor, path, data, error: null, loading: false })
+  }
+
   useEffect(() => {
     if (!enabled || !client || !path) return
     let active = true
@@ -146,5 +154,6 @@ export function useApiResource<T>(
       ? state
       : { data: null, error: null, loading: enabled }),
     reload,
+    replace,
   }
 }
