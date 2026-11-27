@@ -10,7 +10,7 @@ import { FaqSummary, RemainingIcon, SettingRow, type RemainingIconName } from '.
 import { approvalLabel } from './therapist-approval'
 import { optionName, useTherapistOptions } from './therapist-options'
 import { TherapistProfileForm } from './TherapistProfileForm'
-import { profileReviewError, therapistLifecycle, therapistProfilePath, therapistSubmissionPath, type TherapistProfileResponse } from './therapist-profile-review'
+import { hasKnownTherapistLifecycle, profileReviewError, therapistLifecycle, therapistProfilePath, therapistSubmissionPath, type TherapistProfileResponse } from './therapist-profile-review'
 
 type Page = 'profile' | 'settings' | 'help'
 type Props = { page: Page; navigate: (path: string) => void; api?: ApiClient }
@@ -130,15 +130,17 @@ function ProfileActor({
     api,
     validIdentity ? '/therapists/me/dashboard' : null,
   )
-  const profile = useApiResource<TherapistProfileResponse>(api, validIdentity ? therapistProfilePath : null)
+  const profile = useApiResource<TherapistProfileResponse>(api, validIdentity ? therapistProfilePath : null, { validate: hasKnownTherapistLifecycle })
   const review = profile.data?.data
   const published = review?.published
   const pending = review?.pending_revision
   const last = review?.last_review
-  const pendingUpdate = !!review && therapistLifecycle(review) === 'update_pending'
+  const lifecycle = review && !profile.error ? therapistLifecycle(review) : null
+  const pendingUpdate = lifecycle === 'update_pending'
+  const canEditProfile = lifecycle === 'approved' || pendingUpdate
   const rejectedUpdate = last?.kind === 'update' && last.status === 'rejected' ? last : null
   const options = useTherapistOptions(api, !!published)
-  const approval = review && approvalLabel(review.approval_status)
+  const approval = lifecycle === 'suspended' ? approvalLabel('suspended') : lifecycle && lifecycle !== 'invited' && review ? approvalLabel(review.approval_status) : null
   const timezone = dashboard.data?.timezone || identity.data?.user.timezone || user.timezone
   const [dialog, setDialog] = useState<Dialog>(() => {
     const requested = new URLSearchParams(window.location.search).get('state')
@@ -178,7 +180,7 @@ function ProfileActor({
           </div>
           <button
             className="remaining-primary profile-edit"
-            disabled={!published}
+            disabled={!published || !canEditProfile}
             onClick={() => setDialog('edit')}
           >
             {titles.edit}
@@ -423,6 +425,7 @@ function ProfileActor({
                 initial={(pending?.kind === 'update' ? pending.data : rejectedUpdate?.data) ?? published}
                 phone={review.account.whatsapp_number}
                 options={options}
+                disabled={!canEditProfile}
                 close={close}
                 submitLabel="إرسال التعديلات للمراجعة"
                 saved={(response) => {
@@ -437,7 +440,7 @@ function ProfileActor({
               </>
             ))}
           {dialog === 'withdrawProfile' && (
-            withdrawalRevisionId ? (
+            withdrawalRevisionId && pendingUpdate ? (
               <WithdrawProfileUpdate
                 api={api}
                 revisionId={withdrawalRevisionId}

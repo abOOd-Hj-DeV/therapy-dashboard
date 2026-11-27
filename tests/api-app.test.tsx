@@ -44,6 +44,7 @@ describe('live routing boundaries', () => {
     data: validProfile,
   } as const
   const notSubmitted = profileReview({
+    lifecycle_state: 'awaiting_profile',
     approval_status: null,
     account: { whatsapp_number: identity.whatsapp_number, email: null },
     published: {
@@ -51,12 +52,12 @@ describe('live routing boundaries', () => {
       city: null, country: null, languages: [], years_of_experience: null,
     },
   })
-  const pending = profileReview({ ...notSubmitted, approval_status: 'pending', pending_revision: revision })
+  const pending = profileReview({ ...notSubmitted, lifecycle_state: 'pending_review', approval_status: 'pending', pending_revision: revision })
   const requestedDocument = {
     id: revision.id, doc_type: 'certificate', status: 'requested', reason: null, review_note: null, accepts_upload: true,
   }
   const rejected = profileReview({
-    ...notSubmitted, approval_status: 'rejected',
+    ...notSubmitted, lifecycle_state: 'needs_changes', approval_status: 'rejected',
     last_review: {
       revision_id: revision.id, kind: 'initial', status: 'rejected',
       note: 'يرجى تحديث المسمى الوظيفي', reviewed_at: '2026-11-27T12:01:00Z',
@@ -97,8 +98,6 @@ describe('live routing boundaries', () => {
   it.each([
     ['invited', 'approved', 'فعّل حسابك'],
     ['suspended', 'approved', 'الحساب موقوف'],
-    ['approved', null, 'أكمل ملفك المهني'],
-    ['update_pending', 'pending', 'بانتظار الموافقة'],
   ] as const)('keeps /sessions closed for lifecycle %s with approval %s', async (lifecycle, approval, heading) => {
     await api.establish({ ...tokens, user: identity })
     window.history.replaceState({}, '', '/sessions')
@@ -117,6 +116,23 @@ describe('live routing boundaries', () => {
       expect(screen.queryByRole('textbox', { name: 'الاسم' })).not.toBeInTheDocument()
       expect(fetch).toHaveBeenCalledTimes(1)
     }
+  })
+
+  it.each([undefined, 'future_status', 'needs_changes'])('does not infer approval from an unconfirmed lifecycle (%s), then accepts a valid refresh', async (lifecycle) => {
+    await api.establish({ ...tokens, user: identity })
+    window.history.replaceState({}, '', '/sessions')
+    let review: unknown = { ...profileReview(), lifecycle_state: lifecycle }
+    const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) =>
+      isProfile(input) ? json({ data: review }) : json({ data: [], pagination: { last_page: 1 } }),
+    )
+    vi.stubGlobal('fetch', fetch)
+    render(<App />)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('تعذّر التحقق من حالة الموافقة')
+    expect(fetch.mock.calls.some(([url]) => String(url).includes('/me/sessions'))).toBe(false)
+    review = profileReview({ lifecycle_state: 'approved' })
+    fireEvent(window, new Event('focus'))
+    expect(await screen.findByRole('heading', { name: 'All Sessions' })).toBeInTheDocument()
   })
 
   it.each(['/dashboard', '/sessions', '/clients', '/red-flags'])(
@@ -379,7 +395,7 @@ describe('live routing boundaries', () => {
     await api.establish({ ...tokens, user: identity })
     window.history.replaceState({}, '', '/sessions')
     vi.stubGlobal('fetch', vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) =>
-      isProfile(input) ? json({ data: profileReview({ lifecycle_state: 'update_pending' }) })
+      isProfile(input) ? json({ data: profileReview({ lifecycle_state: 'update_pending', pending_revision: { ...revision, kind: 'update' } }) })
         : json({ data: [], pagination: { last_page: 1 } }),
     ))
     render(<App />)

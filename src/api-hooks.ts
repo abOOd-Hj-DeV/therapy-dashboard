@@ -15,7 +15,8 @@ export function useApiResource<T>(
   {
     interval = 30_000,
     shouldSkipBackground,
-  }: { interval?: number; shouldSkipBackground?: () => boolean } = {},
+    validate,
+  }: { interval?: number; shouldSkipBackground?: () => boolean; validate?: (data: T) => boolean } = {},
 ) {
   const user = useSyncExternalStore(
     client?.subscribe ?? noSubscribe,
@@ -77,7 +78,12 @@ export function useApiResource<T>(
     client
       .get<T>(path, controller.signal)
       .then((data) => {
-        if (current()) setState({ client, actor, path, data, error: null, loading: false })
+        if (!current()) return
+        if (validate && !validate(data)) {
+          setState((previous) => ({ ...previous, error: new ApiError(0), loading: false }))
+        } else {
+          setState({ client, actor, path, data, error: null, loading: false })
+        }
       })
       .catch((error) => {
         if (!current()) return
@@ -118,7 +124,11 @@ export function useApiResource<T>(
     requestId.current += 1
     activeRequest.current?.abort()
     activeRequest.current = null
-    setState({ client, actor, path, data, error: null, loading: false })
+    if (validate && !validate(data)) {
+      setState((previous) => ({ ...previous, error: new ApiError(0), loading: false }))
+    } else {
+      setState({ client, actor, path, data, error: null, loading: false })
+    }
   }
 
   useEffect(() => {

@@ -14,7 +14,7 @@ function withLegacyOptions(options: TherapistOption[], selected: string[]) {
 }
 
 export function TherapistProfileForm({
-  api, initial, phone, options, submitLabel, saved, close, onChange,
+  api, initial, phone, options, submitLabel, saved, close, onChange, disabled = false,
 }: {
   api: ApiClient
   initial: ReviewedProfile
@@ -24,6 +24,7 @@ export function TherapistProfileForm({
   saved: (response: TherapistProfileResponse) => void
   close?: () => void
   onChange?: () => void
+  disabled?: boolean
 }) {
   const prefix = useId()
   const [errors, setErrors] = useState<FieldErrors>({})
@@ -62,7 +63,7 @@ export function TherapistProfileForm({
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (mutation.pending) return
+    if (mutation.pending || disabled) return
     const form = new FormData(event.currentTarget)
     const value = (name: ProfileField) => String(form.get(name) ?? '').trim()
     const next: FieldErrors = {}
@@ -121,7 +122,7 @@ export function TherapistProfileForm({
   const invalid = Object.keys(errors).length > 0
   return (
     <form className="reviewed-profile-form" lang="ar" dir="rtl" noValidate onSubmit={submit} onChange={onChange}>
-      <fieldset disabled={mutation.pending}>
+      <fieldset disabled={mutation.pending || disabled}>
         <div className="remaining-field-grid">
           {text('full_name')}
           {text('job_title')}
@@ -176,7 +177,7 @@ export function TherapistProfileForm({
       )}
       <div className="remaining-form-actions">
         {close && <button className="remaining-cancel" type="button" onClick={close}>إلغاء</button>}
-        <button type="submit" className="remaining-primary" disabled={mutation.pending}>
+        <button type="submit" className="remaining-primary" disabled={mutation.pending || disabled}>
           {mutation.pending ? 'جارٍ الإرسال…' : submitLabel}
         </button>
       </div>
