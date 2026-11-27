@@ -50,9 +50,14 @@ describe('live auth responsive styling contracts (not a rendered pixel compariso
       expect(getComputedStyle(subtitle).whiteSpace).toBe('normal')
       expect(getComputedStyle(subtitle).overflowWrap).toBe('anywhere')
       expect(getComputedStyle(container.querySelector('.auth-switch')!).flexWrap).toBe('wrap')
-      expect(getComputedStyle(screen.getByText(/For a local number, select your country/)).fontSize).toBe('12px')
+      const phoneHelp = page === 'activate' ? /اختر بلدك للرقم المحلي/ : /For a local number, select your country/
+      expect(getComputedStyle(screen.getByText(phoneHelp)).fontSize).toBe('12px')
       expect(screen.queryByRole('button', { name: 'Continue with Google' })).not.toBeInTheDocument()
-      expect(screen.getByText(/The access token stays in memory/)).toBeInTheDocument()
+      expect(screen.getByText(page === 'activate' ? /رمز الوصول في الذاكرة/ : /The access token stays in memory/)).toBeInTheDocument()
+      if (page === 'activate') {
+        expect(root).toHaveAttribute('dir', 'rtl')
+        expect(screen.getByLabelText('رقم واتساب')).toHaveAttribute('placeholder', '09XXXXXXXX')
+      }
     },
   )
 

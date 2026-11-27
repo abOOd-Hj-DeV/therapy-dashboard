@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { ApiClient, apiId, safeExternalUrl } from './api'
+import { formatCalendarDate, formatTimestamp } from './display-date'
 import { Workspace } from './Workspace'
 import { Modal } from './ui'
 import {
@@ -204,7 +205,7 @@ export function LiveCareRecord({ api, navigate }: Props) {
                       {entry.to_status}
                     </strong>
                     <small>
-                      {entry.created_at} {entry.actor?.name ? `· ${entry.actor.name}` : ''}
+                      {formatTimestamp(entry.created_at, timezone) || formatCalendarDate(entry.created_at)} {entry.actor?.name ? `· ${entry.actor.name}` : ''}
                     </small>
                   </span>
                 </div>
@@ -659,6 +660,7 @@ function ClinicalEditor({
   refreshClients: () => void
 }) {
   const base = `/therapists/clients/${apiId(patientId)}`
+  const timezone = api.getUser()?.timezone || 'UTC'
   const record = useCareResource<ClientRead>(api, base)
   const notes = useCareResource<NotesRead>(api, `${base}/notes`)
   const modules = useCareResource<ModulesRead>(api, `${base}/modules`)
@@ -742,7 +744,7 @@ function ClinicalEditor({
                 <p>
                   Latest assessment: {record.data.clinical.latest_assessment.type} · Score{' '}
                   {record.data.clinical.latest_assessment.score} ·{' '}
-                  {record.data.clinical.latest_assessment.completed_at || 'Date unavailable'}
+                  {formatTimestamp(record.data.clinical.latest_assessment.completed_at, timezone) || 'Date unavailable'}
                 </p>
               )}
             </>
@@ -792,7 +794,7 @@ function ClinicalEditor({
             <div key={item.id} className="previous-note">
               <span>
                 <small>
-                  {item.created_at || 'Date unavailable'}
+                  {formatTimestamp(item.created_at, timezone) || 'Date unavailable'}
                   {item.session_id ? ' · Session note' : ' · Client note'}
                 </small>
                 <p>{item.body}</p>
@@ -806,7 +808,7 @@ function ClinicalEditor({
               {notes.data.session_reports.map((item) => (
                 <div key={item.session_id} className="previous-note">
                   <span>
-                    <small>{item.session_date || 'Date unavailable'}</small>
+                    <small>{formatCalendarDate(item.session_date) || 'Date unavailable'}</small>
                     <p>{item.summary}</p>
                   </span>
                 </div>
@@ -855,7 +857,7 @@ function ClinicalEditor({
                           </p>
                         ))}
                         <small>
-                          {module.homework_submitted_at || 'Submission date unavailable'}
+                          {formatTimestamp(module.homework_submitted_at, timezone) || 'Submission date unavailable'}
                         </small>
                       </div>
                     )}

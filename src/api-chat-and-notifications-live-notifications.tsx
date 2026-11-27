@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ApiClient, apiErrorMessage, apiId } from './api'
 import { useApiUser } from './api-hooks'
 import { asset } from './assets'
+import { formatTimestamp } from './display-date'
 import {
   useChatConnectivity,
   useChatLifetime,
@@ -168,7 +169,7 @@ function ActorNotifications({ api, navigate, onUnreadCount }: Props & { api: Api
         <p role="alert">
           {error || apiErrorMessage(resource.error)}{' '}
           <button disabled={!!resource.retryAt || !online} onClick={resource.reload}>
-            Refresh notifications
+            Retry notifications
           </button>
         </p>
       )}
@@ -186,10 +187,7 @@ function ActorNotifications({ api, navigate, onUnreadCount }: Props & { api: Api
           {resource.data.data.length === 0 && !resource.error && <p>No notifications.</p>}
           {resource.data.data.map((item) => {
             const route = destination(item)
-            const created =
-              item.created_at && Number.isFinite(Date.parse(item.created_at))
-                ? new Date(item.created_at).toLocaleString()
-                : ''
+            const created = formatTimestamp(item.created_at, api.getUser()?.timezone || 'UTC')
             return (
               <article
                 key={item.id}

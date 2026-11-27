@@ -5,6 +5,7 @@ import { LiveProfile } from './api-profile-and-settings-live'
 import { Modal } from './ui'
 import { asset } from './assets'
 import { remainingAssets } from './remaining-assets'
+import { formatCalendarDate } from './display-date'
 import { FaqSummary, FormActions, RemainingIcon, SettingRow, type RemainingIconName } from './RemainingUI'
 import './visual-profile-closure.css'
 
@@ -362,7 +363,7 @@ function DemoProfile({ page, navigate }: { page: Page; navigate: (path: string) 
 function ProfileInformation({ profile }: { profile: ProfileData }) {
   const professional: [RemainingIconName, string, string][] = [
     ['award', 'License Number', 'PSY-2024-1234'],
-    ['calendar', 'Joining Date', '2023-01-15'],
+    ['calendar', 'Joining Date', formatCalendarDate('2023-01-15')],
     ['experience', 'Years of Experience', '8 years'],
   ]
   const contact: [RemainingIconName, string, string][] = [
@@ -694,7 +695,7 @@ function HolidaysForm({
             <div className="holiday-copy">
               <strong>{holiday.reason}</strong>
               <p>
-                {holiday.from} ← {holiday.to}
+                {formatCalendarDate(holiday.from)} ← {formatCalendarDate(holiday.to)}
               </p>
             </div>
             <button

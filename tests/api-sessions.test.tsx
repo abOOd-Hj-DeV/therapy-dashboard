@@ -784,6 +784,15 @@ describe('canonical timing and safe meeting controls', () => {
     expect(careDate(value, 'Asia/Riyadh')).toContain('01:00')
     expect(careCategory({ ...value, status: 'completed' }, 'Asia/Riyadh')).toBe('Previous')
   })
+  it('formats the server-local fallback without shifting it or exposing invalid timestamps', () => {
+    const value = {
+      ...canonical,
+      starts_at: 'unavailable',
+      local: { date: '2026-01-02', time: '00:15:00', timezone: 'Asia/Riyadh' },
+    }
+    expect(careDate(value, 'America/Los_Angeles')).toBe('2 Jan 2026, 00:15 · Asia/Riyadh')
+    expect(careDate({ ...value, local: null, session_date: null }, 'America/Los_Angeles')).toBe('Schedule unavailable')
+  })
   it('accepts only confirmed HTTPS links with the correct medium host and no URL credentials', () => {
     expect(careMeetingUrl(canonical)).toBe('https://meet.google.com/abc-defg-hij')
     for (const value of [

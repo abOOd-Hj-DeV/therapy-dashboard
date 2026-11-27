@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ApiClient, apiId } from './api'
 import { useApiResource } from './api-hooks'
 import { trackCareMutation } from './api-resource-refresh'
+import { formatTimestamp } from './display-date'
 import { Workspace } from './Workspace'
 import './red-flags.css'
 
@@ -53,12 +54,6 @@ async function loadRemainingPages(
   return flags
 }
 
-const dateFormatter = new Intl.DateTimeFormat('ar-SY-u-nu-latn', {
-  dateStyle: 'medium',
-  timeStyle: 'short',
-  timeZone: 'Asia/Damascus',
-})
-
 const typeLabels: Record<string, string> = {
   safety: 'أفكار لإيذاء النفس',
   low_mood: 'درجة اكتئاب أو قلق مرتفعة',
@@ -90,12 +85,6 @@ const demoFlags: RedFlag[] = [
   },
 ]
 
-function formatDate(value: string | null | undefined): string {
-  if (!value) return '—'
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? '—' : dateFormatter.format(date)
-}
-
 function phoneDigits(value: string | null | undefined): string {
   return value?.replace(/\D/g, '') ?? ''
 }
@@ -108,6 +97,7 @@ export function RedFlags({
   navigate: (path: string) => void
 }) {
   const demo = import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === 'true' && !api
+  const timezone = api?.getUser()?.timezone || 'Asia/Damascus'
   const paginationLoadingRef = useRef(false)
   const resource = useApiResource<RedFlagResponse>(
     api,
@@ -220,7 +210,7 @@ export function RedFlags({
                   {flag.on_hold && <span className="red-flag-hold">الحساب معلّق</span>}
                   {flag.reactivation_requested_at && (
                     <span className="red-flag-request">
-                      طلب إعادة تفعيل · <time dateTime={flag.reactivation_requested_at}>{formatDate(flag.reactivation_requested_at)}</time>
+                      طلب إعادة تفعيل · <time dateTime={flag.reactivation_requested_at}>{formatTimestamp(flag.reactivation_requested_at, timezone, 'ar-SY-u-nu-latn') || '—'}</time>
                     </span>
                   )}
                 </div>
@@ -233,7 +223,7 @@ export function RedFlags({
               </div>
 
               <p className="red-flag-meta">
-                المعالج: {flag.therapist_name ?? 'غير معيّن'} · {formatDate(flag.created_at)}
+                المعالج: {flag.therapist_name ?? 'غير معيّن'} · {formatTimestamp(flag.created_at, timezone, 'ar-SY-u-nu-latn') || '—'}
               </p>
 
               {flag.action_taken && <p className="red-flag-history">{flag.action_taken}</p>}

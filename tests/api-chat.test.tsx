@@ -639,7 +639,7 @@ describe('live notification component for the shared Workspace', () => {
                 preview: 'Sensitive preview',
               },
               read_at: read ? '2026-10-01T00:00:00Z' : null,
-              created_at: null,
+              created_at: '2026-10-01T00:15:00+02:00',
             },
             {
               id: messageB,
@@ -663,6 +663,7 @@ describe('live notification component for the shared Workspace', () => {
     })
     render(<LiveNotifications api={api} navigate={navigate} />)
     await screen.findByText('New care message')
+    expect(screen.getByText('30 Sept 2026, 22:15')).toHaveAttribute('datetime', '2026-10-01T00:15:00+02:00')
     expect(screen.getByText('Account update')).toBeInTheDocument()
     expect(screen.queryByText('Sensitive preview')).not.toBeInTheDocument()
     expect(screen.queryByText('Not trusted title')).not.toBeInTheDocument()

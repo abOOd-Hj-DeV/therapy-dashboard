@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from '../src/App'
@@ -21,7 +21,7 @@ describe('live routing boundaries', () => {
     id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
     name: 'Invited Therapist',
     email: null,
-    whatsapp_number: '+963983321260',
+    whatsapp_number: '+12025550107',
     role: 'therapist',
     is_active: true,
     phone_verified_at: '2026-01-01T00:00:00Z',
@@ -52,6 +52,9 @@ describe('live routing boundaries', () => {
     },
   })
   const pending = profileReview({ ...notSubmitted, approval_status: 'pending', pending_revision: revision })
+  const requestedDocument = {
+    id: revision.id, doc_type: 'certificate', status: 'requested', reason: null, review_note: null, accepts_upload: true,
+  }
   const rejected = profileReview({
     ...notSubmitted, approval_status: 'rejected',
     last_review: {
@@ -63,6 +66,58 @@ describe('live routing boundaries', () => {
   const isSubmit = (input: RequestInfo | URL) => String(input).endsWith('/therapists/me/profile-submission')
   const change = (name: string, value: string) =>
     fireEvent.change(screen.getByLabelText(name), { target: { value } })
+
+  it('finishes invitation activation before loading the professional profile', async () => {
+    window.history.replaceState({}, '', '/activate')
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+    const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) => {
+      if (String(input).endsWith('/auth/activate')) return json({ ...tokens, user: identity })
+      if (isProfile(input)) return json({ data: { ...notSubmitted, lifecycle_state: 'awaiting_profile' } })
+      return json({ data: [] })
+    })
+    vi.stubGlobal('fetch', fetch)
+    render(<App />)
+    expect(screen.getByRole('heading', { name: 'تفعيل دعوة المعالج' })).toBeInTheDocument()
+    expect(fetch).not.toHaveBeenCalled()
+    change('رقم واتساب', identity.whatsapp_number)
+    change('رمز التفعيل', 'ABCD1234')
+    change('كلمة المرور الجديدة', 'synthetic password1')
+    change('تأكيد كلمة المرور', 'synthetic password1')
+    fireEvent.click(screen.getByRole('button', { name: 'تفعيل الحساب' }))
+
+    expect(await screen.findByRole('heading', { name: 'أكمل ملفك المهني' })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/profile/approval')
+    expect(screen.queryByLabelText('رمز التفعيل')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('workspace')).not.toBeInTheDocument()
+    expect(fetch.mock.calls.slice(0, 2).map(([url]) => new URL(String(url)).pathname)).toEqual([
+      '/api/v1/auth/activate', '/api/v1/therapists/me/profile',
+    ])
+  })
+
+  it.each([
+    ['invited', 'approved', 'فعّل حسابك'],
+    ['suspended', 'approved', 'الحساب موقوف'],
+    ['approved', null, 'أكمل ملفك المهني'],
+    ['update_pending', 'pending', 'بانتظار الموافقة'],
+  ] as const)('keeps /sessions closed for lifecycle %s with approval %s', async (lifecycle, approval, heading) => {
+    await api.establish({ ...tokens, user: identity })
+    window.history.replaceState({}, '', '/sessions')
+    const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) =>
+      isProfile(input)
+        ? json({ data: profileReview({ lifecycle_state: lifecycle, approval_status: approval }) })
+        : json({ data: [] }),
+    )
+    vi.stubGlobal('fetch', fetch)
+    render(<App />)
+    const title = await screen.findByRole('heading', { name: heading })
+    expect(title.closest('main')).toHaveClass('visual-auth')
+    expect(screen.queryByTestId('workspace')).not.toBeInTheDocument()
+    expect(fetch.mock.calls.some(([url]) => String(url).includes('/me/sessions'))).toBe(false)
+    if (lifecycle === 'invited' || lifecycle === 'suspended') {
+      expect(screen.queryByRole('textbox', { name: 'الاسم' })).not.toBeInTheDocument()
+      expect(fetch).toHaveBeenCalledTimes(1)
+    }
+  })
 
   it.each(['/dashboard', '/sessions', '/clients', '/red-flags'])(
     'blocks a pending therapist who opens %s directly and shows the submitted profile',
@@ -80,8 +135,10 @@ describe('live routing boundaries', () => {
       expect(screen.getByText(validProfile.email)).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'تعديل الطلب' })).toBeInTheDocument()
       expect(fetch.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual([
-        '/api/v1/therapists/me/profile', '/api/v1/meta/therapist-options',
+        '/api/v1/therapists/me/profile', '/api/v1/therapists/me/documents', '/api/v1/meta/therapist-options',
       ])
+      expect(screen.queryByRole('link', { name: 'المستندات المطلوبة' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'التحقق من حالة المراجعة' })).not.toBeInTheDocument()
     },
   )
 
@@ -135,12 +192,14 @@ describe('live routing boundaries', () => {
     expect(screen.getByLabelText('WhatsApp number')).toBe(phone)
   })
 
-  it('submits the initial reviewed profile, but not the read-only WhatsApp number', async () => {
+  it('submits the initial profile without the read-only number or a requested licence', async () => {
     await api.establish({ ...tokens, user: identity })
     window.history.replaceState({}, '', '/dashboard')
     const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) =>
-      isProfile(input) ? json({ data: notSubmitted }) :
-        isSubmit(input) ? json({ data: pending }, 201) : json({}, 503),
+      isProfile(input) ? json({ data: { ...notSubmitted, lifecycle_state: 'awaiting_profile' } }) :
+        isSubmit(input) ? json({ data: { ...pending, lifecycle_state: 'pending_review' } }, 201) :
+          String(input).endsWith('/me/documents') ? json({ data: [{ ...requestedDocument, doc_type: 'license' }] }) :
+            json({}, 503),
     )
     vi.stubGlobal('fetch', fetch)
     render(<App />)
@@ -148,6 +207,7 @@ describe('live routing boundaries', () => {
     expect(screen.getByLabelText('الاسم')).toHaveValue(identity.name)
     expect(screen.getByLabelText('رقم الجوال')).toHaveAttribute('readonly')
     expect(screen.getByLabelText('رقم الجوال')).toHaveValue(identity.whatsapp_number)
+    expect(await screen.findByRole('link', { name: 'المستندات المطلوبة' })).toBeInTheDocument()
     expect(document.querySelector('input[type="file"]')).not.toBeInTheDocument()
     const countries = Array.from(screen.getByLabelText<HTMLSelectElement>('البلد').options)
     expect(countries.slice(1).map((option) => option.value)).toEqual(
@@ -167,7 +227,16 @@ describe('live routing boundaries', () => {
     change('المدينة', validProfile.city)
     change('البلد', validProfile.country)
     change('سنوات الخبرة', '0')
-    await userEvent.setup().selectOptions(screen.getByRole('listbox', { name: 'اللغات' }), validProfile.languages)
+    const interaction = userEvent.setup()
+    const languages = within(screen.getByRole('group', { name: 'اللغات' }))
+    const arabic = languages.getByRole('checkbox', { name: 'العربية' })
+    const english = languages.getByRole('checkbox', { name: 'الإنجليزية' })
+    await interaction.click(arabic)
+    await interaction.tab()
+    expect(english).toHaveFocus()
+    await interaction.keyboard(' ')
+    expect(arabic).toBeChecked()
+    expect(english).toBeChecked()
     fireEvent.click(submit)
     expect(await screen.findByRole('heading', { name: 'بانتظار الموافقة' })).toBeInTheDocument()
     expect(JSON.parse(String(fetch.mock.calls.find(([url]) => isSubmit(url))?.[1]?.body))).toEqual(validProfile)
@@ -180,21 +249,23 @@ describe('live routing boundaries', () => {
     const draftTitle = 'مسمى وظيفي غير محفوظ'
     vi.stubGlobal('fetch', vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) => {
       if (isProfile(input)) return json({ data: pending })
-      if (String(input).endsWith('/me/documents')) return json({ data: [] })
+      if (String(input).endsWith('/me/documents')) return json({ data: [requestedDocument] })
       return json({}, 404)
     }))
     render(<App />)
     fireEvent.click(await screen.findByRole('button', { name: 'تعديل الطلب' }))
     change('المسمى الوظيفي', draftTitle)
-    await userEvent.setup().selectOptions(screen.getByRole('listbox', { name: 'اللغات' }), 'fr')
+    await userEvent.click(screen.getByRole('checkbox', { name: 'الفرنسية' }))
 
     fireEvent.click(screen.getByRole('link', { name: 'المستندات المطلوبة' }))
-    expect(await screen.findByText('لا توجد مستندات مطلوبة.')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'المستندات المطلوبة' })).toBeInTheDocument()
     expect(screen.queryByRole('textbox', { name: 'المسمى الوظيفي' })).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('link', { name: 'طلب مراجعة الملف المهني' }))
+    fireEvent.click(screen.getByRole('link', { name: 'العودة إلى الملف المهني' }))
 
     expect(screen.getByRole('textbox', { name: 'المسمى الوظيفي' })).toHaveValue(draftTitle)
-    expect(screen.getByRole('listbox', { name: 'اللغات' })).toHaveValue([...validProfile.languages, 'fr'])
+    expect(screen.getByRole('checkbox', { name: 'العربية' })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'الإنجليزية' })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'الفرنسية' })).toBeChecked()
   })
 
   it('keeps requested documents accessible and uses the existing document upload endpoint', async () => {
@@ -204,7 +275,7 @@ describe('live routing boundaries', () => {
     const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) => {
       if (isProfile(input)) return json({ data: pending })
       if (String(input).endsWith('/me/documents')) return json({
-        data: [{ id: revision.id, doc_type: 'certificate', status: 'requested', reason: null, review_note: null, accepts_upload: true }],
+        data: [requestedDocument],
       })
       return json({ data: {} })
     })
@@ -242,7 +313,9 @@ describe('live routing boundaries', () => {
     window.history.replaceState({}, '', '/profile/approval')
     let approved = false
     const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) => {
-      if (isProfile(input)) return json({ data: approved ? profileReview() : pending })
+      if (isProfile(input)) return json({ data: approved
+        ? profileReview({ lifecycle_state: 'approved' })
+        : profileReview({ ...pending, lifecycle_state: 'pending_review' }) })
       if (String(input).endsWith('/therapists/me/dashboard')) return json({
         therapist: { id: identity.id, full_name: identity.name, rating: 0, approval_status: 'approved' },
         stats: { pending: 0, confirmed: 0, completed: 0, today: 0 },
@@ -257,6 +330,60 @@ describe('live routing boundaries', () => {
     expect(await screen.findByRole('heading', { name: 'Upcoming Sessions' })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/dashboard')
     expect(screen.queryByLabelText('WhatsApp number')).not.toBeInTheDocument()
+  })
+
+  it('keeps the focused draft through rejection and approval arriving during editing', async () => {
+    await api.establish({ ...tokens, user: identity })
+    window.history.replaceState({}, '', '/profile/approval')
+    let review = profileReview({ ...pending, lifecycle_state: 'pending_review' })
+    let profileRequests = 0
+    vi.stubGlobal('fetch', vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) => {
+      if (isProfile(input)) {
+        profileRequests++
+        return json({ data: review })
+      }
+      if (String(input).endsWith('/therapists/me/dashboard')) return json({
+        therapist: { id: identity.id, full_name: identity.name, rating: 0, approval_status: 'approved' },
+        stats: { pending: 0, confirmed: 0, completed: 0, today: 0 },
+      })
+      return json({ data: [], pagination: { last_page: 1 } })
+    }))
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'تعديل الطلب' }))
+    const title = screen.getByLabelText('المسمى الوظيفي')
+    const draft = 'مسمى وظيفي جديد'
+    await userEvent.click(screen.getByRole('checkbox', { name: 'الفرنسية' }))
+    title.focus()
+    change('المسمى الوظيفي', draft)
+    review = profileReview({ ...rejected, lifecycle_state: 'needs_changes' })
+    await act(async () => { fireEvent(window, new Event('focus')) })
+    expect(await screen.findByRole('heading', { name: 'الملف المهني يحتاج إلى تعديل' })).toBeInTheDocument()
+    expect(screen.getByLabelText('المسمى الوظيفي')).toBe(title)
+    expect(title).toHaveFocus()
+    expect(title).toHaveValue(draft)
+
+    review = profileReview({ lifecycle_state: 'approved' })
+    await act(async () => { fireEvent(window, new Event('focus')) })
+    expect(profileRequests).toBe(3)
+    expect(await screen.findByRole('heading', { name: 'تم اعتماد ملفك المهني' })).toBeInTheDocument()
+    expect(title).toHaveFocus()
+    expect(title).toHaveValue(draft)
+    expect(screen.getByRole('checkbox', { name: 'الفرنسية' })).toBeChecked()
+    expect(screen.getByRole('button', { name: 'إرسال التعديلات للمراجعة' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'إلغاء' }))
+    expect(await screen.findByRole('heading', { name: 'Upcoming Sessions' })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/dashboard')
+  })
+
+  it('allows an approved therapist with a pending profile update to open sessions', async () => {
+    await api.establish({ ...tokens, user: identity })
+    window.history.replaceState({}, '', '/sessions')
+    vi.stubGlobal('fetch', vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) =>
+      isProfile(input) ? json({ data: profileReview({ lifecycle_state: 'update_pending' }) })
+        : json({ data: [], pagination: { last_page: 1 } }),
+    ))
+    render(<App />)
+    expect(await screen.findByRole('heading', { name: 'All Sessions' })).toBeInTheDocument()
   })
 
   it.each([503, 403])('handles a self-profile refresh returning %s on the approved sessions page', async (status) => {

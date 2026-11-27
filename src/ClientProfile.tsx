@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { apiId, type ApiClient } from './api'
 import { useApiUser } from './api-hooks'
+import { formatCalendarDate, formatTimestamp } from './display-date'
 import { DesignIcon, Workspace } from './Workspace'
 import {
   CareAvatar,
@@ -61,6 +62,7 @@ export function ClientProfile({ api, navigate }: Props) {
 }
 
 function ClientProfileContent({ api, navigate, patientId }: Props & { patientId: string }) {
+  const timezone = api.getUser()?.timezone || 'UTC'
   const [tab, setTab] = useState<Tab>('overview')
   const [filter, setFilter] = useState('All')
   const [note, setNote] = useState('')
@@ -196,7 +198,7 @@ function ClientProfileContent({ api, navigate, patientId }: Props & { patientId:
                   onClick={() => navigate(`/sessions/upcoming?id=${apiId(session.id)}`)}
                 >
                   <span className="client-profile-session-mark" aria-hidden="true"><DesignIcon name="part2-07-imgCalendarAlt.svg" /></span>
-                  <span className="client-profile-session-copy"><strong>{session.is_initial ? 'Initial consultation' : 'Therapy session'}</strong><small>{careDate(session, api.getUser()?.timezone || 'UTC')} · {session.medium}</small></span>
+                  <span className="client-profile-session-copy"><strong>{session.is_initial ? 'Initial consultation' : 'Therapy session'}</strong><small>{careDate(session, timezone)} · {session.medium}</small></span>
                   <span className="client-profile-session-status">{session.status}</span>
                 </button>
               ))}
@@ -219,21 +221,27 @@ function ClientProfileContent({ api, navigate, patientId }: Props & { patientId:
               <MutationStatus mutation={mutation} refreshed={notesReady} />
               <h3>Previous Notes</h3>
               {notesReady && !notes.data?.notes.length && <p>No private notes yet.</p>}
-              {notes.data?.notes.map((item) => (
-                <article className="client-profile-note" key={item.id}>
-                  <strong>Private therapist note</strong>
-                  {item.created_at && <time dateTime={item.created_at}>{item.created_at.slice(0, 10)}</time>}
-                  <p>{item.body}</p>
-                </article>
-              ))}
+              {notes.data?.notes.map((item) => {
+                const date = formatTimestamp(item.created_at, timezone)
+                return (
+                  <article className="client-profile-note" key={item.id}>
+                    <strong>Private therapist note</strong>
+                    {date && <time dateTime={item.created_at ?? undefined}>{date}</time>}
+                    <p>{item.body}</p>
+                  </article>
+                )
+              })}
               {!!notes.data?.session_reports.length && <h3>Session reports (patient-visible)</h3>}
-              {notes.data?.session_reports.map((item) => (
-                <article className="client-profile-note" key={item.session_id}>
-                  <strong>Session report</strong>
-                  {item.session_date && <time dateTime={item.session_date}>{item.session_date}</time>}
-                  <p>{item.summary}</p>
-                </article>
-              ))}
+              {notes.data?.session_reports.map((item) => {
+                const date = formatCalendarDate(item.session_date)
+                return (
+                  <article className="client-profile-note" key={item.session_id}>
+                    <strong>Session report</strong>
+                    {date && <time dateTime={item.session_date ?? undefined}>{date}</time>}
+                    <p>{item.summary}</p>
+                  </article>
+                )
+              })}
             </div>
           )}
           {active && tab === 'content' && (

@@ -16,6 +16,8 @@ vi.mock('../src/Workspace', () => ({
 }))
 const userId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 const periodId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+const revisionA = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'
+const revisionB = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd'
 const user = {
   id: userId,
   name: 'Real Account Name',
@@ -108,6 +110,16 @@ function change(label: string, value: string) {
 async function loaded() {
   await screen.findByRole('heading', { name: 'Real Professional Name' })
 }
+const withdrawalSuccess = 'تم سحب التعديلات. لم يتغيّر الملف المنشور.'
+function pendingProfile(id: string) {
+  return profileReview({
+    lifecycle_state: 'update_pending',
+    pending_revision: {
+      id, kind: 'update', status: 'pending', submitted_at: '2026-11-27T12:00:00Z',
+      data: { ...validProfile, full_name: 'Unpublished Name' },
+    },
+  })
+}
 beforeEach(() => {
   window.history.replaceState({}, '', '/profile')
   vi.restoreAllMocks()
@@ -149,7 +161,7 @@ describe('live Profile API integration', () => {
     let review = profileReview()
     const { api, calls } = await client((call) => {
       if (call.method === 'POST' && call.path.endsWith('/profile-submission')) {
-        review = profileReview({ pending_revision: pendingRevision })
+        review = profileReview({ lifecycle_state: 'update_pending', pending_revision: pendingRevision })
         return json({ data: review }, 201)
       }
       if (call.path === '/therapists/me/profile') return json({ data: review })
@@ -163,9 +175,15 @@ describe('live Profile API integration', () => {
     expect(modal().getByLabelText('رقم الجوال')).toHaveAttribute('readonly')
     change('التخصص', 'trauma')
     change('البلد', 'DE')
-    const languages = modal().getByRole('listbox', { name: 'اللغات' })
-    await interaction.deselectOptions(languages, ['ar', 'en'])
-    await interaction.selectOptions(languages, ['de', 'ku'])
+    const languages = within(modal().getByRole('group', { name: 'اللغات' }))
+    await interaction.click(languages.getByRole('checkbox', { name: 'العربية' }))
+    await interaction.click(languages.getByRole('checkbox', { name: 'الإنجليزية' }))
+    await interaction.click(languages.getByRole('checkbox', { name: 'الكردية' }))
+    await interaction.tab()
+    expect(languages.getByRole('checkbox', { name: 'الألمانية' })).toHaveFocus()
+    await interaction.keyboard(' ')
+    expect(languages.getByRole('checkbox', { name: 'الكردية' })).toBeChecked()
+    expect(languages.getByRole('checkbox', { name: 'الألمانية' })).toBeChecked()
     fireEvent.click(modal().getByRole('button', { name: 'إرسال التعديلات للمراجعة' }))
     expect(await screen.findByText(/تعديلات ملفك المهني بانتظار المراجعة/)).toBeInTheDocument()
     expect(calls.find((call) => call.method === 'POST')).toMatchObject({
@@ -188,14 +206,89 @@ describe('live Profile API integration', () => {
     const { api } = await client((call) => call.path === '/therapists/me/profile' ? json({
       data: profileReview({ last_review: {
         revision_id: periodId, kind: 'update', status: 'rejected', note: 'يرجى مراجعة معلومات التخصص',
-        reviewed_at: '2026-11-27T12:00:00Z',
+        reviewed_at: '2026-11-27T12:00:00Z', data: { ...validProfile, specialty: 'trauma' },
       } }),
     }) : undefined)
     render(<Profile page="settings" api={api} navigate={vi.fn()} />)
     expect(await screen.findByText('يرجى مراجعة معلومات التخصص')).toBeInTheDocument()
     expect(screen.queryByText(/تعديلات ملفك المهني بانتظار المراجعة/)).not.toBeInTheDocument()
     fireEvent.click(screen.getAllByRole('button', { name: 'تعديل الملف الشخصي' })[0])
-    expect(modal().getByLabelText('التخصص')).toHaveValue(validProfile.specialty)
+    expect(modal().getByLabelText('التخصص')).toHaveValue('trauma')
+  })
+
+  it('withdraws by revision only on confirmation, even when the published profile has null fields', async () => {
+    const published = { ...validProfile, job_title: null, city: null }
+    const { api, calls } = await client((call) => {
+      if (call.path === '/therapists/me/profile') return json({ data: { ...pendingProfile(revisionA), published } })
+      if (call.method === 'DELETE') return json({ data: profileReview({ lifecycle_state: 'approved', published }) })
+    })
+    render(<Profile page="settings" api={api} navigate={vi.fn()} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'سحب التعديلات' }))
+    expect(modal().getByText(/ستبقى بيانات ملفك المنشور كما هي/)).toBeInTheDocument()
+    fireEvent.click(modal().getByRole('button', { name: 'إلغاء' }))
+    expect(calls.every(({ method }) => method === 'GET')).toBe(true)
+    fireEvent.click(screen.getByRole('button', { name: 'سحب التعديلات' }))
+    fireEvent.click(modal().getByRole('button', { name: 'تأكيد السحب' }))
+    expect(await screen.findByText(withdrawalSuccess)).toBeInTheDocument()
+    expect(calls.filter(({ method }) => method !== 'GET')).toMatchObject([
+      { method: 'DELETE', path: `/therapists/me/profile-submission/${revisionA}`, body: undefined },
+    ])
+    expect(screen.queryByRole('button', { name: 'سحب التعديلات' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Unpublished Name')).not.toBeInTheDocument()
+  })
+
+  it.each([409, 404])('targets the pinned revision after a refresh and handles withdrawal %s without reporting success', async (status) => {
+    const profilePath = '/therapists/me/profile'
+    let review = pendingProfile(revisionA)
+    const { api, calls } = await client((call) => {
+      if (call.path === profilePath) return json({ data: review })
+      if (call.method === 'DELETE') {
+        review = { ...review, published: { ...validProfile, full_name: 'Latest Published Name' } }
+        return json({}, status)
+      }
+    })
+    render(<Profile page="settings" api={api} navigate={vi.fn()} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'سحب التعديلات' }))
+    review = {
+      ...pendingProfile(revisionB),
+      last_review: {
+        revision_id: periodId, kind: 'update', status: 'rejected', note: 'سبب المراجعة السابقة',
+        reviewed_at: '2026-11-27T12:00:00Z',
+      },
+    }
+    fireEvent(window, new Event('focus'))
+    expect(await screen.findByText('سبب المراجعة السابقة')).toBeInTheDocument()
+    const previousReads = calls.filter(({ path }) => path === profilePath).length
+
+    fireEvent.click(modal().getByRole('button', { name: 'تأكيد السحب' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('تعذّر سحب التعديلات')
+    expect(calls.filter(({ method }) => method !== 'GET')).toMatchObject([
+      { method: 'DELETE', path: `/therapists/me/profile-submission/${revisionA}`, body: undefined },
+    ])
+    expect(await screen.findByRole('heading', { name: 'Latest Published Name' })).toBeInTheDocument()
+    expect(calls.filter(({ path }) => path === profilePath)).toHaveLength(previousReads + 1)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'سحب التعديلات' })).toBeInTheDocument()
+    expect(screen.queryByText(withdrawalSuccess)).not.toBeInTheDocument()
+  })
+
+  it.each([
+    [0, 'تعذّر الاتصال بالخادم'],
+    [503, 'تعذّر إكمال الطلب'],
+  ])('shows withdrawal error %s in the confirmation without reporting success', async (status, message) => {
+    const { api } = await client((call) => {
+      if (call.path === '/therapists/me/profile') return json({ data: pendingProfile(revisionA) })
+      if (call.method === 'DELETE') {
+        if (!status) throw new TypeError('Offline')
+        return json({}, status)
+      }
+    })
+    render(<Profile page="settings" api={api} navigate={vi.fn()} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'سحب التعديلات' }))
+    fireEvent.click(modal().getByRole('button', { name: 'تأكيد السحب' }))
+    expect(await modal().findByRole('alert')).toHaveTextContent(message)
+    expect(modal().getByRole('button', { name: 'تأكيد السحب' })).toBeEnabled()
+    expect(screen.queryByText(withdrawalSuccess)).not.toBeInTheDocument()
   })
 
   it('renders server option labels and displays raw legacy values', async () => {
@@ -221,7 +314,9 @@ describe('live Profile API integration', () => {
     expect(modal().getByRole('option', { name: 'التخصص العام' })).toHaveValue('general')
     expect(modal().getByLabelText('التخصص')).toHaveDisplayValue('Counselling')
     expect(modal().getByLabelText('البلد')).toHaveDisplayValue('Jordan')
-    expect(modal().getByLabelText('اللغات')).toHaveDisplayValue(['اللغة العربية', 'Legacy language'])
+    const languages = within(modal().getByRole('group', { name: 'اللغات' }))
+    expect(languages.getByRole('checkbox', { name: 'اللغة العربية' })).toBeChecked()
+    expect(languages.getByRole('checkbox', { name: 'Legacy language' })).toBeChecked()
   })
 
   it('preserves drafts on sanitized field errors and guards duplicate submissions', async () => {
@@ -246,7 +341,7 @@ describe('live Profile API integration', () => {
     )
     expect(modal().getByRole('alert')).toHaveTextContent('يرجى مراجعة الحقول')
     expect(modal().getByLabelText('البريد الإلكتروني')).toHaveAccessibleDescription(/ربما يكون مستخدمًا/)
-    expect(modal().getByLabelText('اللغات')).toHaveAttribute('aria-invalid', 'true')
+    expect(modal().getByRole('group', { name: 'اللغات' })).toHaveAttribute('aria-invalid', 'true')
     expect(modal().getByLabelText('النبذة التعريفية')).toHaveValue(draft)
     expect(screen.queryByText('server secret')).not.toBeInTheDocument()
     expect(screen.queryByText('private draft echoed by backend')).not.toBeInTheDocument()
@@ -278,7 +373,7 @@ describe('live Profile API integration', () => {
     )
     render(<Profile page="settings" api={api} navigate={vi.fn()} />)
     await loaded()
-    fireEvent.click(screen.getByRole('button', { name: /Manage Working Hours/ }))
+    fireEvent.click(screen.getByRole('button', { name: /إدارة أوقات العمل/ }))
     expect(modal().getByText(/All times are wall-clock hours in Asia\/Amman/)).toBeInTheDocument()
     expect(modal().getByLabelText('monday start 2')).toHaveValue('13:00')
     change('monday end 1', '11:30')
@@ -301,7 +396,7 @@ describe('live Profile API integration', () => {
     const { api, calls } = await client()
     render(<Profile page="settings" api={api} navigate={vi.fn()} />)
     await loaded()
-    fireEvent.click(screen.getByRole('button', { name: /Manage Working Hours/ }))
+    fireEvent.click(screen.getByRole('button', { name: /إدارة أوقات العمل/ }))
     change('monday end 1', '14:00')
     fireEvent.submit(modal().getByLabelText('monday end 1').closest('form')!)
     expect(screen.getByRole('alert')).toHaveTextContent('non-overlapping')
@@ -323,7 +418,7 @@ describe('live Profile API integration', () => {
     )
     render(<Profile page="settings" api={api} navigate={vi.fn()} />)
     await loaded()
-    fireEvent.click(screen.getByRole('button', { name: 'Change Password' }))
+    fireEvent.click(screen.getByRole('button', { name: 'تغيير كلمة المرور' }))
     change('Current Password', 'old-test-password')
     change('New Password', 'new-test-password1')
     change('Confirm New Password', 'new-test-password1')
@@ -353,7 +448,7 @@ describe('live Profile API integration', () => {
     )
     render(<Profile page="settings" api={api} navigate={vi.fn()} />)
     await loaded()
-    fireEvent.click(screen.getByRole('button', { name: 'Change Password' }))
+    fireEvent.click(screen.getByRole('button', { name: 'تغيير كلمة المرور' }))
     change('Current Password', 'old-test-password')
     change('New Password', 'onlyletters')
     change('Confirm New Password', 'onlyletters')
@@ -378,7 +473,7 @@ describe('live Profile API integration', () => {
       const navigate = vi.fn()
       render(<Profile page="settings" api={api} navigate={navigate} />)
       await loaded()
-      fireEvent.click(screen.getByRole('button', { name: 'Log Out' }))
+      fireEvent.click(screen.getByRole('button', { name: 'تسجيل الخروج' }))
       expect(modal().getByText(/remote revocation is unknown/)).toBeInTheDocument()
       const button = modal().getByRole('button', { name: 'Log out' })
       fireEvent.click(button)
@@ -424,7 +519,7 @@ describe('live Profile API integration', () => {
     })
     render(<Profile page="settings" api={api} navigate={vi.fn()} />)
     await loaded()
-    fireEvent.click(screen.getByRole('button', { name: /Vacations and Breaks/ }))
+    fireEvent.click(screen.getByRole('button', { name: /الإجازات والاستراحات/ }))
     await screen.findByText('No blocked periods.')
     change('Start date', period.start_date)
     change('End date (optional)', period.end_date)
@@ -444,7 +539,7 @@ describe('live Profile API integration', () => {
       reason: 'Travel',
     })
     const remove = await screen.findByRole('button', {
-      name: `Remove blocked period ${period.start_date}`,
+      name: 'Remove blocked period 1 Jan 2090',
     })
     fireEvent.click(remove)
     await screen.findByRole('alert')
@@ -488,7 +583,7 @@ describe('live Profile API integration', () => {
     expect(modal().getByRole('button', { name: 'Send Message (unavailable)' })).toBeDisabled()
     fireEvent.click(modal().getByRole('button', { name: 'Close dialog' }))
     rerender(<Profile page="settings" api={api} navigate={vi.fn()} />)
-    fireEvent.click(screen.getByRole('button', { name: /Notification Settings/ }))
+    fireEvent.click(screen.getByRole('button', { name: /إعدادات الإشعارات/ }))
     expect(modal().getByRole('button', { name: 'Save Preferences (unavailable)' })).toBeDisabled()
     expect(
       modal()

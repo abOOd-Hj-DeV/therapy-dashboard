@@ -7,6 +7,7 @@ import { RemainingIcon } from './RemainingUI'
 import { ApiClient } from './api'
 import { ApiWalletAndWithdrawalsLive } from './api-wallet-and-withdrawals-live'
 import { closurePortraitAssets } from './closure-portrait-assets'
+import { formatCalendarDate } from './display-date'
 import './visual-wallet-closure.css'
 
 const withdrawArrow = 'r4-wallet-arrow-right.svg'
@@ -273,7 +274,7 @@ function DemoWallet({ navigate }: { navigate: (path: string) => void }) {
                       />
                       <div className="wallet-transaction-copy">
                         <strong>{item.name}</strong>
-                        <small>Private Session · {item.date}</small>
+                        <small>Private Session · {formatCalendarDate(item.date)}</small>
                       </div>
                       <div className="wallet-transaction-status">
                         <strong className="wallet-income">+{item.amount} SP</strong>
@@ -311,10 +312,10 @@ function DemoWallet({ navigate }: { navigate: (path: string) => void }) {
                         </strong>
                         <small>
                           <span className="wallet-desktop-detail">
-                            SA** **** **** 1234 · 2024-05-01
+                            SA** **** **** 1234 · {formatCalendarDate('2024-05-01')}
                           </span>
                           <span className="wallet-responsive-detail">
-                            ATM · {item.responsive?.date}
+                            ATM · {formatCalendarDate(item.responsive?.date)}
                           </span>
                         </small>
                       </div>

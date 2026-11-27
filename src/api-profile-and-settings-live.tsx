@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'rea
 import { ApiClient, ApiError, apiErrorMessage, apiId, type ApiUser } from './api'
 import { useApiResource, useApiUser } from './api-hooks'
 import { useMutation } from './api-mutation'
+import { formatCalendarDate } from './display-date'
 import { Workspace } from './Workspace'
 import { passwordPolicyMessage, validNewPassword } from './auth-policy'
 import { Modal } from './ui'
@@ -9,7 +10,7 @@ import { FaqSummary, RemainingIcon, SettingRow, type RemainingIconName } from '.
 import { approvalLabel } from './therapist-approval'
 import { optionName, useTherapistOptions } from './therapist-options'
 import { TherapistProfileForm } from './TherapistProfileForm'
-import { profileReviewError, therapistProfilePath, type TherapistProfileResponse } from './therapist-profile-review'
+import { profileReviewError, therapistLifecycle, therapistProfilePath, therapistSubmissionPath, type TherapistProfileResponse } from './therapist-profile-review'
 
 type Page = 'profile' | 'settings' | 'help'
 type Props = { page: Page; navigate: (path: string) => void; api?: ApiClient }
@@ -28,6 +29,7 @@ const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'
 type Day = (typeof days)[number]
 const titles = {
   edit: 'تعديل الملف الشخصي',
+  withdrawProfile: 'سحب تعديلات الملف المهني',
   hours: 'Work Hours Management',
   holidays: 'Vacations and Breaks',
   password: 'Change Password',
@@ -133,6 +135,8 @@ function ProfileActor({
   const published = review?.published
   const pending = review?.pending_revision
   const last = review?.last_review
+  const pendingUpdate = !!review && therapistLifecycle(review) === 'update_pending'
+  const rejectedUpdate = last?.kind === 'update' && last.status === 'rejected' ? last : null
   const options = useTherapistOptions(api, !!published)
   const approval = review && approvalLabel(review.approval_status)
   const timezone = dashboard.data?.timezone || identity.data?.user.timezone || user.timezone
@@ -140,16 +144,23 @@ function ProfileActor({
     const requested = new URLSearchParams(window.location.search).get('state')
     return requested && Object.hasOwn(titles, requested) ? (requested as Dialog) : ''
   })
+  const reviewDialog = dialog === 'edit' || dialog === 'withdrawProfile'
   const [notice, setNotice] = useState('')
+  const [withdrawalRevisionId, setWithdrawalRevisionId] = useState<string | null>(null)
+  const [withdrawalConflict, setWithdrawalConflict] = useState(false)
   // Keys and uncertain submissions are kept only for this actor, across modal closes.
   const periodKeys = useRef(new Map<string, string>())
   const uncertainPeriod = useRef<PeriodBody | null>(null)
-  const close = () => setDialog('')
+  const close = () => {
+    setWithdrawalRevisionId(null)
+    setDialog('')
+  }
   const name = published?.full_name || identity.data?.user.name || user.name
+  const settings = page === 'settings'
   return (
-    <Workspace title="Profile" active="Profile" navigate={navigate} api={api}>
-      <div className={`profile-layout profile-${page}`}>
-        <aside className="profile-summary" aria-label="Profile overview">
+    <Workspace title={settings ? 'إعدادات الملف المهني' : 'Profile'} active="Profile" navigate={navigate} api={api}>
+      <div className={`profile-layout profile-${page}`} lang={settings ? 'ar' : undefined} dir={settings ? 'rtl' : undefined}>
+        <aside className="profile-summary" aria-label={settings ? 'نبذة عن الملف المهني' : 'Profile overview'}>
           <div className="profile-identity">
             <span className="profile-avatar profile-avatar-initials" aria-label="Profile initials">
               {name
@@ -173,24 +184,25 @@ function ProfileActor({
             {titles.edit}
           </button>
           <div className="profile-description">
-            <h3>Description</h3>
-            <p>{published?.specialty ? optionName(options.specialties, published.specialty) : 'Professional profile unavailable.'}</p>
+            <h3>{settings ? 'التخصص' : 'Description'}</h3>
+            <p>{published?.specialty ? optionName(options.specialties, published.specialty) :
+              settings ? 'بيانات الملف المهني غير متاحة الآن.' : 'Professional profile unavailable.'}</p>
           </div>
           {dashboard.data && (
             <div className="profile-counts">
               <div>
                 <strong>{dashboard.data.clients_count}</strong>
-                <span>Clients</span>
+                <span>{settings ? 'العملاء' : 'Clients'}</span>
               </div>
               <div>
                 <strong>{dashboard.data.stats.completed}</strong>
-                <span>Completed sessions</span>
+                <span>{settings ? 'الجلسات المكتملة' : 'Completed sessions'}</span>
               </div>
             </div>
           )}
         </aside>
-        <section className="profile-panel" aria-label="Profile details">
-          <nav className="profile-tabs" aria-label="Profile sections">
+        <section className="profile-panel" aria-label={settings ? 'تفاصيل الملف المهني' : 'Profile details'}>
+          <nav className="profile-tabs" aria-label={settings ? 'أقسام الملف المهني' : 'Profile sections'}>
             {(['profile', 'settings', 'help'] as const).map((tab) => (
               <button
                 key={tab}
@@ -199,11 +211,13 @@ function ProfileActor({
                 onClick={() => navigate(tab === 'profile' ? '/profile' : `/profile/${tab}`)}
               >
                 <RemainingIcon name={`${tab}${page === tab ? 'Active' : 'Idle'}`} />
-                {tab === 'profile' ? 'Profile' : tab === 'settings' ? 'Settings' : 'Help'}
+                {settings
+                  ? { profile: 'الملف المهني', settings: 'الإعدادات', help: 'المساعدة' }[tab]
+                  : { profile: 'Profile', settings: 'Settings', help: 'Help' }[tab]}
               </button>
             ))}
           </nav>
-          {(identity.loading || dashboard.loading || profile.loading) && <p role="status">Loading profile…</p>}
+          {(identity.loading || dashboard.loading || profile.loading) && <p role="status">{settings ? 'جارٍ تحميل الملف المهني…' : 'Loading profile…'}</p>}
           <Failure error={identity.error || dashboard.error} />
           {(identity.error || dashboard.error || profile.error) && (
             <>
@@ -216,17 +230,29 @@ function ProfileActor({
                   profile.reload()
                 }}
               >
-                Retry profile
+                {settings ? 'إعادة محاولة تحميل الملف المهني' : 'Retry profile'}
               </button>
             </>
           )}
-          {(pending?.kind === 'update' || (last?.kind === 'update' && last.status === 'rejected')) && (
+          {(pendingUpdate || rejectedUpdate) && (
             <div className="profile-review-banner" lang="ar" dir="rtl">
-              {pending?.kind === 'update' && (
-                <p role="status">تعديلات ملفك المهني بانتظار المراجعة. يظل الملف المنشور دون تغيير حتى الموافقة.</p>
+              {pendingUpdate && (
+                <>
+                  <p role="status">تعديلات ملفك المهني بانتظار المراجعة. يظل الملف المنشور دون تغيير حتى الموافقة.</p>
+                  {pending?.kind === 'update' && (
+                    <button type="button" className="remaining-cancel" onClick={() => {
+                      setWithdrawalRevisionId(pending.id)
+                      setWithdrawalConflict(false)
+                      setNotice('')
+                      setDialog('withdrawProfile')
+                    }}>
+                      سحب التعديلات
+                    </button>
+                  )}
+                </>
               )}
-              {last?.kind === 'update' && last.status === 'rejected' && (
-                <p>لم تُعتمد آخر تعديلات ملفك المهني.{last.note && <> سبب الرفض: <bdi>{last.note}</bdi></>}</p>
+              {rejectedUpdate && (
+                <p>لم تُعتمد آخر تعديلات ملفك المهني.{rejectedUpdate.note && <> سبب الرفض: <bdi>{rejectedUpdate.note}</bdi></>}</p>
               )}
             </div>
           )}
@@ -295,39 +321,39 @@ function ProfileActor({
               </div>
             </div>
           )}
-          {page === 'settings' && (
+          {settings && (
             <div className="profile-settings-grid">
               <section className="profile-availability">
-                <h3>Availability and Appointments</h3>
+                <h3>التوفّر والمواعيد</h3>
                 <SettingRow
                   icon="clock"
-                  title="Manage Working Hours"
-                  detail={`Weekly hours in ${timezone || 'your server timezone'}`}
+                  title="إدارة أوقات العمل"
+                  detail={timezone ? `أوقات العمل الأسبوعية (${timezone})` : 'أوقات العمل الأسبوعية'}
                   onClick={() => setDialog('hours')}
                 />
                 <SettingRow
                   icon="briefcase"
-                  title="Vacations and Breaks"
-                  detail="Whole-day blocked periods"
+                  title="الإجازات والاستراحات"
+                  detail="أيام لا تستقبل فيها المواعيد"
                   onClick={() => setDialog('holidays')}
                 />
                 <button className="remaining-danger" onClick={() => setDialog('logout')}>
-                  Log Out
+                  تسجيل الخروج
                 </button>
               </section>
               <section className="profile-account">
-                <h3>Account Settings</h3>
+                <h3>إعدادات الحساب</h3>
                 <SettingRow icon="user" title={titles.edit} onClick={() => setDialog('edit')} />
                 <SettingRow icon="briefcase" title="المستندات المطلوبة" onClick={() => navigate('/profile/documents')} />
                 <SettingRow
                   icon="lock"
-                  title="Change Password"
+                  title="تغيير كلمة المرور"
                   onClick={() => setDialog('password')}
                 />
                 <SettingRow
                   icon="bell"
-                  title="Notification Settings"
-                  detail="Preferences unavailable in the API"
+                  title="إعدادات الإشعارات"
+                  detail="تفضيلات الإشعارات غير متاحة حاليًا"
                   onClick={() => setDialog('preferences')}
                 />
               </section>
@@ -367,6 +393,11 @@ function ProfileActor({
           )}
         </section>
       </div>
+      {withdrawalConflict && (
+        <p lang="ar" dir="rtl" className="remaining-error" role="alert">
+          تعذّر سحب التعديلات لأن الطلب لم يعد متاحًا. تحقّق من حالة طلبك بعد تحديث الملف المهني.
+        </p>
+      )}
       {notice && (
         <p className="remaining-notice" role="status">
           {notice}
@@ -380,16 +411,16 @@ function ProfileActor({
           title={titles[dialog]}
           className={`remaining-modal ${dialog}-modal`}
           closeIcon={<RemainingIcon name="close" />}
-          lang={dialog === 'edit' ? 'ar' : undefined}
-          dir={dialog === 'edit' ? 'rtl' : undefined}
-          closeLabel={dialog === 'edit' ? 'إغلاق نافذة التعديل' : undefined}
+          lang={reviewDialog ? 'ar' : undefined}
+          dir={reviewDialog ? 'rtl' : undefined}
+          closeLabel={reviewDialog ? dialog === 'edit' ? 'إغلاق نافذة التعديل' : 'إغلاق نافذة سحب التعديلات' : undefined}
           onClose={close}
         >
           {dialog === 'edit' &&
             (published && review ? (
               <TherapistProfileForm
                 api={api}
-                initial={pending?.kind === 'update' ? pending.data : published}
+                initial={(pending?.kind === 'update' ? pending.data : rejectedUpdate?.data) ?? published}
                 phone={review.account.whatsapp_number}
                 options={options}
                 close={close}
@@ -405,6 +436,32 @@ function ProfileActor({
                 <button className="remaining-cancel" onClick={close}>إغلاق</button>
               </>
             ))}
+          {dialog === 'withdrawProfile' && (
+            withdrawalRevisionId ? (
+              <WithdrawProfileUpdate
+                api={api}
+                revisionId={withdrawalRevisionId}
+                close={close}
+                saved={(response) => {
+                  profile.replace(response)
+                  close()
+                  setNotice('تم سحب التعديلات. لم يتغيّر الملف المنشور.')
+                }}
+                conflicted={() => {
+                  close()
+                  setWithdrawalConflict(true)
+                  profile.reload()
+                }}
+              />
+            ) : (
+              <>
+                <p role="status">{published
+                  ? 'لم تعد هناك تعديلات بانتظار المراجعة.'
+                  : 'بيانات الملف المهني غير متاحة الآن.'}</p>
+                <button type="button" className="remaining-cancel" onClick={close}>إغلاق</button>
+              </>
+            )
+          )}
           {dialog === 'hours' &&
             (dashboard.data?.therapist && timezone ? (
               <WorkingHours
@@ -492,6 +549,38 @@ function ProfileActor({
         </Modal>
       )}
     </Workspace>
+  )
+}
+function WithdrawProfileUpdate({ api, revisionId, close, saved, conflicted }: {
+  api: ApiClient
+  revisionId: string
+  close: () => void
+  saved: (response: TherapistProfileResponse) => void
+  conflicted: () => void
+}) {
+  const mutation = useMutation(api)
+
+  function withdraw() {
+    void mutation.run(
+      (signal) => api.request<TherapistProfileResponse>(`${therapistSubmissionPath}/${apiId(revisionId)}`, 'DELETE', { signal }),
+      saved,
+      (error) => {
+        if (error instanceof ApiError && (error.status === 409 || error.status === 404)) conflicted()
+      },
+    )
+  }
+
+  return (
+    <>
+      <p>سيُلغى طلب مراجعة تعديلاتك. ستبقى بيانات ملفك المنشور كما هي.</p>
+      {!!mutation.error && <p role="alert" className="remaining-error">{profileReviewError(mutation.error)}</p>}
+      <footer className="remaining-form-actions">
+        <button type="button" className="remaining-cancel" disabled={mutation.pending} onClick={close}>إلغاء</button>
+        <button type="button" className="remaining-primary" disabled={mutation.pending} onClick={withdraw}>
+          {mutation.pending ? 'جارٍ سحب التعديلات…' : 'تأكيد السحب'}
+        </button>
+      </footer>
+    </>
   )
 }
 function Info({
@@ -828,12 +917,12 @@ function BlockedPeriods({
             <span className="holiday-clock"><RemainingIcon name="pendingMobile" /></span>
             <div className="holiday-copy">
               <strong>{period.reason || 'No reason provided'}</strong>
-              <p>{period.start_date} – {period.end_date}</p>
+              <p>{formatCalendarDate(period.start_date) || 'Date unavailable'} – {formatCalendarDate(period.end_date) || 'Date unavailable'}</p>
             </div>
             <button
               className="icon-button holiday-remove"
               disabled={busy || locked}
-              aria-label={`Remove blocked period ${period.start_date}`}
+              aria-label={`Remove blocked period ${formatCalendarDate(period.start_date)}`.trimEnd()}
               onClick={() => remove(period.id)}
             >
               <RemainingIcon name="close" />

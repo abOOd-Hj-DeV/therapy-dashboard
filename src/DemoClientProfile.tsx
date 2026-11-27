@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type KeyboardEvent } from 'react'
 import { asset } from './assets'
 import { DesignIcon, Workspace } from './Workspace'
+import { formatCalendarDate } from './display-date'
 import './visual-client-profile-preview.css'
 
 type Tab = 'Overview' | 'Sessions' | 'Notes' | 'Custom Content'
@@ -145,7 +146,7 @@ function ClientProfileFixture({ navigate }: { navigate: (path: string) => void }
             </div>
             <div className="dcp-metadata">
               <section className="dcp-contact"><h3>Contact Information</h3><dl><div><dt>Mobile</dt><dd>+966 50 123 4567</dd></div><div><dt>Email</dt><dd>ahmed@example.com</dd></div></dl></section>
-              <section className="dcp-subscription"><h3>Subscription</h3><dl><div><dt>Package</dt><dd>8-Week Package</dd></div><div><dt>Start</dt><dd>2024-01-15</dd></div><div><dt>Next Session</dt><dd>Today 10:00 AM</dd></div></dl></section>
+              <section className="dcp-subscription"><h3>Subscription</h3><dl><div><dt>Package</dt><dd>8-Week Package</dd></div><div><dt>Start</dt><dd>{formatCalendarDate('2024-01-15')}</dd></div><div><dt>Next Session</dt><dd>Today 10:00 AM</dd></div></dl></section>
             </div>
           </aside>
           <div className="dcp-content">

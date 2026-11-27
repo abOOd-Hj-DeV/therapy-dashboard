@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type ComponentProps } from 'react'
 import { ApiClient, ApiError, apiErrorMessage, apiId } from './api'
 import { useApiResource, useApiUser } from './api-hooks'
+import { formatTimestamp } from './display-date'
 import { Workspace } from './Workspace'
 import { RemainingIcon } from './RemainingUI'
 import { Modal } from './ui'
@@ -251,7 +252,7 @@ function LiveWallet({ api, navigate }: LiveProps) {
         {resource.loading && <p role="status">Loading wallet…</p>}
         {!!error && (
           <p className="remaining-error" role="alert">
-            {apiErrorMessage(error)} <button onClick={resource.reload}>Refresh wallet</button>
+            {apiErrorMessage(error)} <button onClick={resource.reload}>Retry loading wallet</button>
           </p>
         )}
         {wallet && (
@@ -353,9 +354,7 @@ function LiveWallet({ api, navigate }: LiveProps) {
                         <strong>{methodLabel(payoutField(item, 'method'))}</strong>
                         <small>
                           {maskAccount(payoutField(item, 'account'))} ·{' '}
-                          {item.created_at
-                            ? new Date(item.created_at).toLocaleString()
-                            : 'Date unavailable'}
+                          {formatTimestamp(item.created_at, api.getUser()?.timezone || 'UTC') || 'Date unavailable'}
                         </small>
                         {item.status === 'rejected' && item.note && (
                           <small>Review note: {item.note}</small>
@@ -428,7 +427,7 @@ function LiveWallet({ api, navigate }: LiveProps) {
               <p className="withdrawal-balance">
                 {wallet
                   ? `Available Balance: ${money(wallet.available, wallet.currency)}`
-                  : 'Refresh wallet to see current balance.'}
+                  : 'Current balance is unavailable.'}
               </p>
               <p>
                 This submits a request for manual finance review. No automatic transfer, guaranteed
@@ -658,7 +657,7 @@ function useWithdrawalFlow(api: ApiClient, wallet: WalletSummary | null, reload:
     setError('')
     if (!wallet || isRestricted(wallet)) {
       setError(
-        'Refresh your wallet. A pending request or insufficient funds may prevent a new request.',
+        'A pending request or insufficient funds may prevent a new request. Wait for the wallet to update.',
       )
       return
     }
