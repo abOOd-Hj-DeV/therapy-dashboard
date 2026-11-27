@@ -36,6 +36,7 @@ function phoneCountries(language: 'ar' | 'en') {
 const countries = { ar: phoneCountries('ar'), en: phoneCountries('en') }
 const invalidPhoneMessage = 'Enter a valid WhatsApp number.'
 const rejectedCredentials = 'Invalid WhatsApp number or password.'
+const resetRequestNotice = 'إذا كان الرقم مؤهلاً، قد يصلك رمز الاستعادة على واتساب.'
 
 function invitationError(error: ApiError) {
   switch (error.code) {
@@ -426,7 +427,7 @@ export function LiveAuthentication({
           clearSecrets()
           setPhone(normalizedPhone ?? '')
           setPhase('reset')
-          setNotice('If this number is registered, a reset code has been sent. Check WhatsApp.')
+          setNotice(resetRequestNotice)
           setResendUntil(Date.now() + 60000)
           setNow(Date.now())
         },
@@ -480,7 +481,7 @@ export function LiveAuthentication({
           setOtp('')
           setResendUntil(Date.now() + 60000)
           setNow(Date.now())
-          setNotice('If this number is registered, a reset code has been sent. Check WhatsApp.')
+          setNotice(resetRequestNotice)
         },
       )
     }
@@ -761,7 +762,7 @@ export function LiveAuthentication({
               </p>
             )}
             {notice && (
-              <p className="auth-notice" role="status">
+              <p className="auth-notice" role="status" dir="auto">
                 {notice}
               </p>
             )}
