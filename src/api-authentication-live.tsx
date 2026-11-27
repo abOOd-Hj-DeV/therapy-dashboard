@@ -14,8 +14,8 @@ import {
   type LoginChallenge,
 } from './api'
 import type { AuthPage } from './Auth'
-import { asset } from './assets'
-import { Icon, Logo } from './ui'
+import { Icon } from './ui'
+import { AuthCardShell } from './AuthCardShell'
 import { passwordPolicyMessage, validNewPassword } from './auth-policy'
 
 type Phase = 'login' | 'activate' | 'forgot' | 'reset' | 'otp'
@@ -23,16 +23,34 @@ type Challenge = LoginChallenge & { phone: string }
 type Operation = { controller: AbortController }
 type AuthResponse = ApiSession | LoginChallenge
 
-const regionNames = new Intl.DisplayNames(['en'], { type: 'region' })
-const countries = getCountries()
-  .map((code) => ({
+function phoneCountries(language: 'ar' | 'en') {
+  const regionNames = new Intl.DisplayNames([language], { type: 'region' })
+  return getCountries().map((code) => ({
     code,
     name: regionNames.of(code) ?? code,
     dial: getCountryCallingCode(code),
   }))
-  .sort((a, b) => a.name.localeCompare(b.name))
+  .sort((a, b) => a.name.localeCompare(b.name, language))
+}
+const countries = { ar: phoneCountries('ar'), en: phoneCountries('en') }
 const invalidPhoneMessage = 'Enter a valid WhatsApp number.'
 const rejectedCredentials = 'Invalid WhatsApp number or password.'
+
+function invitationError(error: ApiError) {
+  switch (error.code) {
+    case 'phone_invalid': return 'أدخل رقم واتساب صالحًا.'
+    case 'otp_invalid': return error.meta.attempts_left === undefined
+      ? 'رمز التفعيل غير صحيح.'
+      : `رمز التفعيل غير صحيح. المحاولات المتبقية: ${error.meta.attempts_left}.`
+    case 'otp_expired': return 'انتهت صلاحية رمز التفعيل. تواصل مع الإدارة للحصول على دعوة جديدة.'
+    case 'otp_exhausted': return 'استُنفدت محاولات إدخال الرمز. تواصل مع الإدارة للحصول على دعوة جديدة.'
+  }
+  if (error.status === 403) return 'لا يمكن تفعيل هذا الحساب في بوابة المعالجين.'
+  if (error.status === 429) return 'محاولات كثيرة. انتظر قليلًا ثم أعد المحاولة.'
+  if (error.status === 0 || error.status === 408) return 'تعذّر الاتصال. تحقّق من اتصالك بالإنترنت وأعد المحاولة.'
+  if (error.status === 422) return 'تحقّق من بيانات التفعيل وحاول مرة أخرى.'
+  return 'تعذّر تفعيل الحساب الآن. أعد المحاولة.'
+}
 
 function internationalPhone(value: string, region: CountryCode): string | null {
   const input = value.trim().replace(/^00/, '+')
@@ -78,6 +96,10 @@ export function LiveAuthentication({
   navigate: (path: string) => void
 }) {
   const [phase, setPhase] = useState<Phase>(() => initialPhase(page))
+  const activating = phase === 'activate'
+  const phoneError = activating ? 'أدخل رقم واتساب صالحًا.' : invalidPhoneMessage
+  const phoneLabel = activating ? 'رقم واتساب' : 'WhatsApp number'
+  const passwordLabel = phase === 'login' ? 'Password' : activating ? 'كلمة المرور الجديدة' : 'New password'
   const [phone, setPhone] = useState('')
   const [region, setRegion] = useState<CountryCode>('SY')
   const [password, setPassword] = useState('')
@@ -218,7 +240,17 @@ export function LiveAuthentication({
       if (!current()) return
       if (failure instanceof ApiError) {
         const codeMessage = otpError(failure)
-        if (failure.code === 'phone_invalid' && phase !== 'otp') {
+        if (activating) {
+          const message = invitationError(failure)
+          const field = failure.code === 'phone_invalid' ? 'whatsapp_number' :
+            failure.code === 'otp_invalid' || failure.code === 'otp_expired' ? 'code' :
+              ['whatsapp_number', 'code', 'password', 'password_confirmation'].find((name) => Object.hasOwn(failure.fields, name))
+          if (failure.code === 'otp_exhausted') {
+            clearSecrets()
+            setError(message)
+          } else if (field) setFields({ [field]: message })
+          else setError(message)
+        } else if (failure.code === 'phone_invalid' && phase !== 'otp') {
           setFields({ whatsapp_number: invalidPhoneMessage })
         } else if (failure.code === 'password_reused' && phase !== 'login') {
           setFields({ password: 'The new password must be different from your current password.' })
@@ -228,13 +260,9 @@ export function LiveAuthentication({
           setPhase(phase === 'otp' ? 'login' : phase === 'reset' ? 'forgot' : phase)
           setError(codeMessage ?? apiErrorMessage(failure))
         } else if (codeMessage) {
-          const field = phase === 'activate' ? 'code' : phase === 'forgot' ? 'whatsapp_number' : phase === 'login' ? null : 'otp'
-          const message =
-            phase === 'activate' && failure.code === 'otp_expired'
-              ? 'The invitation code has expired. Contact management for a replacement.'
-              : codeMessage
-          if (field) setFields({ [field]: message })
-          else setError(message)
+          const field = phase === 'forgot' ? 'whatsapp_number' : phase === 'login' ? null : 'otp'
+          if (field) setFields({ [field]: codeMessage })
+          else setError(codeMessage)
         } else if (
           phase === 'login' &&
           (failure.status === 401 ||
@@ -262,7 +290,7 @@ export function LiveAuthentication({
           }
           setNow(Date.now())
         }
-      } else setError(apiErrorMessage(failure))
+      } else setError(activating ? 'تعذّر تفعيل الحساب الآن. أعد المحاولة.' : apiErrorMessage(failure))
     } finally {
       if (current()) {
         operation.current = null
@@ -344,7 +372,7 @@ export function LiveAuthentication({
     if (!current()) return
     clearSecrets()
     setPhone('')
-    navigate('/dashboard')
+    navigate(activating ? '/profile/approval' : '/dashboard')
   }
 
   const normalizedPhone = internationalPhone(phone, region)
@@ -365,7 +393,7 @@ export function LiveAuthentication({
   function submit(event: FormEvent) {
     event.preventDefault()
     if (phase !== 'otp' && !normalizedPhone) {
-      setFields((previous) => ({ ...previous, whatsapp_number: invalidPhoneMessage }))
+      setFields((previous) => ({ ...previous, whatsapp_number: phoneError }))
       return
     }
     if (!valid || operation.current || Date.now() < retryUntil) return
@@ -465,7 +493,7 @@ export function LiveAuthentication({
   function fieldError(name: string) {
     const message = fields[name] ??
       (name === 'password' && phase !== 'login' && password && !validNewPassword(password)
-        ? passwordPolicyMessage
+        ? activating ? 'استخدم ٨ أحرف على الأقل، تتضمن حرفًا ورقمًا.' : passwordPolicyMessage
         : '')
     return message ? <span className="live-auth-field-error" role="alert">{message}</span> : null
   }
@@ -477,7 +505,7 @@ export function LiveAuthentication({
 
   const title =
     phase === 'activate'
-      ? 'Activate your invitation'
+      ? 'تفعيل دعوة المعالج'
       : phase === 'forgot'
         ? 'Forgot your password?'
         : phase === 'reset'
@@ -487,7 +515,7 @@ export function LiveAuthentication({
             : 'log in to Sakina'
   const action =
     phase === 'activate'
-      ? 'Activate account'
+      ? 'تفعيل الحساب'
       : phase === 'forgot'
         ? 'Request reset code'
         : phase === 'reset'
@@ -497,31 +525,56 @@ export function LiveAuthentication({
             : 'Login'
 
   return (
-    <main className="auth-page visual-auth live-auth">
-      <img className="auth-glow" src={asset('auth-imgEllipse1559.svg')} alt="" />
-      <div className="auth-stack">
-        <div className="auth-glass">
-          <section className="auth-card" aria-labelledby="auth-heading">
-            <header className="auth-heading">
-              <Logo />
-              <div>
-                <h1 id="auth-heading">{title}</h1>
-                <p>
-                  {phase === 'activate'
-                    ? 'Therapist accounts are invited by authorized management, not self-registered.'
-                    : phase === 'otp'
-                      ? 'Enter the six-digit code from WhatsApp for this sign-in request.'
-                      : phase === 'reset'
-                        ? 'Enter your six-digit WhatsApp reset code and your new password together.'
-                        : 'Use your local or international WhatsApp number.'}
-                </p>
-              </div>
-            </header>
+    <AuthCardShell
+      title={title}
+      arabic={activating}
+      description={activating
+        ? 'أدخل رمز الدعوة الذي وصلك عبر واتساب، ثم اختر كلمة مرور لحسابك.'
+        : phase === 'otp'
+          ? 'Enter the six-digit code from WhatsApp for this sign-in request.'
+          : phase === 'reset'
+            ? 'Enter your six-digit WhatsApp reset code and your new password together.'
+            : 'Use your local or international WhatsApp number.'}
+      footer={(
+        <>
+          {(phase === 'otp' || phase === 'reset') && (
+            <p className="auth-switch">
+              Not receiving code?
+              <button type="button" disabled={busy || resendSeconds > 0 || (phase === 'otp' && !challengeValid)} onClick={resend}>
+                {resendSeconds > 0 ? `Resend (${resendSeconds}s)` : 'Resend'}
+              </button>
+            </p>
+          )}
+          <p className="auth-switch">
+            {phase === 'login' ? (
+              <>
+                Have a management invitation?
+                <a href="/activate" onClick={(event) => {
+                  event.preventDefault()
+                  cancel()
+                  navigate('/activate')
+                }}>
+                  Activate invitation
+                </a>
+              </>
+            ) : (
+              <button type="button" onClick={() => activating ? navigate('/login') : changePhase('login')}>
+                {activating ? 'العودة إلى تسجيل الدخول' : 'Cancel and return to sign in'}
+              </button>
+            )}
+          </p>
+          <p className="auth-legal">
+            {activating
+              ? 'هذه البوابة للمعالجين المدعوين فقط. يبقى رمز الوصول في الذاكرة، وتحفظ علامة التبويب رمز تجديد الجلسة لتبقى مسجّل الدخول بعد إعادة تحميل الصفحة.'
+              : 'This portal is for invited therapists. Google sign-in and public therapist registration are not available. The access token stays in memory. This tab stores a refresh token so you can stay signed in after reloading.'}
+          </p>
+        </>
+      )}
+    >
             {phase === 'activate' && (
               <p className="live-auth-help">
-                Invitations expire after 24 hours. If your invitation is missing or expired, contact
-                authorized management for a replacement. Activation does not imply clinical
-                approval.
+                الدعوة صالحة لمدة ٢٤ ساعة. إذا انتهت صلاحيتها، اطلب دعوة جديدة من الإدارة.
+                تفعيل الحساب يسبق إرسال الملف المهني للمراجعة ولا يعني الموافقة عليه.
               </p>
             )}
             {phase === 'otp' && challenge && (
@@ -540,12 +593,12 @@ export function LiveAuthentication({
             <form onSubmit={submit} className="auth-form" aria-busy={busy}>
               {phase !== 'otp' && (
                 <label>
-                  Country or region
+                  {activating ? 'البلد أو المنطقة' : 'Country or region'}
                   <select value={region} disabled={busy} onChange={(event) => {
                     editField('whatsapp_number')
                     setRegion(event.target.value as CountryCode)
                   }}>
-                    {countries.map(({ code, name, dial }) => (
+                    {countries[activating ? 'ar' : 'en'].map(({ code, name, dial }) => (
                       <option key={code} value={code}>{name} (+{dial})</option>
                     ))}
                   </select>
@@ -553,14 +606,15 @@ export function LiveAuthentication({
               )}
               {phase !== 'otp' && (
                 <label>
-                  WhatsApp number
+                  {phoneLabel}
                   <input
                     name="whatsapp_number"
                     type="tel"
                     autoComplete="tel"
-                    aria-label="WhatsApp number"
+                    aria-label={phoneLabel}
                     aria-describedby="auth-phone-help"
-                    placeholder="0983321260"
+                    placeholder="09XXXXXXXX"
+                    dir="ltr"
                     value={phone}
                     onChange={(event) => {
                       editField('whatsapp_number')
@@ -568,24 +622,26 @@ export function LiveAuthentication({
                     }}
                     onBlur={() => {
                       if (phone && !normalizedPhone)
-                        setFields((previous) => ({ ...previous, whatsapp_number: invalidPhoneMessage }))
+                        setFields((previous) => ({ ...previous, whatsapp_number: phoneError }))
                     }}
                     aria-invalid={Object.hasOwn(fields, 'whatsapp_number')}
                     disabled={busy}
                     required
                   />
                   <span id="auth-phone-help" className="live-auth-help">
-                    For a local number, select your country. International numbers may start with + or 00.
+                    {activating ? 'اختر بلدك للرقم المحلي، أو أدخل الرقم الدولي مبتدئًا بـ + أو 00.' :
+                      'For a local number, select your country. International numbers may start with + or 00.'}
                   </span>
                   {fieldError('whatsapp_number')}
                 </label>
               )}
               {phase === 'activate' && (
                 <label>
-                  Invitation code
+                  رمز التفعيل
                   <input
                     name="code"
-                    aria-label="Invitation code"
+                    aria-label="رمز التفعيل"
+                    dir="ltr"
                     autoComplete="one-time-code"
                     value={activationCode}
                     onChange={(event) => {
@@ -595,7 +651,7 @@ export function LiveAuthentication({
                     minLength={8}
                     maxLength={8}
                     pattern="[A-Za-z0-9]{8}"
-                    placeholder="8 letters or digits"
+                    placeholder="٨ أحرف أو أرقام"
                     aria-invalid={Object.hasOwn(fields, 'code')}
                     disabled={busy}
                     required
@@ -629,11 +685,11 @@ export function LiveAuthentication({
               )}
               {(phase === 'login' || phase === 'activate' || phase === 'reset') && (
                 <label>
-                  {phase === 'login' ? 'Password' : 'New password'}
+                  {passwordLabel}
                   <span className="password-field">
                     <input
                       name="password"
-                      aria-label={phase === 'login' ? 'Password' : 'New password'}
+                      aria-label={passwordLabel}
                       type={visible ? 'text' : 'password'}
                       autoComplete={phase === 'login' ? 'current-password' : 'new-password'}
                       minLength={phase === 'login' ? undefined : 8}
@@ -649,7 +705,7 @@ export function LiveAuthentication({
                     <button
                       type="button"
                       className="password-toggle"
-                      aria-label={visible ? 'Hide password' : 'Show password'}
+                      aria-label={activating ? visible ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور' : visible ? 'Hide password' : 'Show password'}
                       aria-pressed={visible}
                       onClick={() => setVisible(!visible)}
                     >
@@ -661,10 +717,10 @@ export function LiveAuthentication({
               )}
               {(phase === 'activate' || phase === 'reset') && (
                 <label>
-                  Confirm password
+                  {activating ? 'تأكيد كلمة المرور' : 'Confirm password'}
                   <input
                     name="password_confirmation"
-                    aria-label="Confirm password"
+                    aria-label={activating ? 'تأكيد كلمة المرور' : 'Confirm password'}
                     type="password"
                     autoComplete="new-password"
                     minLength={8}
@@ -690,11 +746,13 @@ export function LiveAuthentication({
                 className="primary-button"
                 disabled={!valid || busy || retrySeconds > 0}
               >
-                {busy ? 'Please wait…' : action}
+                {busy ? activating ? 'جارٍ التفعيل…' : 'Please wait…' : action}
               </button>
             </form>
             {error && <p className="live-auth-feedback" role="alert">{error}</p>}
-            {retrySeconds > 0 && error && <p className="live-auth-feedback" role="status">Try again in {retrySeconds} seconds.</p>}
+            {retrySeconds > 0 && error && <p className="live-auth-feedback" role="status">
+              {activating ? `يمكنك المحاولة مجددًا بعد ${retrySeconds} ثانية.` : `Try again in ${retrySeconds} seconds.`}
+            </p>}
             {revocationUnknown && (
               <p className="auth-notice" role="status">
                 Signed out locally. Server revocation could not be confirmed; sign in and use sign
@@ -709,49 +767,6 @@ export function LiveAuthentication({
             {phase === 'reset' && (
               <p className="live-auth-help">Reset codes expire after five minutes. Request another if needed.</p>
             )}
-          </section>
-        </div>
-        {(phase === 'otp' || phase === 'reset') && (
-          <p className="auth-switch">
-            Not receiving code?
-            <button
-              type="button"
-              disabled={
-                busy || resendSeconds > 0 || (phase === 'otp' && !challengeValid)
-              }
-              onClick={resend}
-            >
-              {resendSeconds > 0 ? `Resend (${resendSeconds}s)` : 'Resend'}
-            </button>
-          </p>
-        )}
-        <p className="auth-switch">
-          {phase === 'login' ? (
-            <>
-              Have a management invitation?
-              <a
-                href="/activate"
-                onClick={(event) => {
-                  event.preventDefault()
-                  cancel()
-                  navigate('/activate')
-                }}
-              >
-                Activate invitation
-              </a>
-            </>
-          ) : (
-            <button type="button" onClick={() => changePhase('login')}>
-              Cancel and return to sign in
-            </button>
-          )}
-        </p>
-        <p className="auth-legal">
-          This portal is for invited therapists. Google sign-in and public therapist registration
-          are not available. The access token stays in memory. This tab stores a refresh token so
-          you can stay signed in after reloading.
-        </p>
-      </div>
-    </main>
+    </AuthCardShell>
   )
 }

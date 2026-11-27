@@ -251,7 +251,7 @@ function LiveWallet({ api, navigate }: LiveProps) {
         {resource.loading && <p role="status">Loading wallet…</p>}
         {!!error && (
           <p className="remaining-error" role="alert">
-            {apiErrorMessage(error)} <button onClick={resource.reload}>Refresh wallet</button>
+            {apiErrorMessage(error)} <button onClick={resource.reload}>Retry loading wallet</button>
           </p>
         )}
         {wallet && (
@@ -428,7 +428,7 @@ function LiveWallet({ api, navigate }: LiveProps) {
               <p className="withdrawal-balance">
                 {wallet
                   ? `Available Balance: ${money(wallet.available, wallet.currency)}`
-                  : 'Refresh wallet to see current balance.'}
+                  : 'Current balance is unavailable.'}
               </p>
               <p>
                 This submits a request for manual finance review. No automatic transfer, guaranteed
@@ -658,7 +658,7 @@ function useWithdrawalFlow(api: ApiClient, wallet: WalletSummary | null, reload:
     setError('')
     if (!wallet || isRestricted(wallet)) {
       setError(
-        'Refresh your wallet. A pending request or insufficient funds may prevent a new request.',
+        'A pending request or insufficient funds may prevent a new request. Wait for the wallet to update.',
       )
       return
     }

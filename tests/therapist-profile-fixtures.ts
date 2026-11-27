@@ -16,7 +16,7 @@ export function profileReview(overrides: Partial<TherapistProfileReview> = {}): 
   return {
     approval_status: 'approved',
     application_ref: 'TEST-1',
-    account: { whatsapp_number: '+963983321260', email: validProfile.email },
+    account: { whatsapp_number: '+12025550107', email: validProfile.email },
     published: validProfile,
     pending_revision: null,
     last_review: null,

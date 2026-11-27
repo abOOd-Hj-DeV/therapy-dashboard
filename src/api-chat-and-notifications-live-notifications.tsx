@@ -168,7 +168,7 @@ function ActorNotifications({ api, navigate, onUnreadCount }: Props & { api: Api
         <p role="alert">
           {error || apiErrorMessage(resource.error)}{' '}
           <button disabled={!!resource.retryAt || !online} onClick={resource.reload}>
-            Refresh notifications
+            Retry notifications
           </button>
         </p>
       )}

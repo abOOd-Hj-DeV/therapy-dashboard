@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Auth, type AuthPage } from './Auth'
+import { AuthCardShell } from './AuthCardShell'
 import { Dashboard } from './Dashboard'
 import { Chats } from './Chats'
 import { Sessions } from './Sessions'
@@ -17,7 +18,7 @@ import { HomeworkLibrary } from './HomeworkLibrary'
 import { HomeworkWizard } from './HomeworkWizard'
 import { CarePlanInsertion } from './CarePlanInsertion'
 import { RedFlags } from './RedFlags'
-import { therapistProfilePath, type TherapistProfileResponse } from './therapist-profile-review'
+import { therapistLifecycle, therapistProfilePath, type TherapistProfileResponse } from './therapist-profile-review'
 
 export function App() {
   const user = useApiUser(api)
@@ -26,16 +27,17 @@ export function App() {
   const [restoring, setRestoring] = useState(() => !!client?.hasStoredSession() && !user)
   const approval = useApiResource<TherapistProfileResponse>(client, user ? therapistProfilePath : null)
   const [location, setLocation] = useState(window.location.pathname + window.location.search)
+  const [draftSession, setDraftSession] = useState<number | null>(null)
   const requestedPath = location.split('?')[0]
   const review = approval.data?.data
-  const approved = review?.approval_status === 'approved'
+  const lifecycle = review && therapistLifecycle(review)
+  const approved = lifecycle === 'approved' || lifecycle === 'update_pending'
+  const finishingDraft = approved && draftSession === client?.getSessionKey()
+  const activatedEntry = !!(client && user && ['/activate', '/signup'].includes(requestedPath))
   const approvedOnboardingPath =
-    approved && requestedPath === '/profile/approval'
-  const path =
-    approvedOnboardingPath ||
-    (client && user && ['/', '/login', '/activate', '/signup'].includes(requestedPath))
-      ? '/dashboard'
-      : requestedPath
+    approved && !finishingDraft && (activatedEntry || requestedPath === '/profile/approval')
+  const redirectPath = approvedOnboardingPath ? '/dashboard' : activatedEntry ? '/profile/approval' : null
+  const path = redirectPath ?? (client && user && ['/', '/login'].includes(requestedPath) ? '/dashboard' : requestedPath)
   const [verificationEmail, setVerificationEmail] = useState('henryford@Sakina.com')
   useEffect(() => {
     const onPopState = () => setLocation(window.location.pathname + window.location.search)
@@ -53,19 +55,23 @@ export function App() {
     }
   }, [client, restoring])
   useEffect(() => {
-    if (!approvedOnboardingPath) return
-    window.history.replaceState({}, '', '/dashboard')
-    setLocation('/dashboard')
-  }, [approvedOnboardingPath])
+    if (!redirectPath) return
+    window.history.replaceState({}, '', redirectPath)
+    setLocation(redirectPath)
+  }, [redirectPath])
+  useEffect(() => {
+    if (lifecycle === 'invited' || lifecycle === 'suspended' || (!review && approval.error))
+      setDraftSession(null)
+  }, [approval.error, lifecycle, review])
   function navigate(next: string) {
     window.history.pushState({}, '', next)
     setLocation(window.location.pathname + window.location.search)
     window.scrollTo({ top: 0 })
   }
-  async function logout() {
+  async function logout(next = '/login') {
     try {
       await client?.logout()
-      navigate('/login')
+      navigate(next)
     } catch {
       navigate('/login?logout=revocation-unknown')
     }
@@ -79,9 +85,9 @@ export function App() {
     '/forgot-password',
     '/reset-password',
   ].includes(path)
-  if (restoring) return <main lang="ar" dir="rtl" role="status">جارٍ استعادة جلستك…</main>
-  if (client && user && protectedPage && (!approved || path === '/profile/documents')) {
-    if (review) {
+  if (restoring) return <AuthCardShell arabic title="سكينة"><p role="status">جارٍ استعادة جلستك…</p></AuthCardShell>
+  if (client && user && protectedPage && (!approved || finishingDraft || path === '/profile/documents')) {
+    if (review && lifecycle) {
       return (
         <TherapistOnboarding
           key={client.getSessionKey()}
@@ -90,31 +96,34 @@ export function App() {
           review={review}
           saved={approval.replace}
           navigate={navigate}
-          logout={logout}
-          checkingApproval={approval.loading}
+          lifecycle={lifecycle}
+          finishingDraft={finishingDraft}
+          onDraftChange={(dirty) => setDraftSession(dirty ? client.getSessionKey() : null)}
+          logout={() => logout()}
+          activate={() => logout('/activate')}
           approvalCheckFailed={!!approval.error}
           checkApproval={approval.reload}
         />
       )
     }
     return (
-      <main className="approval-page" lang="ar" dir="rtl">
+      <AuthCardShell arabic title="الملف المهني">
         {approval.loading ? (
           <p role="status">جارٍ التحقق من حالة الموافقة…</p>
         ) : (
           <>
             <p role="alert">تعذّر التحقق من حالة الموافقة. حاول مرة أخرى.</p>
-            <div className="approval-actions">
-              <button type="button" className="soft-button" onClick={approval.reload}>
+            <div className="remaining-form-actions">
+              <button type="button" className="remaining-primary" onClick={approval.reload}>
                 إعادة المحاولة
               </button>
-              <button type="button" className="soft-button" onClick={logout}>
+              <button type="button" className="remaining-cancel" onClick={() => void logout()}>
                 تسجيل الخروج
               </button>
             </div>
           </>
         )}
-      </main>
+      </AuthCardShell>
     )
   }
   if (!demo && protectedPage && !user)

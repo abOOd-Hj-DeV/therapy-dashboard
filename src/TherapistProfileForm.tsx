@@ -7,15 +7,14 @@ import { optionName, type TherapistOption, type TherapistOptions } from './thera
 type FieldErrors = Partial<Record<ProfileField, string>>
 type TextField = 'full_name' | 'job_title' | 'bio' | 'email' | 'city'
 
-function selectOptions(options: TherapistOption[], selected: string[]) {
+function withLegacyOptions(options: TherapistOption[], selected: string[]) {
   return [...options, ...selected
     .filter((code) => code && !options.some((option) => option.code === code))
     .map((code) => ({ code, name_ar: code }))]
-    .map(({ code, name_ar }) => <option key={code} value={code}>{name_ar}</option>)
 }
 
 export function TherapistProfileForm({
-  api, initial, phone, options, submitLabel, saved, close,
+  api, initial, phone, options, submitLabel, saved, close, onChange,
 }: {
   api: ApiClient
   initial: ReviewedProfile
@@ -24,12 +23,14 @@ export function TherapistProfileForm({
   submitLabel: string
   saved: (response: TherapistProfileResponse) => void
   close?: () => void
+  onChange?: () => void
 }) {
   const prefix = useId()
   const [errors, setErrors] = useState<FieldErrors>({})
   const [failed, setFailed] = useState(false)
   const mutation = useMutation(api)
-  const initialLanguages = [...new Set(initial.languages ?? [])]
+  const [languages, setLanguages] = useState(() => [...new Set(initial.languages ?? [])])
+  const languageError = errors.languages
 
   function field(name: ProfileField, control: (props: { id: string; name: ProfileField; 'aria-invalid'?: true; 'aria-describedby'?: string }) => ReactNode) {
     const id = prefix + name
@@ -54,7 +55,7 @@ export function TherapistProfileForm({
     return field(name, (props) => (
       <select {...props} defaultValue={value} required>
         <option value="">اختر {profileLabels[name]}</option>
-        {selectOptions(values, [value])}
+        {withLegacyOptions(values, [value]).map(({ code, name_ar }) => <option key={code} value={code}>{name_ar}</option>)}
       </select>
     ))
   }
@@ -78,7 +79,6 @@ export function TherapistProfileForm({
       next.email = 'أدخل عنوان بريد إلكتروني صالحًا.'
     if (!options.specialties.some(({ code }) => code === value('specialty'))) next.specialty = 'اختر تخصصًا من القائمة.'
     if (!options.countries.some(({ code }) => code === value('country'))) next.country = 'اختر بلدًا من القائمة.'
-    const languages = form.getAll('languages').map(String)
     if (!languages.length || languages.length > 10 || new Set(languages).size !== languages.length ||
       languages.some((code) => !options.languages.some((item) => item.code === code)))
       next.languages = 'اختر من لغة واحدة إلى عشر لغات مختلفة من القائمة.'
@@ -120,7 +120,7 @@ export function TherapistProfileForm({
 
   const invalid = Object.keys(errors).length > 0
   return (
-    <form className="reviewed-profile-form" lang="ar" dir="rtl" noValidate onSubmit={submit}>
+    <form className="reviewed-profile-form" lang="ar" dir="rtl" noValidate onSubmit={submit} onChange={onChange}>
       <fieldset disabled={mutation.pending}>
         <div className="remaining-field-grid">
           {text('full_name')}
@@ -142,16 +142,32 @@ export function TherapistProfileForm({
             {select('country', options.countries)}
           </div>
         </fieldset>
-        <div className="remaining-field-grid">
-          {field('languages', (props) => (
-            <select {...props} multiple defaultValue={initialLanguages} required>
-              {selectOptions(options.languages, initialLanguages)}
-            </select>
-          ))}
-          {field('years_of_experience', (props) => (
-            <input {...props} type="number" min={0} max={60} step={1} defaultValue={initial.years_of_experience ?? ''} required />
-          ))}
-        </div>
+        <fieldset className="remaining-field" aria-invalid={languageError ? true : undefined} aria-describedby={prefix + 'languages-help'}>
+          <legend>{profileLabels.languages}</legend>
+          <div className="remaining-field-grid profile-language-options">
+            {withLegacyOptions(options.languages, [...new Set([...(initial.languages ?? []), ...languages])]).map(({ code, name_ar }) => (
+              <label key={code}>
+                <input
+                  type="checkbox"
+                  name="languages"
+                  value={code}
+                  checked={languages.includes(code)}
+                  onChange={(event) => {
+                    const checked = event.currentTarget.checked
+                    setLanguages((current) => checked ? [...current, code] : current.filter((language) => language !== code))
+                  }}
+                />
+                <bdi>{name_ar}</bdi>
+              </label>
+            ))}
+          </div>
+          <span id={prefix + 'languages-help'} className={languageError ? 'remaining-error' : undefined}>
+            {languageError ?? 'اختر لغة واحدة أو أكثر.'}
+          </span>
+        </fieldset>
+        {field('years_of_experience', (props) => (
+          <input {...props} type="number" min={0} max={60} step={1} defaultValue={initial.years_of_experience ?? ''} required />
+        ))}
       </fieldset>
       {(invalid || failed) && (
         <p className="remaining-error" role="alert">
@@ -184,10 +200,10 @@ export function TherapistProfileSummary({ profile, phone, options }: {
       {Object.entries(profileLabels).map(([key, label]) => (
         <div key={key}>
           <dt>{label}</dt>
-          <dd dir="auto">{labels[key as ProfileField] ?? 'غير متوفر'}</dd>
+          <dd dir="auto">{labels[key as ProfileField] === 0 ? 0 : labels[key as ProfileField] || 'غير متوفر'}</dd>
         </div>
       ))}
-      <div><dt>رقم الجوال</dt><dd dir="auto">{phone}</dd></div>
+      <div><dt>رقم الجوال</dt><dd dir="auto">{phone || 'غير متوفر'}</dd></div>
     </dl>
   )
 }
