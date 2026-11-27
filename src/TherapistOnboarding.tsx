@@ -191,7 +191,9 @@ export function TherapistOnboarding({
           <h2>Requested documents</h2>
           {documents.loading && <p role="status">Loading requests…</p>}
           {documents.error && <p role="alert">{apiErrorMessage(documents.error)}</p>}
-          {documents.data?.data.length === 0 && <p>No documents have been requested.</p>}
+          {documents.data?.data.length === 0 && !documents.error && (
+            <p>No documents have been requested.</p>
+          )}
           {documents.data?.data.map((document) => (
             <article key={document.id}>
               <h3>{document.doc_type}</h3>

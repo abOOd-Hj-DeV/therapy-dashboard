@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { ApiClient, ApiError } from './api'
+import { isCareMutationInFlight } from './api-resource-refresh'
 
 export function useApiUser(client: ApiClient) {
   return useSyncExternalStore(client.subscribe, client.getUser, () => null)
@@ -8,7 +9,11 @@ export function useApiUser(client: ApiClient) {
 const noSubscribe = () => () => undefined
 const noUser = () => null
 
-export function useApiResource<T>(client: ApiClient | undefined, path: string | null) {
+export function useApiResource<T>(
+  client: ApiClient | undefined,
+  path: string | null,
+  { interval = 30_000 }: { interval?: number } = {},
+) {
   const user = useSyncExternalStore(
     client?.subscribe ?? noSubscribe,
     client?.getUser ?? noUser,
@@ -24,40 +29,100 @@ export function useApiResource<T>(client: ApiClient | undefined, path: string | 
     error: ApiError | null
     loading: boolean
   }>({ client, actor, path, data: null, error: null, loading: enabled })
-  const [revision, setRevision] = useState(0)
-  const reload = useCallback(() => setRevision((value) => value + 1), [])
-  useEffect(() => {
+  const activeRequest = useRef<AbortController | null>(null)
+  const requestId = useRef(0)
+  const mounted = useRef(false)
+  const runRef = useRef<(background: boolean) => void>(() => {})
+
+  runRef.current = (background) => {
     if (!enabled || !client || !path) return
+    if (background && (isCareMutationInFlight(client) || activeRequest.current)) return
+
+    const id = ++requestId.current
+    activeRequest.current?.abort()
     const controller = new AbortController()
-    let active = true
-    setState({ client, actor, path, data: null, error: null, loading: true })
+    activeRequest.current = controller
+
+    setState((current) => {
+      const sameScope =
+        current.client === client &&
+        current.actor === actor &&
+        current.path === path
+      const data = sameScope ? current.data : null
+      return {
+        client,
+        actor,
+        path,
+        data,
+        error: sameScope ? current.error : null,
+        loading: background ? sameScope && current.loading : data === null,
+      }
+    })
+
+    const current = () =>
+      mounted.current &&
+      id === requestId.current &&
+      !controller.signal.aborted &&
+      client.getUser() !== null &&
+      client.getSessionKey() === actor
+
     client
       .get<T>(path, controller.signal)
       .then((data) => {
-        if (active && client.getUser() && client.getSessionKey() === actor)
-          setState({ client, actor, path, data, error: null, loading: false })
+        if (current()) setState({ client, actor, path, data, error: null, loading: false })
       })
       .catch((error) => {
-        if (
-          active &&
-          !controller.signal.aborted &&
-          client.getUser() &&
-          client.getSessionKey() === actor
-        )
-          setState({
+        if (!current()) return
+        setState((currentState) => {
+          const sameScope =
+            currentState.client === client &&
+            currentState.actor === actor &&
+            currentState.path === path
+          return {
             client,
             actor,
             path,
-            data: null,
+            data: sameScope ? currentState.data : null,
             error: error instanceof ApiError ? error : new ApiError(0),
             loading: false,
-          })
+          }
+        })
       })
+      .finally(() => {
+        if (activeRequest.current === controller) activeRequest.current = null
+      })
+  }
+
+  const reload = useCallback(() => runRef.current(false), [])
+
+  useEffect(() => {
+    if (!enabled || !client || !path) return
+    let active = true
+    mounted.current = true
+    const onRefresh = () => {
+      if (active && document.visibilityState === 'visible') runRef.current(true)
+    }
+    const onOnline = () => {
+      if (active) runRef.current(true)
+    }
+    window.addEventListener('focus', onRefresh)
+    window.addEventListener('online', onOnline)
+    document.addEventListener('visibilitychange', onRefresh)
+    const timer = interval > 0 ? window.setInterval(onRefresh, interval) : undefined
+    runRef.current(false)
+
     return () => {
       active = false
-      controller.abort()
+      requestId.current += 1
+      activeRequest.current?.abort()
+      activeRequest.current = null
+      mounted.current = false
+      window.removeEventListener('focus', onRefresh)
+      window.removeEventListener('online', onOnline)
+      document.removeEventListener('visibilitychange', onRefresh)
+      if (timer !== undefined) window.clearInterval(timer)
     }
-  }, [client, actor, enabled, path, revision])
+  }, [client, actor, enabled, path, interval])
   return {
     ...(state.path === path && state.client === client && state.actor === actor
       ? state

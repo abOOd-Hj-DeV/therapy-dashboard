@@ -966,7 +966,9 @@ function BlockedPeriods({
       >
         Refresh blocked periods
       </button>
-      {!periods.loading && periods.data?.data.length === 0 && <p>No blocked periods.</p>}
+      {!periods.loading && !periods.error && periods.data?.data.length === 0 && (
+        <p>No blocked periods.</p>
+      )}
       <div className="holiday-list">
         {periods.data?.data.map((period) => (
           <article key={period.id}>
@@ -1221,7 +1223,7 @@ function Faqs({ api }: { api: ApiClient }) {
           Retry FAQs
         </button>
       )}
-      {state?.data.length === 0 && <p>No published FAQs.</p>}
+      {state?.data.length === 0 && !error && <p>No published FAQs.</p>}
       {state?.data.map((faq, index) => (
         <details key={faq.id} open={index === 0}>
           <FaqSummary>{faq.question}</FaqSummary>

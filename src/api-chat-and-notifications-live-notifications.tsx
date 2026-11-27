@@ -183,7 +183,7 @@ function ActorNotifications({ api, navigate, onUnreadCount }: Props & { api: Api
           >
             Mark all read
           </button>
-          {resource.data.data.length === 0 && <p>No notifications.</p>}
+          {resource.data.data.length === 0 && !resource.error && <p>No notifications.</p>}
           {resource.data.data.map((item) => {
             const route = destination(item)
             const created =

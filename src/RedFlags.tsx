@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ApiClient, apiId } from './api'
 import { useApiResource } from './api-hooks'
+import { trackCareMutation } from './api-resource-refresh'
 import { Workspace } from './Workspace'
 import './red-flags.css'
 
@@ -107,7 +108,11 @@ export function RedFlags({
   navigate: (path: string) => void
 }) {
   const demo = import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === 'true' && !api
-  const resource = useApiResource<RedFlagResponse>(api, demo ? null : '/therapists/red-flags')
+  const resource = useApiResource<RedFlagResponse>(
+    api,
+    demo ? null : '/therapists/red-flags',
+    { interval: 15_000 },
+  )
   const [allFlags, setAllFlags] = useState<RedFlag[] | null>(null)
   const [paginationLoading, setPaginationLoading] = useState(false)
   const [paginationError, setPaginationError] = useState(false)
@@ -121,10 +126,10 @@ export function RedFlags({
     }
     const controller = new AbortController()
     let active = true
-    setAllFlags(null)
     setPaginationError(false)
     setPaginationLoading(false)
     if (firstPage.pagination.current_page >= firstPage.pagination.last_page) {
+      setAllFlags(firstPage.data)
       return () => controller.abort()
     }
     setPaginationLoading(true)
@@ -144,7 +149,7 @@ export function RedFlags({
     }
   }, [api, demo, resource.data])
   const flags = demo ? demoFlags : allFlags ?? resource.data?.data ?? []
-  const loading = resource.loading || paginationLoading
+  const loading = resource.loading || (paginationLoading && allFlags === null)
   const error = resource.error || paginationError
   const [decisions, setDecisions] = useState<Record<string, Decision>>({})
   const [notes, setNotes] = useState<Record<string, string>>({})
@@ -159,6 +164,7 @@ export function RedFlags({
     setSubmitting((current) => ({ ...current, [flag.id]: true }))
     setErrors((current) => ({ ...current, [flag.id]: '' }))
     setSuccess('')
+    trackCareMutation(api, 1)
     try {
       await api.mutate(`/therapists/red-flags/${apiId(flag.id)}/decision`, {
         decision: flag.on_hold ? (decisions[flag.id] ?? 'reactivate') : 'close',
@@ -169,6 +175,7 @@ export function RedFlags({
     } catch {
       setErrors((current) => ({ ...current, [flag.id]: 'تعذر حفظ القرار. حاول مرة أخرى.' }))
     } finally {
+      trackCareMutation(api, -1)
       setSubmitting((current) => ({ ...current, [flag.id]: false }))
     }
   }
