@@ -90,12 +90,10 @@ export function LiveAuthentication({
   const [error, setError] = useState('')
   const [fields, setFields] = useState<Record<string, string>>({})
   const [notice, setNotice] = useState(
-    new URLSearchParams(window.location.search).get('logout') === 'revocation-unknown'
-      ? 'Signed out locally. Server revocation could not be confirmed; sign in and use sign out of all devices before leaving a shared device.'
-      : page === 'verify'
-        ? 'No sign-in challenge is available. Sign in with your password first.'
-        : '',
+    page === 'verify' ? 'No sign-in challenge is available. Sign in with your password first.' : '',
   )
+  const revocationUnknown = phase === 'login' &&
+    new URLSearchParams(window.location.search).get('logout') === 'revocation-unknown'
   const [resendUntil, setResendUntil] = useState(0)
   const [retryUntil, setRetryUntil] = useState(0)
   const [now, setNow] = useState(() => Date.now())
@@ -697,6 +695,12 @@ export function LiveAuthentication({
             </form>
             {error && <p className="live-auth-feedback" role="alert">{error}</p>}
             {retrySeconds > 0 && error && <p className="live-auth-feedback" role="status">Try again in {retrySeconds} seconds.</p>}
+            {revocationUnknown && (
+              <p className="auth-notice" role="status">
+                Signed out locally. Server revocation could not be confirmed; sign in and use sign
+                out of all devices before leaving a shared device.
+              </p>
+            )}
             {notice && (
               <p className="auth-notice" role="status">
                 {notice}

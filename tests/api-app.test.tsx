@@ -89,6 +89,28 @@ describe('live routing boundaries', () => {
     expect(fetch).toHaveBeenCalledWith(expect.stringMatching(/\/auth\/logout$/), expect.objectContaining({ method: 'POST' }))
   })
 
+  it('warns on the mounted login screen when server revocation fails after local sign-out', async () => {
+    await api.establish({ ...tokens, user: identity })
+    window.history.replaceState({}, '', '/login')
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+    let finishLogout!: (response: Response) => void
+    vi.stubGlobal('fetch', vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) =>
+      String(input).endsWith('/auth/logout')
+        ? new Promise((resolve) => { finishLogout = resolve })
+        : json({}, 403),
+    ))
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'تسجيل الخروج' }))
+    const phone = await screen.findByLabelText('WhatsApp number')
+    expect(api.getUser()).toBeNull()
+    expect(screen.queryByText(/Server revocation could not be confirmed/)).not.toBeInTheDocument()
+
+    await act(async () => finishLogout(json({}, 503)))
+    expect(window.location.search).toBe('?logout=revocation-unknown')
+    expect(screen.getByText(/Server revocation could not be confirmed/)).toBeInTheDocument()
+    expect(screen.getByLabelText('WhatsApp number')).toBe(phone)
+  })
+
   it('shows the not-submitted license form and links to working document and profile settings', async () => {
     await api.establish({ ...tokens, user: identity })
     window.history.replaceState({}, '', '/dashboard')
