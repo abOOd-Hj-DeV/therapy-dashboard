@@ -6,6 +6,7 @@ const repairCss = readFileSync('src/visual-profile-wallet.css', 'utf8')
 import { ApiClient, type ApiSession } from '../src/api'
 import { Profile } from '../src/Profile'
 import { Wallet } from '../src/Wallet'
+import { profileReview, validProfile } from './therapist-profile-fixtures'
 
 vi.mock('../src/Workspace', () => ({
   Workspace: ({ children, active }: { children: ReactNode; active: string }) => (
@@ -37,6 +38,12 @@ async function harness(overrides: Record<string, unknown> = {}) {
     const path = String(input).replace('https://visual.example.test/api/v1', '')
     if (Object.hasOwn(overrides, path)) return json(overrides[path])
     if (path === '/auth/user') return json({ user })
+    if (path === '/therapists/me/profile') return json({
+      data: profileReview({
+        published: { ...validProfile, ...therapist, email: user.email },
+        account: { whatsapp_number: user.whatsapp_number, email: user.email },
+      }),
+    })
     if (path === '/therapists/me/dashboard') return json({
       therapist, clients_count: 7,
       stats: { pending: 2, confirmed: 3, completed: 12, today: 1 }, timezone: 'UTC',
@@ -154,9 +161,9 @@ describe('profile/wallet designed component regression contracts', () => {
     expect(avatar).toHaveTextContent('RT')
     expect(avatar.querySelector('img')).toBeNull()
     const rows = container.querySelectorAll('.profile-info-row')
-    expect(rows).toHaveLength(9)
+    expect(rows).toHaveLength(11)
     rows.forEach((row) => expect(row.querySelector(':scope > .remaining-icon')).not.toBeNull())
-    expect(screen.getByText('On file (not independent verification)')).toBeInTheDocument()
+    expect(screen.getByText(validProfile.job_title)).toBeInTheDocument()
     expect(container.querySelector('.profile-verified')).toBeNull()
   })
 
