@@ -326,6 +326,77 @@ describe('background resource refresh', () => {
     expect(result.current.error).toBe(suspended)
   })
 
+  it.each([408, 429])('keeps useApiResource state unchanged after a background %i', async (status) => {
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'visible',
+    })
+    const foregroundError = new ApiError(503)
+    const get = vi.fn()
+      .mockResolvedValueOnce({ value: 'initial' })
+      .mockRejectedValueOnce(foregroundError)
+      .mockRejectedValueOnce(new ApiError(status))
+    const api = makeApi(get)
+    const { result } = renderHook(() => useApiResource<{ value: string }>(api, '/resource'))
+
+    await flush()
+    act(() => { void result.current.reload() })
+    await flush()
+    expect(result.current.error).toBe(foregroundError)
+
+    act(() => window.dispatchEvent(new Event('focus')))
+    await flush()
+
+    expect(result.current.data).toEqual({ value: 'initial' })
+    expect(result.current.error).toBe(foregroundError)
+  })
+
+  it('keeps a mounted care-record draft after a background 429', async () => {
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'visible',
+    })
+    const foregroundError = new ApiError(503)
+    const get = vi.fn()
+      .mockResolvedValueOnce({ value: 'initial' })
+      .mockRejectedValueOnce(foregroundError)
+      .mockRejectedValueOnce(new ApiError(429))
+    const api = makeApi(get)
+
+    function Editor() {
+      const resource = useCareResource<{ value: string }>(api, '/clinical-record', 'single', {
+        interval: 0,
+      })
+      const [draft, setDraft] = useState('')
+      if (!resource.data) return <p>Editor unmounted</p>
+
+      return (
+        <>
+          <p>{resource.data.value}</p>
+          <p role="status">{resource.error instanceof ApiError ? resource.error.status : 'ok'}</p>
+          <input aria-label="Clinical draft" value={draft} onChange={(event) => setDraft(event.target.value)} />
+          <button onClick={resource.reload}>Reload</button>
+        </>
+      )
+    }
+
+    render(<Editor />)
+    await flush()
+    fireEvent.change(screen.getByLabelText('Clinical draft'), {
+      target: { value: 'Keep this clinical draft' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Reload' }))
+    await flush()
+    expect(screen.getByRole('status')).toHaveTextContent('503')
+
+    act(() => window.dispatchEvent(new Event('focus')))
+    await flush()
+
+    expect(screen.getByLabelText('Clinical draft')).toHaveValue('Keep this clinical draft')
+    expect(screen.queryByText('Editor unmounted')).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('503')
+  })
+
   it('drops stale responses and preserves the last data on refresh errors', async () => {
     Object.defineProperty(document, 'visibilityState', {
       configurable: true,

@@ -82,7 +82,13 @@ export function useApiResource<T>(
       .catch((error) => {
         if (!current()) return
         const apiError = error instanceof ApiError ? error : new ApiError(0)
-        if (background && (apiError.status === 0 || apiError.status >= 500)) return
+        if (
+          background &&
+          (apiError.status === 0 ||
+            apiError.status === 408 ||
+            apiError.status === 429 ||
+            apiError.status >= 500)
+        ) return
         setState((currentState) => {
           const sameScope =
             currentState.client === client &&
