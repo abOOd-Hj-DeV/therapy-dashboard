@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ApiClient, apiErrorMessage, apiId } from './api'
 import { useApiUser } from './api-hooks'
 import { asset } from './assets'
+import { formatTimestamp } from './display-date'
 import {
   useChatConnectivity,
   useChatLifetime,
@@ -25,33 +26,33 @@ type Props = {
   onUnreadCount?: (count: number) => void
 }
 const LABELS: Record<string, string> = {
-  chat_message_received: 'New care message',
-  session_booked: 'Session booked',
-  session_reminder: 'Session reminder',
-  session_status_changed: 'Session status changed',
-  reschedule_requested: 'Session reschedule requested',
-  reschedule_approved: 'Session reschedule approved',
-  reschedule_rejected: 'Session reschedule rejected',
-  cancellation_requested: 'Session cancellation requested',
-  cancellation_approved: 'Session cancellation approved',
-  cancellation_rejected: 'Session cancellation rejected',
-  assessment_completed: 'Assessment completed',
-  red_flag_raised: 'Care flag raised',
-  red_flag_priority_raised: 'Care flag priority raised',
-  red_flag_escalated: 'Care flag escalated',
-  payment_proof_pending: 'Payment proof pending',
-  payment_review_overdue: 'Payment review overdue',
-  payment_reviewed: 'Payment reviewed',
-  therapist_approval: 'Therapist approval update',
-  therapist_switch: 'Therapist assignment update',
-  patient_transferred: 'Client transferred',
-  document_requested: 'Document requested',
-  document_submitted: 'Document submitted',
-  document_reviewed: 'Document reviewed',
-  session_recommendation: 'Session recommendation available',
-  support_reply: 'Support reply available',
-  parallel_layer_updated: 'Care plan updated',
-  emergency_contact_requested: 'Emergency contact requested',
+  chat_message_received: 'رسالة رعاية جديدة',
+  session_booked: 'حُجزت جلسة',
+  session_reminder: 'تذكير بجلسة',
+  session_status_changed: 'تغيّرت حالة الجلسة',
+  reschedule_requested: 'طُلبت إعادة جدولة الجلسة',
+  reschedule_approved: 'اعتُمدت إعادة الجدولة',
+  reschedule_rejected: 'رُفضت إعادة الجدولة',
+  cancellation_requested: 'طُلب إلغاء الجلسة',
+  cancellation_approved: 'اعتُمد إلغاء الجلسة',
+  cancellation_rejected: 'رُفض إلغاء الجلسة',
+  assessment_completed: 'اكتمل التقييم',
+  red_flag_raised: 'رُفعت علامة رعاية',
+  red_flag_priority_raised: 'رُفعت أولوية علامة الرعاية',
+  red_flag_escalated: 'صُعّدت علامة الرعاية',
+  payment_proof_pending: 'إثبات دفع معلّق',
+  payment_review_overdue: 'مراجعة دفع متأخرة',
+  payment_reviewed: 'رُوجع الدفع',
+  therapist_approval: 'تحديث اعتماد المعالج',
+  therapist_switch: 'تحديث إسناد المعالج',
+  patient_transferred: 'نُقل العميل',
+  document_requested: 'طُلب مستند',
+  document_submitted: 'سُلّم مستند',
+  document_reviewed: 'رُوجع المستند',
+  session_recommendation: 'تتوفر توصية جلسة',
+  support_reply: 'يتوفر رد من الدعم',
+  parallel_layer_updated: 'حُدّثت خطة الرعاية',
+  emergency_contact_requested: 'طُلب تواصل طارئ',
 }
 function notificationKind(item: StoredNotification) {
   return item.data && typeof item.data.kind === 'string' ? item.data.kind : ''
@@ -116,7 +117,7 @@ function AuthenticatedNotifications(props: Props & { api: ApiClient }) {
   return user ? (
     <ActorNotifications key={props.api.getSessionKey()} {...props} />
   ) : (
-    <p role="alert">Your session has ended. Please sign in again.</p>
+    <p role="alert">انتهت جلستك. يرجى تسجيل الدخول مجدداً.</p>
   )
 }
 function ActorNotifications({ api, navigate, onUnreadCount }: Props & { api: ApiClient }) {
@@ -163,16 +164,16 @@ function ActorNotifications({ api, navigate, onUnreadCount }: Props & { api: Api
   }
   return (
     <div className="live-notifications">
-      {resource.loading && <p role="status">Loading notifications…</p>}
+      {resource.loading && <p role="status">جارٍ تحميل الإشعارات…</p>}
       {(error || resource.error) && (
         <p role="alert">
           {error || apiErrorMessage(resource.error)}{' '}
           <button disabled={!!resource.retryAt || !online} onClick={resource.reload}>
-            Refresh notifications
+            Retry notifications
           </button>
         </p>
       )}
-      {!!resource.retryAt && <p role="status">Waiting before retrying the server.</p>}
+      {!!resource.retryAt && <p role="status">بانتظار إعادة المحاولة على الخادم.</p>}
       {resource.data && (
         <>
           <p className="notification-count">{resource.data.unread_count} unread notifications</p>
@@ -183,13 +184,10 @@ function ActorNotifications({ api, navigate, onUnreadCount }: Props & { api: Api
           >
             Mark all read
           </button>
-          {resource.data.data.length === 0 && <p>No notifications.</p>}
+          {resource.data.data.length === 0 && !resource.error && <p>No notifications.</p>}
           {resource.data.data.map((item) => {
             const route = destination(item)
-            const created =
-              item.created_at && Number.isFinite(Date.parse(item.created_at))
-                ? new Date(item.created_at).toLocaleString()
-                : ''
+            const created = formatTimestamp(item.created_at, api.getUser()?.timezone || 'UTC')
             return (
               <article
                 key={item.id}
@@ -210,20 +208,20 @@ function ActorNotifications({ api, navigate, onUnreadCount }: Props & { api: Api
                     <strong>
                       {Object.hasOwn(LABELS, notificationKind(item))
                         ? LABELS[notificationKind(item)]
-                        : 'Account update'}
+                        : 'تحديث الحساب'}
                     </strong>
                     <time dateTime={item.created_at && created ? item.created_at : undefined}>
                       {created}
                     </time>
                   </div>
-                  <p>Open the relevant page to view currently authorized information.</p>
+                  <p>افتح الصفحة المعنية لعرض المعلومات المصرّح بها حالياً.</p>
                   <span className="notification-read-state">{item.read_at ? 'Read' : 'Unread'}</span>
                   <div className="notification-actions">
                     <button
                       disabled={busy || !online || !!resource.retryAt || !!item.read_at}
                       onClick={() => void read(item.id)}
                     >
-                      {item.read_at ? 'Read' : 'Mark read'}
+                      {item.read_at ? 'Read' : 'وضع كمقروء'}
                     </button>
                     {route && navigate && (
                       <button
@@ -235,8 +233,8 @@ function ActorNotifications({ api, navigate, onUnreadCount }: Props & { api: Api
                         }}
                       >
                         {notificationKind(item) === 'chat_message_received'
-                          ? 'Open conversation'
-                          : 'Open relevant page'}
+                          ? 'فتح المحادثة'
+                          : 'فتح الصفحة المعنية'}
                       </button>
                     )}
                   </div>
@@ -245,7 +243,7 @@ function ActorNotifications({ api, navigate, onUnreadCount }: Props & { api: Api
               </article>
             )
           })}
-          <nav aria-label="Notification pages">
+          <nav aria-label="صفحات الإشعارات">
             <button
               disabled={page <= 1 || resource.loading || busy || !!resource.retryAt}
               onClick={() => setPage(page - 1)}

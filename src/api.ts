@@ -25,37 +25,51 @@ export type LoginChallenge = {
   request_reference: string
 }
 
+export type TherapistApprovalStatus = 'pending' | 'approved' | 'rejected' | 'suspended' | null
+
+export function isTherapistApprovalStatus(value: unknown): value is TherapistApprovalStatus {
+  return value === null || value === 'pending' || value === 'approved' ||
+    value === 'rejected' || value === 'suspended'
+}
+
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
     public readonly fields: Record<string, string[]> = {},
     public readonly retryAfter = 0,
+    public readonly code?: string,
+    public readonly meta: {
+      approval_status?: TherapistApprovalStatus
+      approval_note?: string | null
+      attempts_left?: number
+      retry_after?: number
+    } = {},
   ) {
     super(
       status === 401
-        ? 'Your session has ended. Please sign in again.'
+        ? 'انتهت جلستك. يرجى تسجيل الدخول مجدداً.'
         : status === 403
-          ? 'This action is not permitted for your account.'
+          ? 'هذا الإجراء غير مسموح لحسابك.'
           : status === 404
-            ? 'The requested record is unavailable.'
+            ? 'السجل المطلوب غير متاح.'
             : status === 409
-              ? 'The request conflicts with the current server state. Refresh before retrying.'
+              ? 'يتعارض الطلب مع حالة الخادم الحالية. حدّث قبل إعادة المحاولة.'
               : status === 422
-                ? 'Please check the submitted information.'
+                ? 'تحقق من المعلومات المُدخلة.'
                 : status === 429
-                  ? 'Too many requests. Wait before trying again.'
+                  ? 'طلبات كثيرة جداً. انتظر قبل المحاولة مجدداً.'
                   : status === 413
-                    ? 'The submitted content is too large.'
+                    ? 'المحتوى المُرسل كبير جداً.'
                     : status === 0
-                      ? 'Unable to reach the server. Check your connection. The result may be unknown.'
-                      : 'The server could not complete the request. Refresh before retrying.',
+                      ? 'تعذّر الوصول إلى الخادم. تحقق من اتصالك. قد تكون النتيجة مجهولة.'
+                      : 'تعذّر على الخادم إكمال الطلب. حدّث قبل إعادة المحاولة.',
     )
     this.name = 'ApiError'
   }
 }
 
 export function apiErrorMessage(error: unknown): string {
-  return error instanceof ApiError ? error.message : 'The request could not be completed.'
+  return error instanceof ApiError ? error.message : 'تعذّر إكمال الطلب.'
 }
 
 export function apiId(value: string): string {
@@ -109,8 +123,14 @@ function validSession(value: ApiSession): boolean {
     Date.parse(value.refresh_expires_at) > Date.now() &&
     !!value.user &&
     typeof value.user.id === 'string' &&
+    /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(value.user.id) &&
+    typeof value.user.name === 'string' &&
+    (value.user.email === null || typeof value.user.email === 'string') &&
+    typeof value.user.whatsapp_number === 'string' &&
+    typeof value.user.timezone === 'string' &&
     value.user.role === 'therapist' &&
     value.user.is_active === true &&
+    typeof value.user.phone_verified_at === 'string' &&
     !!value.user.phone_verified_at
   )
 }
@@ -121,12 +141,13 @@ export class ApiClient {
   private generation = 0
   private requests = new Set<AbortController>()
   private refreshing: Promise<void> | null = null
+  private restoring: Promise<void> | null = null
   private closing = false
   readonly base: string
 
   constructor(
     base = import.meta.env.VITE_API_BASE_URL || '/api/v1',
-    private readonly transport = fetch,
+    private readonly transport: typeof fetch = (input, init) => fetch(input, init),
   ) {
     this.base = baseUrl(base)
   }
@@ -139,6 +160,53 @@ export class ApiClient {
   }
   private emit() {
     this.listeners.forEach((listener) => listener())
+  }
+
+  private get storageKey() {
+    return `sakina:therapist:refresh:${this.base}`
+  }
+
+  private storedToken(): string | null {
+    try {
+      return window.sessionStorage.getItem(this.storageKey)
+    } catch {
+      return null
+    }
+  }
+
+  private storeToken(token?: string) {
+    try {
+      if (token) window.sessionStorage.setItem(this.storageKey, token)
+      else window.sessionStorage.removeItem(this.storageKey)
+    } catch {
+      // Storage can be disabled; in-memory sign-in is still available.
+    }
+  }
+
+  hasStoredSession = (): boolean => !!this.storedToken()
+
+  restore = (): Promise<void> => {
+    if (this.restoring) return this.restoring
+    const refreshToken = this.storedToken()
+    if (this.session || this.closing || !refreshToken) return Promise.resolve()
+    const generation = this.generation
+    const pending = (async () => {
+      try {
+        if (!/^[A-Za-z0-9]{64}$/.test(refreshToken)) throw new ApiError(401)
+        const tokens = await this.rotate(refreshToken)
+        if (generation !== this.generation) return
+        if (typeof tokens?.access_token !== 'string' || !tokens.access_token)
+          throw new ApiError(401)
+        const { user } = await this.raw<{ user: ApiUser }>('/auth/user', 'GET', {}, tokens.access_token)
+        if (generation === this.generation) await this.establish({ ...tokens, user })
+      } catch {
+        if (generation === this.generation) this.clear()
+      }
+    })()
+    this.restoring = pending
+    return pending.finally(() => {
+      if (this.restoring === pending) this.restoring = null
+    })
   }
 
   establish = async (session: ApiSession): Promise<void> => {
@@ -170,6 +238,7 @@ export class ApiClient {
       expires_at: session.expires_at,
       refresh_expires_at: session.refresh_expires_at,
     }
+    this.storeToken(this.session.refresh_token)
     this.emit()
   }
 
@@ -177,6 +246,8 @@ export class ApiClient {
     this.generation++
     this.session = null
     this.refreshing = null
+    this.restoring = null
+    this.storeToken()
     this.requests.forEach((controller) => controller.abort())
     this.requests.clear()
     this.emit()
@@ -189,6 +260,7 @@ export class ApiClient {
     const originalToken = this.session?.access_token
     try {
       // Finish a rotation before selecting its replacement token; never clear a newer login.
+      this.storeToken()
       await this.refreshing?.catch(() => undefined)
       const token = generation === this.generation ? this.session?.access_token : originalToken
       if (generation === this.generation) this.clear()
@@ -197,6 +269,13 @@ export class ApiClient {
     } finally {
       this.closing = false
     }
+  }
+
+  private rotate(refreshToken: string) {
+    return this.raw<Omit<ApiSession, 'user'>>('/auth/refresh', 'POST', {
+      public: true,
+      body: { refresh_token: refreshToken },
+    })
   }
 
   private async refresh(): Promise<void> {
@@ -209,11 +288,8 @@ export class ApiClient {
     }
     this.refreshing = (async () => {
       try {
-        const tokens = await this.raw<Omit<ApiSession, 'user'>>('/auth/refresh', 'POST', {
-          public: true,
-          body: { refresh_token: session.refresh_token },
-        })
-        if (generation !== this.generation) throw new DOMException('Session changed', 'AbortError')
+        const tokens = await this.rotate(session.refresh_token)
+        if (generation !== this.generation) throw new DOMException('تغيّرت الجلسة', 'AbortError')
         const next = {
           user: session.user,
           access_token: tokens.access_token,
@@ -224,6 +300,7 @@ export class ApiClient {
         }
         if (!validSession(next)) throw new ApiError(401)
         this.session = next
+        if (!this.closing) this.storeToken(next.refresh_token)
         this.emit()
       } catch (error) {
         if (generation === this.generation) this.clear()
@@ -243,7 +320,7 @@ export class ApiClient {
       const generation = this.generation
       if (!this.session || this.closing) throw new ApiError(401)
       if (Date.parse(this.session.expires_at) <= Date.now() + 15000) await this.refresh()
-      if (generation !== this.generation) throw new DOMException('Session changed', 'AbortError')
+      if (generation !== this.generation) throw new DOMException('تغيّرت الجلسة', 'AbortError')
       if (!this.session || this.closing) throw new ApiError(401)
     }
     return this.raw<T>(
@@ -282,17 +359,17 @@ export class ApiClient {
       destination.origin !== new URL(this.base).origin ||
       !destination.pathname.startsWith(new URL(this.base).pathname + '/')
     )
-      throw new Error('Only API-relative paths are accepted.')
+      throw new Error('تُقبل فقط المسارات النسبية للـAPI.')
     const generation = this.generation
     const controller = new AbortController()
     const onAbort = () => controller.abort()
     options.signal?.addEventListener('abort', onAbort, { once: true })
     if (options.signal?.aborted) controller.abort()
     this.requests.add(controller)
-    const timeout = setTimeout(() => controller.abort(), 25000)
+    const timeout = setTimeout(() => controller.abort(), 60000)
     const assertCurrent = () => {
       if (controller.signal.aborted || (generation !== this.generation && !options.public))
-        throw new DOMException('Request cancelled', 'AbortError')
+        throw new DOMException('أُلغي الطلب', 'AbortError')
     }
     try {
       assertCurrent()
@@ -318,14 +395,23 @@ export class ApiClient {
       })
       assertCurrent()
       if (!response.ok) {
-        if (response.status === 401 && token && !options.public) this.clear()
         // Never render server exception text or field-error contents, which can contain secrets.
-        let keys: string[] = []
-        if (response.status === 422) {
-          const value = await response.json().catch(() => null)
-          assertCurrent()
-          if (value?.errors && typeof value.errors === 'object') keys = Object.keys(value.errors)
-        }
+        const value = await response.json().catch(() => null)
+        assertCurrent()
+        if (response.status === 401 && token && !options.public) this.clear()
+        const keys =
+          value?.errors && typeof value.errors === 'object' ? Object.keys(value.errors) : []
+        const code =
+          typeof value?.code === 'string'
+            ? value.code
+            : response.status === 403 &&
+                value?.message === 'لم يُعتمد ملف المعالج الخاص بك بعد.'
+              ? 'therapist_pending_approval'
+              : undefined
+        const seconds = value?.meta?.retry_after
+        const attempts = value?.meta?.attempts_left
+        const approval = value?.meta?.approval_status
+        const approvalNote = value?.meta?.approval_note
         const retry = response.headers.get('Retry-After')
         const delay = retry
           ? /^\d+$/.test(retry)
@@ -334,8 +420,20 @@ export class ApiClient {
           : 0
         throw new ApiError(
           response.status,
-          Object.fromEntries(keys.map((key) => [key, ['Please check this field.']])),
-          Number.isFinite(delay) ? delay : 0,
+          Object.fromEntries(keys.map((key) => [key, ['تحقق من هذا الحقل.']])),
+          Number.isInteger(seconds) && seconds > 0 ? seconds : Number.isFinite(delay) ? delay : 0,
+          code,
+          {
+            ...(Number.isInteger(attempts) && attempts >= 0 && { attempts_left: attempts }),
+            ...(Number.isInteger(seconds) && seconds > 0 && { retry_after: seconds }),
+            ...(code === 'therapist_pending_approval' && isTherapistApprovalStatus(approval) && {
+              approval_status: approval,
+              ...(approval === 'rejected' &&
+                (typeof approvalNote === 'string' || approvalNote === null) && {
+                  approval_note: approvalNote,
+                }),
+            }),
+          },
         )
       }
       if (options.binary) {

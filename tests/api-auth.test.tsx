@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Auth, type AuthPage } from '../src/Auth'
 import { ApiClient, type ApiSession } from '../src/api'
 
-const phone = '+491234567890'
+const phone = '+4915123456789'
 const proof = 'a'.repeat(64)
 
 function json(value: unknown, status = 200, headers: Record<string, string> = {}) {
@@ -69,9 +69,10 @@ function login(password = 'x') {
   fireEvent.click(screen.getByRole('button', { name: 'Login' }))
 }
 
-function newPassword(password = 'new password') {
-  fill('New password', password)
-  fill('Confirm password', password)
+function newPassword(password = 'new password1') {
+  const activating = !!screen.queryByLabelText('رمز التفعيل')
+  fill(activating ? 'كلمة المرور الجديدة' : 'New password', password)
+  fill(activating ? 'تأكيد كلمة المرور' : 'Confirm password', password)
 }
 
 function expectPublicRequest(
@@ -92,9 +93,129 @@ function expectPublicRequest(
 }
 
 beforeEach(() => window.history.replaceState({}, '', '/login'))
-afterEach(() => vi.useRealTimers())
+afterEach(() => {
+  window.sessionStorage.clear()
+  vi.restoreAllMocks()
+  vi.useRealTimers()
+  vi.unstubAllGlobals()
+})
 
 describe('live authentication public API integration', () => {
+  it.each(['2025550107', '12025550107', '+12025550107', '0012025550107', '+1 202 555 0107'])(
+    'sends the synthetic US test number %s in E.164',
+    async (input) => {
+      const { transport } = setup()
+      transport.mockResolvedValue(json({}, 401))
+      expect(screen.getByLabelText('Country or region')).toHaveValue('SY')
+      fill('Country or region', 'US')
+      fill('WhatsApp number', input)
+      fill('Password', 'existing')
+      await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Login' })))
+      expectPublicRequest(transport, 0, '/auth/login', {
+        whatsapp_number: '+12025550107',
+        password: 'existing',
+      })
+    },
+  )
+
+  it('uses the selected country for a local forgot-password number and clears inline phone_invalid', async () => {
+    const { transport } = setup('forgot-password')
+    transport.mockResolvedValue(json({ code: 'phone_invalid', errors: { whatsapp_number: ['raw'] } }, 422))
+    fill('Country or region', 'DE')
+    fill('WhatsApp number', '015123456789')
+    fireEvent.click(screen.getByRole('button', { name: 'Request reset code' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Enter a valid WhatsApp number.')
+    expectPublicRequest(transport, 0, '/auth/forgot-password', { whatsapp_number: phone })
+    fill('Country or region', 'SY')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it.each([
+    ['otp_invalid', 'رمز التفعيل غير صحيح. المحاولات المتبقية: 2.'],
+    ['otp_expired', 'انتهت صلاحية رمز التفعيل. تواصل مع الإدارة للحصول على دعوة جديدة.'],
+    ['otp_exhausted', 'استُنفدت محاولات إدخال الرمز. تواصل مع الإدارة للحصول على دعوة جديدة.'],
+  ])('handles activation %s without duplicating messages', async (code, message) => {
+    const { transport } = setup('activate')
+    transport.mockResolvedValue(json({ code, errors: { otp: ['raw'] }, meta: { attempts_left: 2 } }, 422))
+    expect(screen.getByLabelText('رقم واتساب')).toHaveAttribute('autocomplete', 'tel')
+    expect(screen.getByLabelText('رمز التفعيل')).toHaveAttribute('autocomplete', 'one-time-code')
+    expect(screen.getByLabelText('كلمة المرور الجديدة')).toHaveAttribute('autocomplete', 'new-password')
+    fill('رقم واتساب', '+12025550107')
+    fill('رمز التفعيل', 'ABCD1234')
+    newPassword('onlyletters')
+    expect(screen.getByRole('alert')).toHaveTextContent('استخدم ٨ أحرف على الأقل، تتضمن حرفًا ورقمًا.')
+    newPassword()
+    fireEvent.click(screen.getByRole('button', { name: 'تفعيل الحساب' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(message)
+    expectPublicRequest(transport, 0, '/auth/activate', {
+      whatsapp_number: '+12025550107', code: 'ABCD1234', password: 'new password1', password_confirmation: 'new password1',
+    })
+    if (code === 'otp_exhausted') {
+      expect(screen.getByLabelText('رمز التفعيل')).toHaveValue('')
+      expect(screen.getByLabelText('كلمة المرور الجديدة')).toHaveValue('')
+    } else {
+      expect(screen.getByLabelText('رمز التفعيل')).toHaveAttribute('aria-invalid', 'true')
+      fill('رمز التفعيل', 'ABCD1235')
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    }
+  })
+
+  it('shows a forgot-password delivery failure under the phone field', async () => {
+    const { transport } = setup('forgot-password')
+    transport.mockResolvedValue(json({ code: 'otp_send_failed', errors: { otp: ['raw'] } }, 503))
+    fill('WhatsApp number', phone)
+    fireEvent.click(screen.getByRole('button', { name: 'Request reset code' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('We could not send a code on WhatsApp.')
+    expect(screen.getByLabelText('WhatsApp number')).toHaveAttribute('aria-invalid', 'true')
+  })
+
+  it('maps reset expiry and password reuse, counts down resend, and restarts on exhaustion', async () => {
+    vi.useFakeTimers()
+    const { transport } = setup('reset-password')
+    transport
+      .mockResolvedValueOnce(json({ code: 'otp_expired' }, 422))
+      .mockResolvedValueOnce(json({ code: 'otp_cooldown', meta: { retry_after: 4 } }, 429))
+      .mockResolvedValueOnce(json({ code: 'password_reused' }, 422))
+      .mockResolvedValueOnce(json({ code: 'otp_exhausted' }, 422))
+    fill('WhatsApp number', phone)
+    fill('Reset code', '123456')
+    newPassword()
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Reset password' })))
+    expect(screen.getByRole('alert')).toHaveTextContent('The code has expired.')
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Resend' })))
+    expect(screen.getByRole('alert')).toHaveTextContent('You can request a new code in 4 seconds.')
+    expect(screen.getByRole('button', { name: 'Resend (4s)' })).toBeDisabled()
+    await act(async () => vi.advanceTimersByTime(1000))
+    expect(screen.getByRole('button', { name: 'Resend (3s)' })).toBeDisabled()
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Reset password' })))
+    expect(screen.getByRole('alert')).toHaveTextContent('The new password must be different from your current password.')
+    fill('New password', 'different1')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    await act(async () => vi.advanceTimersByTime(3000))
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Resend' })))
+    expect(screen.getByRole('heading', { name: 'Forgot your password?' })).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent('The attempts for this code are exhausted.')
+  })
+
+  it('calls the default fetch transport without an illegal receiver', async () => {
+    vi.stubGlobal(
+      'fetch',
+      function (this: unknown) {
+        if (this !== undefined && this !== globalThis) throw new TypeError('Illegal invocation')
+        return Promise.resolve(
+          new Response(JSON.stringify({ ok: true }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        )
+      },
+    )
+    const api = new ApiClient('https://api.example.test/api/v1')
+    await expect(api.request('/auth/privacy-policy', 'GET', { public: true })).resolves.toEqual({
+      ok: true,
+    })
+  })
+
   it('preserves the original no-api demo login behavior in its isolated component', () => {
     vi.useFakeTimers()
     const navigate = vi.fn()
@@ -126,7 +247,7 @@ describe('live authentication public API integration', () => {
           resolve = done
         }),
     )
-    fill('WhatsApp number', '0049 (123) 456-7890')
+    fill('WhatsApp number', '0049 (151) 234-56789')
     fill('Password', ' x ')
     fireEvent.click(screen.getByRole('button', { name: 'Login' }))
     expect(navigate).not.toHaveBeenCalled()
@@ -139,17 +260,21 @@ describe('live authentication public API integration', () => {
     expect(navigate).toHaveBeenCalledExactlyOnceWith('/dashboard')
     expect(establish.mock.calls[0][0].user).not.toHaveProperty('patient')
     expect(api.getUser()?.role).toBe('therapist')
-    expect(persisted).not.toHaveBeenCalled()
+    expect(persisted).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('refresh:'), issued.refresh_token)
     expect(screen.getByLabelText('Password')).toHaveValue('')
   })
 
-  it('does not impose the new-password minimum on login and does reject local phone guessing', () => {
+  it('does not impose the new-password minimum on login and reports an invalid phone inline', () => {
     const { transport } = setup()
     fill('WhatsApp number', '01234567890')
     fill('Password', 'x')
-    expect(screen.getByRole('button', { name: 'Login' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Login' })).toBeEnabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Login' }))
+    expect(screen.getByRole('alert')).toHaveTextContent('Enter a valid WhatsApp number.')
+    expect(screen.getByLabelText('WhatsApp number')).toHaveAttribute('aria-invalid', 'true')
     expect(screen.getByLabelText('Password')).not.toHaveAttribute('minlength')
     fill('WhatsApp number', phone)
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Login' })).toBeEnabled()
     expect(transport).not.toHaveBeenCalled()
   })
@@ -167,9 +292,10 @@ describe('live authentication public API integration', () => {
     )
     login()
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Please check the submitted information.',
+      'Invalid WhatsApp number or password.',
     )
-    expect(screen.getByText('Please check this field.')).toBeInTheDocument()
+    expect(screen.queryByText('Please check this field.')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('WhatsApp number')).toHaveAttribute('aria-invalid', 'false')
     expect(
       screen.queryByText(/raw database exception|private server detail/),
     ).not.toBeInTheDocument()
@@ -192,36 +318,36 @@ describe('live authentication public API integration', () => {
     async (page) => {
       const { transport, navigate, onCreateAccount } = setup(page)
       transport.mockResolvedValue(json(session()))
-      expect(screen.getByRole('heading', { name: 'Activate your invitation' })).toBeInTheDocument()
-      fill('WhatsApp number', phone)
-      fill('Invitation code', 'abc12!34')
-      newPassword(' new password ')
-      expect(screen.getByRole('button', { name: 'Activate account' })).toBeDisabled()
-      fill('Invitation code', 'abc1234')
-      expect(screen.getByRole('button', { name: 'Activate account' })).toBeDisabled()
-      fill('Invitation code', 'abc12345')
-      fill('Confirm password', 'not matching')
-      expect(screen.getByRole('button', { name: 'Activate account' })).toBeDisabled()
-      fill('Confirm password', ' new password ')
-      fireEvent.click(screen.getByRole('button', { name: 'Activate account' }))
-      await waitFor(() => expect(navigate).toHaveBeenCalledExactlyOnceWith('/dashboard'))
+      expect(screen.getByRole('heading', { name: 'تفعيل دعوة المعالج' })).toBeInTheDocument()
+      fill('رقم واتساب', phone)
+      fill('رمز التفعيل', 'abc12!34')
+      newPassword(' new password1 ')
+      expect(screen.getByRole('button', { name: 'تفعيل الحساب' })).toBeDisabled()
+      fill('رمز التفعيل', 'abc1234')
+      expect(screen.getByRole('button', { name: 'تفعيل الحساب' })).toBeDisabled()
+      fill('رمز التفعيل', 'abc12345')
+      fill('تأكيد كلمة المرور', 'not matching')
+      expect(screen.getByRole('button', { name: 'تفعيل الحساب' })).toBeDisabled()
+      fill('تأكيد كلمة المرور', ' new password1 ')
+      fireEvent.click(screen.getByRole('button', { name: 'تفعيل الحساب' }))
+      await waitFor(() => expect(navigate).toHaveBeenCalledExactlyOnceWith('/profile/approval'))
       expectPublicRequest(transport, 0, '/auth/activate', {
         whatsapp_number: phone,
         code: 'ABC12345',
-        password: ' new password ',
-        password_confirmation: ' new password ',
+        password: ' new password1 ',
+        password_confirmation: ' new password1 ',
       })
       expect(onCreateAccount).not.toHaveBeenCalled()
       expect(transport).toHaveBeenCalledTimes(1)
-      expect(screen.getByLabelText('Invitation code')).toHaveValue('')
-      expect(screen.getByLabelText('New password')).toHaveValue('')
+      expect(screen.getByLabelText('رمز التفعيل')).toHaveValue('')
+      expect(screen.getByLabelText('كلمة المرور الجديدة')).toHaveValue('')
     },
   )
 
   it('supports direct /activate entry when the router supplies its login default', () => {
     window.history.replaceState({}, '', '/activate')
     setup('login')
-    expect(screen.getByRole('heading', { name: 'Activate your invitation' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'تفعيل دعوة المعالج' })).toBeInTheDocument()
   })
 
   it('rejects staff activation sessions cleanly and never masquerades as a therapist', async () => {
@@ -229,11 +355,11 @@ describe('live authentication public API integration', () => {
     transport
       .mockResolvedValueOnce(json(session('admin')))
       .mockResolvedValueOnce(json({ message: 'Logged out.' }))
-    fill('WhatsApp number', phone)
-    fill('Invitation code', 'ABC12345')
+    fill('رقم واتساب', phone)
+    fill('رمز التفعيل', 'ABC12345')
     newPassword()
-    fireEvent.click(screen.getByRole('button', { name: 'Activate account' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('not permitted for your account')
+    fireEvent.click(screen.getByRole('button', { name: 'تفعيل الحساب' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('لا يمكن تفعيل هذا الحساب')
     expect(api.getUser()).toBeNull()
     expect(navigate).not.toHaveBeenCalled()
     expect(transport.mock.calls[1][0]).toBe('https://api.example.test/api/v1/auth/logout')
@@ -255,16 +381,16 @@ describe('live authentication public API integration', () => {
     expectPublicRequest(transport, 0, '/auth/forgot-password', { whatsapp_number: phone })
     expect(screen.getByText(/If this number is registered/)).toBeInTheDocument()
     expect(screen.queryByText('server content must not be rendered')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Resend' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^Resend/ })).toBeDisabled()
     fill('Reset code', '001234')
-    newPassword('replacement password')
+    newPassword('replacement password1')
     fireEvent.click(screen.getByRole('button', { name: 'Reset password' }))
     await screen.findByRole('heading', { name: 'log in to Sakina' })
     expectPublicRequest(transport, 1, '/auth/reset-password', {
       whatsapp_number: phone,
       otp: '001234',
-      password: 'replacement password',
-      password_confirmation: 'replacement password',
+      password: 'replacement password1',
+      password_confirmation: 'replacement password1',
     })
     expect(clear).toHaveBeenCalledTimes(1)
     expect(navigate).toHaveBeenCalledExactlyOnceWith('/login')
@@ -283,10 +409,11 @@ describe('live authentication public API integration', () => {
     fill('Reset code', '012345')
     newPassword('short')
     expect(screen.getByRole('button', { name: 'Reset password' })).toBeDisabled()
+    expect(screen.getByRole('alert')).toHaveTextContent('Password must be at least 8 characters and include a letter and a number.')
     newPassword()
     fill('Confirm password', 'different password')
     expect(screen.getByRole('button', { name: 'Reset password' })).toBeDisabled()
-    fill('Confirm password', 'new password')
+    fill('Confirm password', 'new password1')
     fireEvent.click(screen.getByRole('button', { name: 'Reset password' }))
     await screen.findByRole('alert')
     expect(screen.queryByText('private reset error')).not.toBeInTheDocument()
@@ -310,7 +437,7 @@ describe('live authentication public API integration', () => {
     expect(screen.queryByLabelText('Password')).not.toBeInTheDocument()
     expect(api.getUser()).toBeNull()
     expect(navigate).not.toHaveBeenCalled()
-    expect(screen.getByRole('button', { name: 'Resend' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^Resend/ })).toBeDisabled()
     fill('Verification code', '00123')
     expect(screen.getByRole('button', { name: 'Verify' })).toBeDisabled()
     await act(async () => vi.advanceTimersByTime(60000))
@@ -405,13 +532,13 @@ describe('live authentication public API integration', () => {
     await act(async () =>
       fireEvent.click(screen.getByRole('button', { name: 'Request reset code' })),
     )
-    expect(screen.getByRole('button', { name: 'Resend' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^Resend/ })).toBeDisabled()
     fill('Reset code', '001234')
     await act(async () => vi.advanceTimersByTime(60000))
     await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Resend' })))
     expectPublicRequest(transport, 1, '/auth/forgot-password', { whatsapp_number: phone })
     expect(screen.getByLabelText('Reset code')).toHaveValue('')
-    expect(screen.getByRole('button', { name: 'Resend' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^Resend/ })).toBeDisabled()
   })
 
   it('respects Retry-After without automatically retrying login', async () => {

@@ -36,12 +36,18 @@ export function Modal({
   onClose,
   className = '',
   closeIcon,
+  lang,
+  dir,
+  closeLabel = 'إغلاق الحوار',
 }: {
   title: string
   children: ReactNode
   onClose: () => void
   className?: string
   closeIcon?: ReactNode
+  lang?: string
+  dir?: 'rtl' | 'ltr'
+  closeLabel?: string
 }) {
   const ref = useRef<HTMLDialogElement>(null)
   const pointerOrigin = useRef<{ startedInside: boolean; endedInside: boolean } | null>(null)
@@ -83,6 +89,8 @@ export function Modal({
     <dialog
       ref={ref}
       className={`modal ${className}`}
+      lang={lang}
+      dir={dir}
       aria-labelledby="modal-title"
       onCancel={onClose}
       onPointerDownCapture={(event) => {
@@ -102,7 +110,7 @@ export function Modal({
     >
       <div className="modal-heading">
         <h2 id="modal-title">{title}</h2>
-        <button className="icon-button" aria-label="Close dialog" onClick={onClose}>
+        <button className="icon-button" aria-label={closeLabel} onClick={onClose}>
           {closeIcon ?? '×'}
         </button>
       </div>

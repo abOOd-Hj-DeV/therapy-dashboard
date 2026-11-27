@@ -38,7 +38,7 @@ export function FaqSummary({ children }: { children: ReactNode }) {
 
 export function FormActions({
   onClose,
-  label = 'Save Changes',
+  label = 'حفظ التغييرات',
   cancelLabel = 'Cancel',
 }: {
   onClose: () => void

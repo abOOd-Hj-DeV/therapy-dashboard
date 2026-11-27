@@ -30,7 +30,7 @@ function DemoDashboard({ navigate }: DashboardProps) {
     initial === 'meeting' || initial === 'notifications' ? initial : null,
   )
   const [searchOpen, setSearchOpen] = useState(initial === 'search')
-  const [query, setQuery] = useState(initial === 'search' ? 'Fa' : '')
+  const [query, setQuery] = useState(initial === 'search' ? 'فا' : '')
   // Only the explicit design-preview URL uses the two rows in Figma 1:1629.
   // Editing the query restores search across all demo patients.
   const [searchPreview, setSearchPreview] = useState(initial === 'search')
@@ -78,7 +78,7 @@ function DemoDashboard({ navigate }: DashboardProps) {
   }, [])
 
   function unavailable(label: string) {
-    if (label === 'Patients') {
+    if (label === 'المرضى') {
       navigate('/clients')
       return
     }
@@ -87,8 +87,8 @@ function DemoDashboard({ navigate }: DashboardProps) {
     setExpanded(false)
   }
   const searchPatients = [
-    { name: 'Fatima', image: 'dashboard-imgContainer3.png' },
-    { name: 'Fadi', image: 'dashboard-imgContainer4.png', crop: 'khaled' },
+    { name: 'فاطمة', image: 'dashboard-imgContainer3.png' },
+    { name: 'فادي', image: 'dashboard-imgContainer4.png', crop: 'khaled' },
   ]
   const results = (searchPreview ? searchPatients : [...sessions, ...searchPatients]).filter(
     (patient) => patient.name.toLowerCase().includes(query.trim().toLowerCase()),
@@ -101,17 +101,17 @@ function DemoDashboard({ navigate }: DashboardProps) {
       {expanded && (
         <button
           className="sidebar-backdrop"
-          aria-label="Close navigation"
+          aria-label="إغلاق التنقل"
           onClick={() => setExpanded(false)}
         />
       )}
-      <aside className="sidebar" aria-label="Main navigation">
+      <aside className="sidebar" aria-label="التنقل الرئيسي">
         <div>
           <header className="sidebar-header">
             <Logo wordmark />
             <button
               className="icon-button collapse-button"
-              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              aria-label={collapsed ? 'توسيع الشريط الجانبي' : 'طي الشريط الجانبي'}
               aria-expanded={!collapsed}
               onClick={() => {
                 setCollapsed(!collapsed)
@@ -123,29 +123,31 @@ function DemoDashboard({ navigate }: DashboardProps) {
             </button>
           </header>
           <nav className="navigation">
-            <p className="nav-label">MAIN MENU</p>
+            <p className="nav-label">القائمة الرئيسية</p>
             {menu.map((item) => (
               <button
                 key={item.label}
-                className={`nav-item ${item.label === 'Dashboard' ? 'active' : ''}`}
+                className={`nav-item ${item.label === 'لوحة التحكم' ? 'active' : ''}`}
                 title={item.label}
                 aria-label={item.label}
-                aria-current={item.label === 'Dashboard' ? 'page' : undefined}
+                aria-current={item.label === 'لوحة التحكم' ? 'page' : undefined}
                 onClick={() =>
-                  item.label === 'Dashboard'
+                  item.label === 'لوحة التحكم'
                     ? setExpanded(false)
-                    : item.label === 'Messages'
+                    : item.label === 'الرسائل'
                       ? navigate('/chats')
-                      : item.label === 'Sessions'
+                      : item.label === 'الجلسات'
                         ? navigate('/sessions')
-                        : item.label === 'Wallet'
+                        : item.label === 'المحفظة'
                           ? navigate('/wallet')
-                          : item.label === 'Additional Content'
+                          : item.label === 'المحتوى الإضافي'
                             ? navigate('/homework')
+                            : item.label === 'حالات الخطر'
+                              ? navigate('/red-flags')
                             : unavailable(item.label)
                 }
               >
-                {item.label === 'Dashboard' ? (
+                {item.label === 'لوحة التحكم' ? (
                   <span className="icon dashboard-active-icon" aria-hidden="true" />
                 ) : (
                   <Icon name={item.icon} />
@@ -159,14 +161,14 @@ function DemoDashboard({ navigate }: DashboardProps) {
         <div className="sidebar-footer">
           <div className="client-reminder textured">
             <div>
-              <p>This week</p>
-              <p>You have one client without assigned content for over a week.</p>
-              <button onClick={() => navigate('/sessions/upcoming')}>Client review</button>
+              <p>هذا الأسبوع</p>
+              <p>لديك عميل دون محتوى مسند منذ أكثر من أسبوع.</p>
+              <button onClick={() => navigate('/sessions/upcoming')}>مراجعة العميل</button>
             </div>
           </div>
           <button
             className="compact-reminder icon-button"
-            aria-label="Client review"
+            aria-label="مراجعة العميل"
             onClick={() => navigate('/sessions/upcoming')}
           >
             <Icon name="part2-10-imgMaterialSymbolsLightEmergencyHome.svg" />
@@ -174,13 +176,13 @@ function DemoDashboard({ navigate }: DashboardProps) {
           </button>
           <button
             className="profile-card textured"
-            aria-label="Open profile"
+            aria-label="فتح الملف الشخصي"
             onClick={() => navigate('/profile')}
           >
             <img src={asset('dashboard-imgContainer.png')} alt="Dr. Issa Alhadad" />
             <span className="profile-copy">
-              <strong>Dr. Issa Alhadad</strong>
-              <small>Certified Psychotherapist</small>
+              <strong>د. عيسى الحداد</strong>
+              <small>معالج نفسي مرخص</small>
             </span>
             <Icon name="dashboard-imgIcon.svg" />
           </button>
@@ -191,7 +193,7 @@ function DemoDashboard({ navigate }: DashboardProps) {
           <div className="topbar-heading">
             <button
               className="icon-button mobile-menu"
-              aria-label="Open navigation"
+              aria-label="فتح التنقل"
               aria-expanded={expanded}
               onClick={() => {
                 setExpanded(!expanded)
@@ -200,13 +202,13 @@ function DemoDashboard({ navigate }: DashboardProps) {
             >
               <Icon name="part2-11-imgMenu.svg" />
             </button>
-            <h1>Dashboard</h1>
+            <h1>لوحة التحكم</h1>
           </div>
           <div className="topbar-actions">
             <div className={`search-area ${searchOpen ? 'search-open' : ''}`} ref={searchArea}>
               <button
                 className="icon-button mobile-search"
-                aria-label="Open search"
+                aria-label="فتح البحث"
                 onClick={() => {
                   setSearchOpen(!searchOpen)
                   setOverlay(null)
@@ -219,8 +221,8 @@ function DemoDashboard({ navigate }: DashboardProps) {
                 <Icon name="dashboard-imgSearch.svg" />
                 <input
                   ref={searchRef}
-                  aria-label="Search patients"
-                  placeholder="Search..."
+                  aria-label="ابحث في المرضى"
+                  placeholder="ابحث..."
                   value={query}
                   onFocus={() => {
                     setSearchOpen(true)
@@ -234,7 +236,7 @@ function DemoDashboard({ navigate }: DashboardProps) {
                 />
               </label>
               {searchOpen && query.trim() && (
-                <div className="search-results" aria-label="Search results">
+                <div className="search-results" aria-label="نتائج البحث">
                   {results.length ? (
                     results.map((patient) => (
                       <button
@@ -251,7 +253,7 @@ function DemoDashboard({ navigate }: DashboardProps) {
                       </button>
                     ))
                   ) : (
-                    <p>No patients found</p>
+                    <p>لم يُعثر على مرضى</p>
                   )}
                 </div>
               )}
@@ -259,7 +261,7 @@ function DemoDashboard({ navigate }: DashboardProps) {
             <button
               ref={notificationButton}
               className="icon-button notification-button"
-              aria-label="Notifications"
+              aria-label="الإشعارات"
               aria-expanded={overlay === 'notifications'}
               aria-controls="notifications-panel"
               onClick={() => {
@@ -277,12 +279,12 @@ function DemoDashboard({ navigate }: DashboardProps) {
           </div>
         )}
         <div className="hero-section">
-          <section className="dashboard-hero textured" aria-label="Today’s overview">
+          <section className="dashboard-hero textured" aria-label="نظرة اليوم">
             <div className="hero-copy">
               <div className="greeting">
-                <p>Good morning!</p>
-                <h2>Dr. khaled Alshamy</h2>
-                <p>you have 3 sessions for today!</p>
+                <p>صباح الخير!</p>
+                <h2>د. خالد الشامي</h2>
+                <p>لديك 3 جلسات اليوم!</p>
               </div>
               <div className="hero-rating">
                 <span>
@@ -294,16 +296,16 @@ function DemoDashboard({ navigate }: DashboardProps) {
                     ))}
                   </b>
                 </span>
-                <span>Attendance Rate: 95%</span>
+                <span>نسبة الحضور: 95%</span>
               </div>
             </div>
             <div className="next-session">
-              <p className="eyebrow">YOUR NEXT SESSION</p>
+              <p className="eyebrow">جلستك القادمة</p>
               <div className="next-patient">
                 <div className="initials">AM</div>
                 <div>
-                  <h3>Ahmed Mohamed</h3>
-                  <p>One-on-one session · Today 10:00 AM</p>
+                  <h3>أحمد محمد</h3>
+                  <p>جلسة فردية · اليوم 10:00 صباحاً</p>
                 </div>
               </div>
               <button
@@ -320,7 +322,7 @@ function DemoDashboard({ navigate }: DashboardProps) {
             <img className="hero-illustration" src={asset('dashboard-imgImage1988.png')} alt="" />
           </section>
         </div>
-        <section className="metrics" aria-label="Practice statistics">
+        <section className="metrics" aria-label="إحصاءات العيادة">
           {metrics.map((metric) => (
             <article className="metric" key={metric.label}>
               <span className={`featured-icon ${metric.glass ? 'has-glass' : ''}`}>
@@ -331,7 +333,7 @@ function DemoDashboard({ navigate }: DashboardProps) {
               <div className="metric-data">
                 <h2>
                   {metric.label}
-                  {metric.label === 'Active users' && <span className="metric-current"> now</span>}
+                  {metric.label === 'مستخدمون نشطون' && <span className="metric-current"> الآن</span>}
                 </h2>
                 <div>
                   <strong>{metric.value}</strong>
@@ -353,7 +355,7 @@ function DemoDashboard({ navigate }: DashboardProps) {
         <section className="sessions-section" aria-labelledby="sessions-heading">
           <div className="sessions-card">
             <header>
-              <h2 id="sessions-heading">Upcoming Sessions</h2>
+              <h2 id="sessions-heading">الجلسات القادمة</h2>
               <button className="see-all" onClick={() => navigate('/sessions')}>
                 See all
                 <Icon name="dashboard-imgIcon5.svg" />
@@ -362,9 +364,9 @@ function DemoDashboard({ navigate }: DashboardProps) {
             <table>
               <thead>
                 <tr>
-                  <th scope="col">Patient Name</th>
-                  <th scope="col">Date</th>
-                  <th scope="col">Status</th>
+                  <th scope="col">اسم المريض</th>
+                  <th scope="col">التاريخ</th>
+                  <th scope="col">الحالة</th>
                 </tr>
               </thead>
               <tbody>
@@ -381,7 +383,7 @@ function DemoDashboard({ navigate }: DashboardProps) {
                         <Avatar patient={patient} />
                         <span>
                           <span className="patient-name">{patient.name}</span>
-                          <small>Private Session</small>
+                          <small>جلسة خاصة</small>
                         </span>
                       </button>
                     </td>
@@ -391,10 +393,10 @@ function DemoDashboard({ navigate }: DashboardProps) {
                     <td>
                       <span className={`session-status ${patient.status}`}>
                         {patient.status === 'ready'
-                          ? 'Is ready'
+                          ? 'جاهز'
                           : patient.status === 'canceled'
-                            ? 'Canceled'
-                            : 'Not sure'}
+                            ? 'ملغاة'
+                            : 'غير مؤكد'}
                         <Icon
                           name={
                             patient.status === 'ready'
@@ -419,13 +421,13 @@ function DemoDashboard({ navigate }: DashboardProps) {
           className="notifications-panel"
           id="notifications-panel"
           role="region"
-          aria-label="Notifications"
+          aria-label="الإشعارات"
         >
           <header>
-            <h2>Notifications</h2>
+            <h2>الإشعارات</h2>
             <button
               className="icon-button"
-              aria-label="Close notifications"
+              aria-label="إغلاق الإشعارات"
               onClick={() => {
                 setOverlay(null)
                 notificationButton.current?.focus()
@@ -474,14 +476,14 @@ function DemoDashboard({ navigate }: DashboardProps) {
                       <div className="notification-actions">
                         <button
                           onClick={() => {
-                            if (item.action === 'Accept') setDismissed([...dismissed, item.id])
+                            if (item.action === 'قبول') setDismissed([...dismissed, item.id])
                             else unavailable(item.action!)
-                            setStatus(item.action === 'Accept' ? 'Demo invitation accepted.' : '')
+                            setStatus(item.action === 'قبول' ? 'قُبلت دعوة العرض التجريبي.' : '')
                           }}
                         >
                           {item.action}
                         </button>
-                        {item.action === 'Accept' && (
+                        {item.action === 'قبول' && (
                           <button onClick={() => setDismissed([...dismissed, item.id])}>
                             Decline
                           </button>
@@ -494,7 +496,7 @@ function DemoDashboard({ navigate }: DashboardProps) {
               ))}
           </div>
           <footer>
-            <span>Powered by</span> <Logo wordmark />
+            <span>مدعوم من</span> <Logo wordmark />
           </footer>
           {status && (
             <p role="status" className="notification-feedback">
@@ -505,7 +507,7 @@ function DemoDashboard({ navigate }: DashboardProps) {
       )}
       {overlay === 'meeting' && (
         <Modal
-          title="let’s join the Meeting!"
+          title="هيّا ننضم إلى الاجتماع!"
           className="dashboard-meeting-modal"
           closeIcon={<DashboardCloseIcon />}
           onClose={() => setOverlay(null)}
@@ -514,22 +516,22 @@ function DemoDashboard({ navigate }: DashboardProps) {
             Meeting URL
             <div className="meeting-url">
               <textarea
-                aria-label="Meeting URL"
+                aria-label="رابط الاجتماع"
                 readOnly
                 rows={1}
                 value="https://meet.google.com/kxx-eyzx-dew?author=0"
               />
               <button
                 className="icon-button"
-                aria-label="Copy meeting URL"
+                aria-label="نسخ رابط الاجتماع"
                 onClick={async () => {
                   try {
                     await navigator.clipboard.writeText(
                       'https://meet.google.com/kxx-eyzx-dew?author=0',
                     )
-                    setStatus('Demo URL copied.')
+                    setStatus('نُسخ رابط العرض التجريبي.')
                   } catch {
-                    setStatus('Copy is unavailable. Select the URL and copy it manually.')
+                    setStatus('النسخ غير متاح. حدّد الرابط وانسخه يدوياً.')
                   }
                 }}
               >
@@ -544,7 +546,7 @@ function DemoDashboard({ navigate }: DashboardProps) {
           </label>
           <button
             className="primary-button"
-            onClick={() => setStatus('Demo only: no live meeting service is connected.')}
+            onClick={() => setStatus('عرض تجريبي فقط: لا توجد خدمة اجتماعات مباشرة متصلة.')}
           >
             Join meeting
           </button>
@@ -565,13 +567,13 @@ function DemoDashboard({ navigate }: DashboardProps) {
       )}
       {overlay === 'patient' && (
         <Modal title={selected} onClose={() => setOverlay(null)}>
-          <p>Private Session · Demo patient record</p>
-          <p>The full patient page is not included in the first design file.</p>
+          <p>جلسة خاصة · سجل مريض تجريبي</p>
+          <p>صفحة المريض الكاملة غير مضمّنة في ملف التصميم الأول.</p>
         </Modal>
       )}
       {overlay === 'profile' && (
-        <Modal title="Dr. Issa Alhadad" onClose={() => setOverlay(null)}>
-          <p>Certified Psychotherapist</p>
+        <Modal title="د. عيسى الحداد" onClose={() => setOverlay(null)}>
+          <p>معالج نفسي مرخص</p>
           <p>This is a frontend demo. No authenticated session is stored.</p>
           <button className="primary-button" onClick={() => navigate('/login')}>
             Back to login

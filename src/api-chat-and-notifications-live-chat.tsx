@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { ApiClient, ApiError, apiErrorMessage, apiId } from './api'
 import { useApiUser } from './api-hooks'
+import { formatTimestamp } from './display-date'
 import { DesignIcon, Workspace } from './Workspace'
 import {
   chatCanRefresh,
@@ -63,9 +64,6 @@ function initialCounterpart() {
     return null
   }
 }
-function timestamp(value: string | null) {
-  return value && Number.isFinite(Date.parse(value)) ? new Date(value).toLocaleString() : ''
-}
 function mergeMessages(previous: Message[], incoming: Message[]) {
   const unique = new Map(previous.map((message) => [message.id, message]))
   incoming.forEach((message) => unique.set(message.id, message))
@@ -82,7 +80,7 @@ export function LiveChats({ api, navigate }: { api: ApiClient; navigate: (path: 
     <ActorChats key={api.getSessionKey()} api={api} navigate={navigate} actor={user.id} />
   ) : (
     <Workspace api={api} title="Chats" active="Messages" navigate={navigate}>
-      <p role="alert">Your session has ended. Please sign in again.</p>
+      <p role="alert">انتهت جلستك. يرجى تسجيل الدخول مجدداً.</p>
     </Workspace>
   )
 }
@@ -146,8 +144,8 @@ function ActorChats({
           <label className="chat-search">
             <DesignIcon name="part2-03-imgSearch.svg" />
             <input
-              aria-label="Search conversations"
-              placeholder="Search loaded page…"
+              aria-label="ابحث في المحادثات"
+              placeholder="ابحث في الصفحة المحمّلة…"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
@@ -164,7 +162,7 @@ function ActorChats({
             New conversation
           </button>
           {chooser && <OwnedClients api={api} select={select} />}
-          {list.loading && <p role="status">Loading conversations…</p>}
+          {list.loading && <p role="status">جارٍ تحميل المحادثات…</p>}
           {list.error && (
             <p role="alert">
               {apiErrorMessage(list.error)}{' '}
@@ -173,7 +171,7 @@ function ActorChats({
               </button>
             </p>
           )}
-          {!!list.retryAt && <p role="status">Waiting before retrying the server.</p>}
+          {!!list.retryAt && <p role="status">بانتظار إعادة المحاولة على الخادم.</p>}
           <div className="conversation-list">
             {conversations.map((item) => (
               <button
@@ -187,25 +185,25 @@ function ActorChats({
                 <span className="conversation-copy">
                   <span>
                     <strong>{item.patient.name || 'Client'}</strong>
-                    <time>{timestamp(item.last_message_at)}</time>
+                    <time>{formatTimestamp(item.last_message_at, api.getUser()?.timezone || 'UTC')}</time>
                   </span>
                   <span>
                     <small>
-                      {item.status === 'closed' ? 'Closed conversation' : 'Conversation'}
+                      {item.status === 'closed' ? 'محادثة مغلقة' : 'Conversation'}
                     </small>
                     {item.unread_count > 0 && (
-                      <i aria-label={`${item.unread_count} unread messages`}>{item.unread_count}</i>
+                      <i aria-label={`${item.unread_count} رسائل غير مقروءة`}>{item.unread_count}</i>
                     )}
                   </span>
                 </span>
               </button>
             ))}
-            {list.data && conversations.length === 0 && (
-              <p className="empty-result">No conversations found.</p>
+            {list.data && !list.error && conversations.length === 0 && (
+              <p className="empty-result">لم يُعثر على محادثات.</p>
             )}
           </div>
           {list.data && (
-            <nav aria-label="Conversation pages">
+            <nav aria-label="صفحات المحادثات">
               <button
                 disabled={page <= 1 || list.loading || !!list.retryAt}
                 onClick={() => setPage(page - 1)}
@@ -235,13 +233,13 @@ function ActorChats({
             onReconcile={list.reload}
           />
         ) : (
-          <section className="empty-conversation" aria-label="Select a conversation">
+          <section className="empty-conversation" aria-label="اختر محادثة">
             <div>
               <span>
                 <DesignIcon name="part2-20-imgMessageCircleLinesAlt1.svg" />
               </span>
-              <h2>Select a conversation</h2>
-              <p>Open a conversation or choose an assigned client to start one.</p>
+              <h2>اختر محادثة</h2>
+              <p>افتح محادثة أو اختر عميلاً مسنداً لبدء واحدة.</p>
             </div>
           </section>
         )}
@@ -264,8 +262,8 @@ function OwnedClients({
   }>(api, `/therapists/clients?status=active&page=${page}&per_page=20`, 30000)
   return (
     <section className="assigned-clients" aria-label="Assigned clients">
-      <p>Start a conversation with a currently assigned client.</p>
-      {resource.loading && <p role="status">Loading assigned clients…</p>}
+      <p>ابدأ محادثة مع عميل مسند حالياً.</p>
+      {resource.loading && <p role="status">جارٍ تحميل العملاء المسندين…</p>}
       {resource.error && (
         <p role="alert">
           {apiErrorMessage(resource.error)}{' '}
@@ -281,9 +279,11 @@ function OwnedClients({
             {client.full_name || 'Client'}
           </button>
         ))}
-      {resource.data?.data.length === 0 && <p>No currently assigned clients.</p>}
+      {resource.data?.data.length === 0 && !resource.error && (
+        <p>لا يوجد عملاء مسندون حالياً.</p>
+      )}
       {resource.data && (
-        <nav aria-label="Assigned client pages">
+        <nav aria-label="صفحات العملاء المسندين">
           <button
             disabled={page <= 1 || resource.loading || !!resource.retryAt}
             onClick={() => setPage(page - 1)}
@@ -492,7 +492,7 @@ function ChatThread({
       if (fileRef.current) fileRef.current.value = ''
       // A keyed replay is an old snapshot, not proof that clinical data still exists.
       // Display from an independently authorized GET rather than appending its cached body.
-      setFeedback('Message accepted by the server. Refreshing conversation…')
+      setFeedback('قبل الخادم الرسالة. جارٍ تحديث المحادثة…')
       resource.reload()
       onReconcile()
     } catch (failure) {
@@ -513,10 +513,10 @@ function ChatThread({
           setPendingRequest(null)
         }
         if (failure instanceof ApiError && failure.fields.attachment)
-          setError('Please check the attachment type and size. The server validates file contents.')
+          setError('تحقق من نوع المرفق وحجمه. يتحقق الخادم من محتوى الملفات.')
         else if (failure instanceof ApiError && failure.fields.content)
           setError(
-            'Please check the message. Use text up to 4,000 characters or an allowed attachment.',
+            'تحقق من الرسالة. استخدم نصاً حتى 4,000 حرف أو مرفقاً مسموحاً.',
           )
       }
     } finally {
@@ -531,7 +531,7 @@ function ChatThread({
     const max = IMAGE_TYPES.includes(value.type) ? 5 * 1024 * 1024 : 10 * 1024 * 1024
     if (!FILE_TYPES.includes(value.type) || value.size > max || value.size === 0) {
       setError(
-        'Choose an allowed image (up to 5 MB), audio or PDF/text/Word file (up to 10 MB). Server file validation is authoritative.',
+        'اختر صورة مسموحة (حتى 5 م.ب) أو ملف صوت أو PDF/نص/Word (حتى 10 م.ب). تحقق الخادم من الملفات هو المرجع النهائي.',
       )
       if (fileRef.current) fileRef.current.value = ''
       return
@@ -587,7 +587,7 @@ function ChatThread({
       <header className="chat-thread-header">
         <button
           className="thread-back icon-button"
-          aria-label="Back to conversations"
+          aria-label="عودة إلى المحادثات"
           onClick={onBack}
         >
           <DesignIcon name="part2-06-imgIcon.svg" />
@@ -597,11 +597,11 @@ function ChatThread({
         </span>
         <div>
           <strong>{threadName}</strong>
-          <p>{closed ? 'Closed conversation · Read only' : 'Care conversation'}</p>
+          <p>{closed ? 'محادثة مغلقة · للقراءة فقط' : 'محادثة الرعاية'}</p>
         </div>
       </header>
       <div className="message-history">
-        {resource.loading && <p role="status">Loading conversation…</p>}
+        {resource.loading && <p role="status">جارٍ تحميل المحادثة…</p>}
         {resource.error && (
           <p role="alert">
             {apiErrorMessage(resource.error)}{' '}
@@ -610,8 +610,8 @@ function ChatThread({
             </button>
           </p>
         )}
-        {!!resource.retryAt && <p role="status">Waiting before retrying the server.</p>}
-        {resource.data && messages.length === 0 && <p>No messages yet.</p>}
+        {!!resource.retryAt && <p role="status">بانتظار إعادة المحاولة على الخادم.</p>}
+        {resource.data && !resource.error && messages.length === 0 && <p>No messages yet.</p>}
         {!resource.error &&
           messages.map((message) => (
             <div
@@ -629,7 +629,7 @@ function ChatThread({
                 </button>
               )}
               <time>
-                {timestamp(message.sent_at)}
+                {formatTimestamp(message.sent_at, api.getUser()?.timezone || 'UTC')}
                 {message.sender_id === actor ? (message.is_read ? ' · Read' : ' · Sent') : ''}
               </time>
             </div>
@@ -639,7 +639,7 @@ function ChatThread({
             disabled={historyBusy || !online || !!resource.retryAt}
             onClick={() => void older()}
           >
-            {historyBusy ? 'Loading earlier messages…' : 'Load earlier messages'}
+            {historyBusy ? 'جارٍ تحميل الرسائل الأقدم…' : 'تحميل الرسائل الأقدم'}
           </button>
         )}
         <p>
@@ -664,11 +664,11 @@ function ChatThread({
           send messages.
         </p>
       )}
-      {conflict && <p role="status">Sending paused while the current conversation is refreshed.</p>}
+      {conflict && <p role="status">توقّف الإرسال مؤقتاً أثناء تحديث المحادثة الحالية.</p>}
       <form className="message-composer" onSubmit={(event) => void send(event)}>
         <button
           type="button"
-          aria-label="Attach a file"
+          aria-label="إرفاق ملف"
           disabled={readOnly || !online || !!pendingRequest}
           onClick={() => fileRef.current?.click()}
         >
@@ -679,14 +679,14 @@ function ChatThread({
           ref={fileRef}
           type="file"
           accept={FILE_TYPES.join(',')}
-          aria-label="Message attachment"
+          aria-label="مرفق رسالة"
           disabled={readOnly || !online || !!pendingRequest}
           onChange={(event) => chooseFile(event.target.files?.[0] || null)}
         />
         <input
           aria-label="Message"
           placeholder={
-            closed ? 'This conversation is read only' : 'Type your message to the client…'
+            closed ? 'هذه المحادثة للقراءة فقط' : 'اكتب رسالتك للعميل…'
           }
           maxLength={4000}
           value={draft}
@@ -695,7 +695,7 @@ function ChatThread({
         />
         <button
           type="submit"
-          aria-label={pendingRequest && !sending ? 'Retry sending message' : 'Send message'}
+          aria-label={pendingRequest && !sending ? 'إعادة إرسال الرسالة' : 'إرسال الرسالة'}
           disabled={
             readOnly || !online || sending || !!resource.retryAt || (!draft.trim() && !file)
           }
@@ -717,7 +717,7 @@ function ChatThread({
           </button>
         </p>
       )}
-      {sending && <p role="status">Sending message…</p>}
+      {sending && <p role="status">جارٍ إرسال الرسالة…</p>}
       {pendingRequest && !sending && (
         <p role="status">
           Your draft is retained. Retry sends this exact message with the same request key; no

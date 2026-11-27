@@ -89,7 +89,7 @@ function NetworkToggleControl() {
         onClick={() => setSimulated(!simulated)}
       >
         <span className="demo-network-toggle__dot" aria-hidden="true" />
-        {simulated ? 'Back online' : 'Simulate offline'}
+        {simulated ? 'عاد الاتصال' : 'محاكاة عدم الاتصال'}
       </button>
       <span id="demo-network-toggle-hint" className="demo-network-toggle__hint">
         Demo only: switches the offline design preview. Network requests are not changed.

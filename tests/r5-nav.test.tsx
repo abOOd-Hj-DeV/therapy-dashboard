@@ -36,6 +36,7 @@ describe('r5 homework navigation wiring', () => {
       'Messages',
       'Additional Content',
       'Wallet',
+      'حالات الخطر',
     ])
     renderShell()
     const sidebar = screen.getByRole('complementary', { name: 'Main navigation' })
@@ -49,6 +50,7 @@ describe('r5 homework navigation wiring', () => {
       'Messages',
       'Additional Content',
       'Wallet',
+      'حالات الخطر',
     ])
   })
 

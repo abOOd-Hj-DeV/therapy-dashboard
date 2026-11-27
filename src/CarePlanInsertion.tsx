@@ -2,6 +2,7 @@ import { useState, type ReactElement } from 'react'
 import { asset } from './assets'
 import { DesignIcon, Workspace } from './Workspace'
 import type { ApiClient } from './api'
+import { formatCalendarDate } from './display-date'
 
 // Development design fixtures ONLY. Transcribed from the round-5 Figma
 // references r5-102..r5-112 ("Ahmed care plan — insertion point"): a numbered
@@ -12,21 +13,21 @@ type StageStatus = 'completed' | 'current' | 'locked'
 type Stage = { title: string; status: StageStatus; line: string; identity: string }
 
 const stages: Stage[] = [
-  { title: 'تقييم الحالة', status: 'completed', line: 'Completed · responses preserved', identity: 'ba-assess' },
-  { title: 'ماذا فقدت من حياتك؟', status: 'completed', line: 'Completed · responses preserved', identity: 'ba-loss' },
-  { title: 'نشاط صغير يوميًا', status: 'current', line: 'Current · in progress', identity: 'ba-small' },
-  { title: 'سلّم النشاط', status: 'locked', line: 'Locked · completes after stage 3', identity: 'ba-ladder' },
-  { title: 'جدولة الأنشطة الأسبوعية', status: 'locked', line: 'Locked · completes after stage 4', identity: 'ba-week' },
-  { title: 'مواجهة الانسحاب الاجتماعي', status: 'locked', line: 'Locked · completes after stage 5', identity: 'ba-social' },
-  { title: 'التعامل مع النكسات', status: 'locked', line: 'Locked · completes after stage 6', identity: 'ba-relapse' },
-  { title: 'بناء روتين طويل المدى', status: 'locked', line: 'Locked · completes after stage 7', identity: 'ba-routine' },
-  { title: 'مراجعة الخطة والاستمرار', status: 'locked', line: 'Locked · completes after stage 8', identity: 'ba-review' },
+  { title: 'تقييم الحالة', status: 'completed', line: 'مكتمل · الاستجابات محفوظة', identity: 'ba-assess' },
+  { title: 'ماذا فقدت من حياتك؟', status: 'completed', line: 'مكتمل · الاستجابات محفوظة', identity: 'ba-loss' },
+  { title: 'نشاط صغير يوميًا', status: 'current', line: 'الحالي · قيد التنفيذ', identity: 'ba-small' },
+  { title: 'سلّم النشاط', status: 'locked', line: 'مقفل · يكتمل بعد المرحلة 3', identity: 'ba-ladder' },
+  { title: 'جدولة الأنشطة الأسبوعية', status: 'locked', line: 'مقفل · يكتمل بعد المرحلة 4', identity: 'ba-week' },
+  { title: 'مواجهة الانسحاب الاجتماعي', status: 'locked', line: 'مقفل · يكتمل بعد المرحلة 5', identity: 'ba-social' },
+  { title: 'التعامل مع النكسات', status: 'locked', line: 'مقفل · يكتمل بعد المرحلة 6', identity: 'ba-relapse' },
+  { title: 'بناء روتين طويل المدى', status: 'locked', line: 'مقفل · يكتمل بعد المرحلة 7', identity: 'ba-routine' },
+  { title: 'مراجعة الخطة والاستمرار', status: 'locked', line: 'مقفل · يكتمل بعد المرحلة 8', identity: 'ba-review' },
 ]
 
 const currentStage = 3
 const proposal = {
   title: 'Thought record · سجل الأفكار',
-  meta: 'Published v2 · 4 long-text fields · Not inserted yet',
+  meta: 'منشور v2 · 4 حقول نص طويل · لم يُدرج بعد',
 }
 
 export function CarePlanInsertion({ navigate, api }: { navigate: (path: string) => void; api?: ApiClient }) {
@@ -39,7 +40,7 @@ export function CarePlanInsertion({ navigate, api }: { navigate: (path: string) 
 // The nav-wire unit owns the shell contract: /homework/* pages highlight
 // "Additional Content" in the sidebar via the Workspace active union.
 const homeworkNav = 'Additional Content' as const
-const homeworkTitle = 'Assign Homework'
+const homeworkTitle = 'إسناد الواجب'
 
 function LiveCarePlanInsertion({ navigate, api }: { navigate: (path: string) => void; api?: ApiClient }) {
   const [notice, setNotice] = useState('')
@@ -56,12 +57,12 @@ function LiveCarePlanInsertion({ navigate, api }: { navigate: (path: string) => 
         )}
         <div className="cpi-layout">
           <section className="cpi-card cpi-empty" aria-label="Care plan unavailable">
-            <h2>Care-plan editing is not connected</h2>
+            <h2>تحرير خطة الرعاية غير متصل</h2>
             <p>
               The therapist API does not expose care-plan stages or a homework library, so no stages
               are shown and nothing can be inserted, published, assigned, repositioned, or deleted here.
             </p>
-            <button type="button" className="cpi-action" onClick={() => setNotice('Care-plan editing is not available in the therapist API.')}>
+            <button type="button" className="cpi-action" onClick={() => setNotice('تحرير خطة الرعاية غير متاح في API المعالج.')}>
               Why is this empty?
             </button>
           </section>
@@ -76,7 +77,7 @@ function DemoCarePlanInsertion({ navigate }: { navigate: (path: string) => void 
   const [notice, setNotice] = useState('')
 
   function unavailable(action: string) {
-    setNotice(`Demo only: ${action} is not connected. No change was made to the care plan.`)
+    setNotice(`عرض تجريبي فقط: ${action} غير متصل. لم يُجرَ أي تغيير على خطة الرعاية.`)
   }
 
   function insertSlot(afterStage: number) {
@@ -87,8 +88,8 @@ function DemoCarePlanInsertion({ navigate }: { navigate: (path: string) => void 
           type="button"
           aria-label={
             next
-              ? `Insert between stages: after ${stages[afterStage - 1].title}, before ${next.title}`
-              : `Insert between stages: after ${stages[afterStage - 1].title}`
+              ? `إدراج بين المراحل: بعد ${stages[afterStage - 1].title}، قبل ${next.title}`
+              : `إدراج بين المراحل: بعد ${stages[afterStage - 1].title}`
           }
           onClick={() => {
             setGap(afterStage)
@@ -96,7 +97,7 @@ function DemoCarePlanInsertion({ navigate }: { navigate: (path: string) => void 
           }}
         >
           <DesignIcon name="r5-insertion-add.svg" />
-          <span>Insert between stages</span>
+          <span>إدراج بين المراحل</span>
         </button>
       </li>
     )
@@ -108,7 +109,7 @@ function DemoCarePlanInsertion({ navigate }: { navigate: (path: string) => void 
       <li
         key={stage.identity}
         className={`cpi-stage cpi-stage-${stage.status}`}
-        aria-label={`Stage ${number}: ${stage.title} — ${stage.line}`}
+        aria-label={`المرحلة ${number}: ${stage.title} — ${stage.line}`}
       >
         <span className={`cpi-chip cpi-chip-${stage.status}`} aria-hidden="true">
           {stage.status === 'completed' ? <img src={asset('r5-insertion-check.svg')} alt="" /> : number}
@@ -123,10 +124,10 @@ function DemoCarePlanInsertion({ navigate }: { navigate: (path: string) => void 
   }
 
   const nextStage = stages[gap]
-  const gapHeading = gap === currentStage ? `Target gap · after current stage ${currentStage}` : `Target gap · after stage ${gap}`
+  const gapHeading = gap === currentStage ? `الفجوة المستهدفة · بعد المرحلة الحالية ${currentStage}` : `الفجوة المستهدفة · بعد المرحلة ${gap}`
   const gapSub = nextStage
-    ? `Before “${nextStage.title}” · proposed new stage ${gap + 1} of ${stages.length + 1}`
-    : `End of plan · proposed new stage ${gap + 1} of ${stages.length + 1}`
+    ? `قبل «${nextStage.title}» · مرحلة جديدة مقترحة ${gap + 1} من ${stages.length + 1}`
+    : `نهاية الخطة · مرحلة جديدة مقترحة ${gap + 1} من ${stages.length + 1}`
 
   return (
     <div className="care-plan-insertion">
@@ -145,7 +146,7 @@ function DemoCarePlanInsertion({ navigate }: { navigate: (path: string) => void 
               <button
                 type="button"
                 className="cpi-contact"
-                title="Open demo chats, not a real patient conversation"
+                title="افتح محادثات العرض، وليست محادثة مريض حقيقية"
                 onClick={() => navigate('/chats')}
               >
                 <DesignIcon name="preview-client-profile-contact.svg" />
@@ -163,7 +164,7 @@ function DemoCarePlanInsertion({ navigate }: { navigate: (path: string) => void 
               </div>
             </div>
             <section className="cpi-meta-block">
-              <h3>Contact Information</h3>
+              <h3>معلومات التواصل</h3>
               <dl>
                 <div>
                   <dt>Mobile</dt>
@@ -180,15 +181,15 @@ function DemoCarePlanInsertion({ navigate }: { navigate: (path: string) => void 
               <dl>
                 <div>
                   <dt>Package</dt>
-                  <dd>8-Week Package</dd>
+                  <dd>باقة 8 أسابيع</dd>
                 </div>
                 <div>
                   <dt>Start</dt>
-                  <dd>2024-01-15</dd>
+                  <dd>{formatCalendarDate('2024-01-15')}</dd>
                 </div>
                 <div>
-                  <dt>Next Session</dt>
-                  <dd>Today 10:00 AM</dd>
+                  <dt>الجلسة التالية</dt>
+                  <dd>اليوم 10:00 ص</dd>
                 </div>
               </dl>
             </section>
@@ -251,7 +252,7 @@ function FragmentRow({
             <button
               type="button"
               className="cpi-action"
-              onClick={() => setNotice('Demo only: pick any “Insert between stages” slot to move the proposed stage. Nothing is saved.')}
+              onClick={() => setNotice('عرض تجريبي فقط: اختر أي خانة «إدراج بين المراحل» لنقل المرحلة المقترحة. لا يُحفظ شيء.')}
             >
               Reposition
             </button>

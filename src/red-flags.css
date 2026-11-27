@@ -1,0 +1,257 @@
+.red-flags-page {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+  direction: rtl;
+}
+
+.red-flags-demo-notice,
+.red-flags-success,
+.red-flags-error,
+.red-flags-empty {
+  margin: 0;
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+
+.red-flags-demo-notice {
+  background: #fff5dd;
+  color: #745500;
+}
+
+.red-flags-success {
+  background: #e9f7f2;
+  color: #16604d;
+}
+
+.red-flags-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #fff0ef;
+  color: #9c2924;
+}
+
+.red-flags-error button {
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: #fff;
+  color: inherit;
+  cursor: pointer;
+}
+
+.red-flags-empty {
+  border: 1px solid #e6e8ed;
+  background: #fff;
+  color: #53606c;
+  text-align: center;
+}
+
+.red-flag-card {
+  display: grid;
+  gap: 16px;
+  border: 1px solid #e3e7ec;
+  border-radius: 14px;
+  padding: 20px;
+  background: #fff;
+  box-shadow: 0 5px 20px rgb(31 48 64 / 5%);
+}
+
+.red-flag-card-header,
+.red-flag-badges,
+.red-flag-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.red-flag-card-header {
+  justify-content: space-between;
+}
+
+.red-flag-card h2,
+.red-flag-reason p,
+.red-flag-meta,
+.red-flag-history,
+.red-flag-close-label,
+.red-flag-note-help {
+  margin: 0;
+}
+
+.red-flag-card h2 {
+  color: #263748;
+  font-size: 20px;
+}
+
+.red-flag-badges span {
+  border-radius: 999px;
+  padding: 6px 11px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.red-flag-priority {
+  background: #eef2f6;
+  color: #3e5266;
+}
+
+.red-flag-priority.priority-high,
+.red-flag-hold {
+  background: #fde7e6;
+  color: #a62622;
+}
+
+.red-flag-priority.priority-medium {
+  background: #fff1d4;
+  color: #825500;
+}
+
+.red-flag-priority.priority-low,
+.red-flag-request {
+  background: #fff1d4;
+  color: #825500;
+}
+
+.red-flag-reason {
+  display: grid;
+  gap: 6px;
+  color: #344657;
+}
+
+.red-flag-reason strong {
+  color: #253749;
+}
+
+.red-flag-reason p {
+  line-height: 1.6;
+}
+
+.red-flag-meta {
+  color: #6a7886;
+  font-size: 13px;
+}
+
+.red-flag-history {
+  border-right: 3px solid #d6dfe7;
+  padding: 8px 12px;
+  color: #596b7a;
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+
+.red-flag-actions {
+  align-items: flex-start;
+  justify-content: space-between;
+  border-top: 1px solid #edf0f3;
+  padding-top: 16px;
+}
+
+.red-flag-whatsapp,
+.red-flag-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  border: 0;
+  border-radius: 9px;
+  padding: 9px 14px;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.red-flag-whatsapp {
+  background: #e7f6ed;
+  color: #18754a;
+}
+
+.red-flag-decision {
+  display: grid;
+  flex: 1 1 420px;
+  gap: 12px;
+  max-width: 650px;
+}
+
+.red-flag-decision fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.red-flag-decision legend,
+.red-flag-note-label,
+.red-flag-close-label {
+  color: #344657;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.red-flag-decision fieldset label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #455767;
+  font-weight: 500;
+}
+
+.red-flag-note-label {
+  display: grid;
+  gap: 7px;
+}
+
+.red-flag-note-label textarea {
+  min-height: 88px;
+  resize: vertical;
+  border: 1px solid #d6dde4;
+  border-radius: 9px;
+  padding: 10px;
+  font: inherit;
+}
+
+.red-flag-note-help {
+  color: #75818c;
+  font-size: 12px;
+}
+
+.red-flag-submit {
+  justify-self: start;
+  background: #287b67;
+  color: #fff;
+}
+
+.red-flag-submit:disabled,
+.red-flag-whatsapp:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+@media (max-width: 720px) {
+  .red-flags-page {
+    padding: 14px;
+  }
+
+  .red-flag-card {
+    padding: 16px;
+  }
+
+  .red-flag-card-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .red-flag-actions {
+    flex-direction: column;
+  }
+
+  .red-flag-decision {
+    width: 100%;
+    flex-basis: auto;
+  }
+}

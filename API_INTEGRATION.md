@@ -10,7 +10,7 @@ Reviewed the supplied endpoint workbook against backend branch [`devin/179170416
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Authentication    | WhatsApp/password, invitation activation, proof-bound six-digit staff challenge where returned, password reset. Therapist/public signup and Google OAuth are unavailable. Therapist login currently does not require backend MFA.                                                        |
 | Dashboard/clients | Server stats, real UUID client/session links, paginated clients. No fabricated income, clinical metrics or fake status fallback.                                                                                                                                                         |
-| Profile/settings  | Identity and therapist profile, supported professional settings, timezone, availability, whole-day blocked periods, notification preferences, password change and logout. Identity fields that have no write endpoint are read-only.                                                     |
+| Profile/settings  | Reviewed therapist profile and revision status, timezone, availability, whole-day blocked periods, notification preferences, password change and logout. Professional changes go through profile submission; only availability is written directly to therapist settings. |
 | Sessions/clinical | Server status/timezone, confirm/report/complete/link/cancel/reschedule-decision/recommendation actions where authorized, private notes, supported clinical/module/content reads and writes. Reports are clearly distinguished from private notes because reports can be patient-visible. |
 | Homework/content  | Supported text/video/PDF/link creation and assignment. No invented audio/interactive/upload homework or therapist-side patient completion controls. External URLs must be HTTPS without embedded credentials.                                                                            |
 | Chat              | UUID counterpart routes, chronological messages, authenticated binary attachments, idempotent sends, read receipts, closed-thread read-only behavior and cancellable HTTP polling. Reverb is not assumed configured.                                                                     |
@@ -24,7 +24,7 @@ The source/demo Figma views are preserved for development reference, not present
 
 ## Frontend safeguards
 
-- Memory-only access/refresh credentials; bearer header only to the configured API prefix. No credentials in URLs, persistent browser storage, analytics or logs.
+- Memory-only access token; only the rotating refresh token is stored in tab-scoped sessionStorage. Bearer headers only go to the configured API prefix. No credentials in URLs, localStorage, analytics or logs.
 - HTTPS required outside loopback development, no fetch redirects, cookies omitted, no-store request caching and no-referrer policy. Encoded traversal and API-origin escapes rejected.
 - Valid therapist role/active/phone-verified session required before private navigation. Backend authorization remains authoritative: hiding a button is not an authorization fix.
 - Rotating refresh deduplication, serialized refresh/logout, session-generation checks, request cancellation, and generation-keyed page boundaries clear stale sensitive results/drafts even on same-account reauthentication.
@@ -33,7 +33,7 @@ The source/demo Figma views are preserved for development reference, not present
 - On a hard reload, unresolved browser intent/key is lost intentionally. Check server history and contact finance if uncertain before creating another request. Backend pending-request checks remain the authority; do not interpret local cancellation as server rollback.
 - Clinical text is ordinary escaped React text, not injected HTML. Downloads use authenticated blob requests and revoked object URLs; bearer tokens are never forwarded to arbitrary attachment URLs.
 
-Memory-only storage reduces persistent credential exposure but does **not** protect against active same-origin XSS. Deploy with an appropriate CSP, TLS, narrow CORS, controlled asset hosting and dependency monitoring. A reviewed BFF/HttpOnly-cookie design would require a separate backend contract.
+Tab-scoped storage limits refresh-token persistence but does **not** protect against active same-origin XSS. Deploy with an appropriate CSP, TLS, narrow CORS, controlled asset hosting and dependency monitoring. A reviewed BFF/HttpOnly-cookie design would require a separate backend contract.
 
 ## Unresolved backend/release findings
 

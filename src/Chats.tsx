@@ -9,36 +9,36 @@ import './visual-chats.css'
 const clients = [
   {
     id: 'sara',
-    name: 'Sara Khaled',
+    name: 'سارة خالد',
     image: 'dashboard-imgContainer3.png',
-    preview: "When's the next unit?",
+    preview: "متى الوحدة التالية؟",
     time: '05/18',
     crop: '',
     unread: 0,
   },
   {
     id: 'ahmed',
-    name: 'Ahmed Mohamed',
+    name: 'أحمد محمد',
     image: 'dashboard-imgContainer1.png',
-    preview: 'Thank you, doctor',
+    preview: 'شكراً دكتور',
     time: '10:30 AM',
     crop: 'chat-portrait',
     unread: 2,
   },
   {
     id: 'jack',
-    name: 'Jack watson',
+    name: 'جاك واطسون',
     image: 'part2-03-imgContainer3.png',
-    preview: 'Can I change the appointment?',
+    preview: 'هل أستطيع تغيير الموعد؟',
     time: 'Yesterday',
     crop: '',
     unread: 1,
   },
   {
     id: 'mohammed',
-    name: 'Mohammed Hassan',
+    name: 'محمد حسن',
     image: 'dashboard-imgContainer4.png',
-    preview: "I'm feeling a lot better",
+    preview: "أشعر بتحسن كبير",
     time: 'Yesterday',
     crop: 'chat-mohammed',
     unread: 0,
@@ -53,23 +53,23 @@ type ChatMessage = {
 }
 const saraMessages: ChatMessage[] = [
   {
-    text: 'I feel better after applying the breathing exercises you recommended.',
+    text: 'أشعر بتحسن بعد تطبيق تمارين التنفس التي أوصيتَ بها.',
     time: '9:20 AM',
     expandOnPhone: true,
   },
   {
-    text: "That's great! Did you run into any difficulties applying it?",
-    time: '9:30 AM · Read',
+    text: "رائع! هل واجهت صعوبات في تطبيقها؟",
+    time: '9:30 ص · مقروءة',
     outgoing: true,
     expandOnPhone: true,
   },
   {
-    text: 'At first it was hard to concentrate, but it got easier with practice.',
+    text: 'كان التركيز صعباً في البداية، لكنه أصبح أسهل مع التمرن.',
     time: '10:00 AM',
     expandOnPhone: true,
   },
-  { text: 'Can I start the new unit?', time: '10:30 AM' },
-  { text: 'Yeah for sure', time: '9:30 AM · Read', outgoing: true, today: true },
+  { text: 'هل أستطيع بدء الوحدة الجديدة؟', time: '10:30 AM' },
+  { text: 'نعم بالتأكيد', time: '9:30 ص · مقروءة', outgoing: true, today: true },
 ]
 
 export function Chats({ navigate, api }: { navigate: (path: string) => void; api?: ApiClient }) {
@@ -116,10 +116,10 @@ function DemoChats({ navigate }: { navigate: (path: string) => void }) {
   function send(event: FormEvent) {
     event.preventDefault()
     if (!draft.trim() || !selected || offline) return
-    const message = { text: draft.trim(), time: 'Just now · Demo', outgoing: true }
+    const message = { text: draft.trim(), time: 'الآن · عرض تجريبي', outgoing: true }
     setSent((current) => ({ ...current, [selected]: [...(current[selected] ?? []), message] }))
     setDraft('')
-    setFeedback('Demo message added locally. No message was sent to a server.')
+    setFeedback('أُضيفت رسالة تجريبية محلياً. لم تُرسل أي رسالة إلى الخادم.')
     requestAnimationFrame(() => bottomRef.current?.scrollIntoView({ block: 'nearest' }))
   }
   const messages = client
@@ -143,8 +143,8 @@ function DemoChats({ navigate }: { navigate: (path: string) => void }) {
           <label className="chat-search">
             <DesignIcon name="part2-03-imgSearch.svg" />
             <input
-              aria-label="Search conversations"
-              placeholder="Search..."
+              aria-label="ابحث في المحادثات"
+              placeholder="ابحث..."
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
@@ -152,7 +152,7 @@ function DemoChats({ navigate }: { navigate: (path: string) => void }) {
           {(!offline || client) && (
             <div className="response-promise list-promise">
               <DesignIcon name="part2-03-imgIcon1.svg" />
-              <span>Committed to responding within 8 hours</span>
+              <span>ملتزمون بالرد خلال 8 ساعات</span>
             </div>
           )}
           <div className="conversation-list">
@@ -190,7 +190,7 @@ function DemoChats({ navigate }: { navigate: (path: string) => void }) {
               ))}
             {!clients.some((item) =>
               item.name.toLowerCase().includes(query.trim().toLowerCase()),
-            ) && <p className="empty-result">No conversations found</p>}
+            ) && <p className="empty-result">لم يُعثر على محادثات</p>}
           </div>
         </section>
         {client ? (
@@ -198,7 +198,7 @@ function DemoChats({ navigate }: { navigate: (path: string) => void }) {
             <header className="chat-thread-header">
               <button
                 className="thread-back icon-button"
-                aria-label="Back to conversations"
+                aria-label="عودة إلى المحادثات"
                 onClick={() => {
                   setSelected(null)
                   setFeedback('')
@@ -212,7 +212,7 @@ function DemoChats({ navigate }: { navigate: (path: string) => void }) {
               <div>
                 <strong>{client.name}</strong>
                 <p>
-                  <span className="desktop-concern">Generalized </span>anxiety disorder · Last seen
+                  <span className="desktop-concern">اضطراب القلق </span>العام · آخر ظهور
                   2 hours ago
                 </p>
               </div>
@@ -220,28 +220,28 @@ function DemoChats({ navigate }: { navigate: (path: string) => void }) {
             <div className="message-history" ref={historyRef}>
               <div className="response-promise thread-promise">
                 <DesignIcon name="part2-03-imgIcon1.svg" />
-                <span>Committed to responding within 8 business hours (Sat–Thu, 9 AM–5 PM)</span>
+                <span>ملتزمون بالرد خلال 8 ساعات عمل (السبت–الخميس، 9ص–5م)</span>
               </div>
-              <p className="message-date">Dec 9, 2025</p>
+              <p className="message-date">9 كانون الأول 2025</p>
               {messages.map((message, index) => (
                 <div
                   key={`${index}-${message.text}`}
                   className={`message-group ${message.outgoing ? 'outgoing' : ''} ${message.expandOnPhone ? 'reference-phone-wide' : ''}`}
                 >
-                  {message.today && <p className="message-date">Today</p>}
+                  {message.today && <p className="message-date">اليوم</p>}
                   <p className="message-bubble">{message.text}</p>
                   <time>{message.time}</time>
                 </div>
               ))}
               <div className="reply-reminder" ref={bottomRef}>
                 <DesignIcon name="part2-03-imgIcon2.svg" />
-                <span>New message from client · 2 hours ago — reply required within 6 hours</span>
+                <span>رسالة جديدة من العميل · قبل ساعتين — يجب الرد خلال 6 ساعات</span>
               </div>
             </div>
             <form className="message-composer" onSubmit={send}>
               <button
                 type="button"
-                aria-label="Attach a file"
+                aria-label="إرفاق ملف"
                 disabled={offline}
                 onClick={() => fileRef.current?.click()}
               >
@@ -251,11 +251,11 @@ function DemoChats({ navigate }: { navigate: (path: string) => void }) {
                 hidden
                 ref={fileRef}
                 type="file"
-                aria-label="Message attachment"
+                aria-label="مرفق رسالة"
                 onChange={(event) =>
                   setFeedback(
                     event.target.files?.[0]
-                      ? `Demo attachment selected: ${event.target.files[0].name}. No file was uploaded.`
+                      ? `مرفق تجريبي محدد: ${event.target.files[0].name}. لم يُرفع أي ملف.`
                       : '',
                   )
                 }
@@ -263,7 +263,7 @@ function DemoChats({ navigate }: { navigate: (path: string) => void }) {
               <textarea
                 aria-label="Message"
                 rows={1}
-                placeholder={compact ? 'Type your message' : 'Type your message to the client...'}
+                placeholder={compact ? 'اكتب رسالتك' : 'اكتب رسالتك للعميل...'}
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
                 onKeyDown={(event) => {
@@ -274,7 +274,7 @@ function DemoChats({ navigate }: { navigate: (path: string) => void }) {
                 }}
                 disabled={offline}
               />
-              <button type="submit" aria-label="Send message" disabled={!draft.trim() || offline}>
+              <button type="submit" aria-label="إرسال الرسالة" disabled={!draft.trim() || offline}>
                 <DesignIcon name="part2-03-imgIcon4.svg" />
               </button>
             </form>
@@ -285,7 +285,7 @@ function DemoChats({ navigate }: { navigate: (path: string) => void }) {
             )}
           </section>
         ) : (
-          <section className="empty-conversation" aria-label="Select a conversation">
+          <section className="empty-conversation" aria-label="اختر محادثة">
             <div>
               <span>
                 <DesignIcon name="part2-20-imgMessageCircleLinesAlt1.svg" />

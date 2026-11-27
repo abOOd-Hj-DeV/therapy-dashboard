@@ -66,7 +66,7 @@ describe('r5 care plan insertion point (refs r5-102..r5-112)', () => {
     expect(within(card).getByText('+966 50 123 4567')).toBeInTheDocument()
     expect(within(card).getByText('ahmed@example.com')).toBeInTheDocument()
     expect(within(card).getByText('8-Week Package')).toBeInTheDocument()
-    expect(within(card).getByText('2024-01-15')).toBeInTheDocument()
+    expect(within(card).getByText('15 Jan 2024')).toBeInTheDocument()
     expect(within(card).getByText('Today 10:00 AM')).toBeInTheDocument()
   })
 

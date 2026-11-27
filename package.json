@@ -23,6 +23,7 @@
     "@fontsource/inter": "5.2.6",
     "@fontsource/inter-tight": "5.2.6",
     "@fontsource/tajawal": "5.2.6",
+    "libphonenumber-js": "^1.13.17",
     "react": "19.1.1",
     "react-dom": "19.1.1"
   },

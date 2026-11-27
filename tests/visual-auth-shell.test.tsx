@@ -50,9 +50,14 @@ describe('live auth responsive styling contracts (not a rendered pixel compariso
       expect(getComputedStyle(subtitle).whiteSpace).toBe('normal')
       expect(getComputedStyle(subtitle).overflowWrap).toBe('anywhere')
       expect(getComputedStyle(container.querySelector('.auth-switch')!).flexWrap).toBe('wrap')
-      expect(getComputedStyle(screen.getByText(/local numbers cannot be inferred/)).fontSize).toBe('12px')
+      const phoneHelp = page === 'activate' ? /اختر بلدك للرقم المحلي/ : /For a local number, select your country/
+      expect(getComputedStyle(screen.getByText(phoneHelp)).fontSize).toBe('12px')
       expect(screen.queryByRole('button', { name: 'Continue with Google' })).not.toBeInTheDocument()
-      expect(screen.getByText(/credentials are kept in memory only/)).toBeInTheDocument()
+      expect(screen.getByText(page === 'activate' ? /رمز الوصول في الذاكرة/ : /The access token stays in memory/)).toBeInTheDocument()
+      if (page === 'activate') {
+        expect(root).toHaveAttribute('dir', 'rtl')
+        expect(screen.getByLabelText('رقم واتساب')).toHaveAttribute('placeholder', '09XXXXXXXX')
+      }
     },
   )
 
@@ -64,7 +69,7 @@ describe('live auth responsive styling contracts (not a rendered pixel compariso
       challenge_expires_at: new Date(Date.now() + 300000).toISOString(),
       request_reference: 'a1b2c3d4',
     }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
-    fireEvent.change(screen.getByLabelText('WhatsApp number'), { target: { value: '+491234567890' } })
+    fireEvent.change(screen.getByLabelText('WhatsApp number'), { target: { value: '+4915123456789' } })
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'untrimmed password ' } })
     fireEvent.click(screen.getByRole('button', { name: 'Login' }))
     const code = await screen.findByLabelText('Verification code')

@@ -7,6 +7,7 @@ import { RemainingIcon } from './RemainingUI'
 import { ApiClient } from './api'
 import { ApiWalletAndWithdrawalsLive } from './api-wallet-and-withdrawals-live'
 import { closurePortraitAssets } from './closure-portrait-assets'
+import { formatCalendarDate } from './display-date'
 import './visual-wallet-closure.css'
 
 const withdrawArrow = 'r4-wallet-arrow-right.svg'
@@ -21,31 +22,31 @@ const monthly = [
 ]
 const earnings = [
   {
-    name: 'Sarah Ali',
+    name: 'سارة علي',
     date: '2024-05-20',
     amount: 300,
     status: 'Completed',
   },
   {
-    name: 'Ahmed Mohammed',
+    name: 'أحمد محمد',
     date: '2024-05-20',
     amount: 200,
     status: 'Completed',
   },
   {
-    name: 'Sarah Khalid',
+    name: 'سارة خالد',
     date: '2024-05-17',
     amount: 100,
     status: 'Processing',
   },
   {
-    name: 'Omar Youssef',
+    name: 'عمر يوسف',
     date: '2024-05-16',
     amount: 200,
     status: 'Completed',
   },
   {
-    name: 'Omar Youssef',
+    name: 'عمر يوسف',
     date: '2024-05-16',
     amount: 400,
     status: 'Completed',
@@ -84,17 +85,17 @@ const withdrawals = Array.from({ length: 6 }, (_, index) => ({
 }))
 const metrics = [
   { icon: 'withdrawn', title: 'Withdrawn', mobile: 'Withdrawn', value: '$30.0k' },
-  { icon: 'available', title: 'Available Now', mobile: 'Available', value: '$12.5k' },
+  { icon: 'available', title: 'المتاح الآن', mobile: 'Available', value: '$12.5k' },
   { icon: 'pending', title: 'Pending', mobile: 'Pending', value: '$3.2k' },
-  { icon: 'rate', title: 'Session Rate', mobile: 'Rate', value: '1000 SP' },
+  { icon: 'rate', title: 'سعر الجلسة', mobile: 'Rate', value: '1000 SP' },
   {
     icon: 'sessions',
     title: 'Sessions',
     mobile: 'Sessions',
-    value: '42 Sessions',
-    phoneValue: '42 Sess.',
+    value: '42 جلسة',
+    phoneValue: '42 جلسة',
   },
-  { icon: 'transactions', title: 'Transactions', mobile: 'Transactions', value: '8 Trans' },
+  { icon: 'transactions', title: 'Transactions', mobile: 'Transactions', value: '8 عمليات' },
 ] as const
 
 export function Wallet({ navigate, api }: { navigate: (path: string) => void; api?: ApiClient }) {
@@ -127,36 +128,36 @@ function DemoWallet({ navigate }: { navigate: (path: string) => void }) {
             <div>
               <header>
                 <span className="wallet-desktop-hero-heading">Overview</span>
-                <h2 className="wallet-desktop-hero-heading">Total in all time</h2>
+                <h2 className="wallet-desktop-hero-heading">الإجمالي الكلي</h2>
                 <h2 className="wallet-tablet-hero-heading">All time Overview</h2>
               </header>
               <div className="wallet-total-numbers">
                 <div>
-                  <span>Total in all time</span>
+                  <span>الإجمالي الكلي</span>
                   <strong>$41.5k</strong>
                 </div>
                 <div>
-                  <span>Monthly earnings</span>
+                  <span>الأرباح الشهرية</span>
                   <strong>8,400 SP</strong>
                 </div>
                 <div>
-                  <span>Net available</span>
+                  <span>صافي المتاح</span>
                   <strong>$9.3k</strong>
                 </div>
               </div>
             </div>
           </article>
           <article className="wallet-phone-total">
-            <button onClick={() => setTab('withdrawals')} aria-label="View withdrawals">
-              <span>Net Available Balance</span>
+            <button onClick={() => setTab('withdrawals')} aria-label="عرض السحوبات">
+              <span>صافي الرصيد المتاح</span>
               <strong className="remaining-badge">$9.3k</strong>
             </button>
             <p>
-              <span>Total in all time</span>
+              <span>الإجمالي الكلي</span>
               <span>$41.5k</span>
             </p>
-            <button onClick={() => setTab('earnings')} aria-label="View earnings">
-              <span>Monthly earnings</span>
+            <button onClick={() => setTab('earnings')} aria-label="عرض الأرباح">
+              <span>الأرباح الشهرية</span>
               <span>8,400 SP</span>
             </button>
           </article>
@@ -204,16 +205,16 @@ function DemoWallet({ navigate }: { navigate: (path: string) => void }) {
           {tab === 'overview' ? (
             <div className="wallet-chart">
               <header>
-                <button onClick={() => setTab('earnings')}>Monthly Earnings</button>
+                <button onClick={() => setTab('earnings')}>الأرباح الشهرية</button>
                 <span className="wallet-growth">
-                  ↑ <span className="desktop-growth">35% since January</span>
+                  ↑ <span className="desktop-growth">35% منذ كانون الثاني</span>
                   <span className="phone-growth">35%</span>
                 </span>
               </header>
               <div
                 className="wallet-bars"
                 role="img"
-                aria-label="Monthly earnings: January 6,200; February 7,800; March 8,500; April 9,200; May 8,400"
+                aria-label="الأرباح الشهرية: كانون الثاني 6,200؛ شباط 7,800؛ آذار 8,500؛ نيسان 9,200؛ أيار 8,400"
               >
                 <div className="desktop-wallet-bars">
                   {monthly.map((item) => (
@@ -250,7 +251,7 @@ function DemoWallet({ navigate }: { navigate: (path: string) => void }) {
           ) : (
             <div className="wallet-transactions">
               <div className="wallet-mobile-list-heading">
-                <button onClick={() => setTab('overview')}>← Overview</button>
+                <button onClick={() => setTab('overview')}>← نظرة عامة</button>
                 <h2>{tab === 'earnings' ? 'Earnings' : 'Withdrawals'}</h2>
                 {tab === 'withdrawals' && (
                   <button
@@ -273,7 +274,7 @@ function DemoWallet({ navigate }: { navigate: (path: string) => void }) {
                       />
                       <div className="wallet-transaction-copy">
                         <strong>{item.name}</strong>
-                        <small>Private Session · {item.date}</small>
+                        <small>Private Session · {formatCalendarDate(item.date)}</small>
                       </div>
                       <div className="wallet-transaction-status">
                         <strong className="wallet-income">+{item.amount} SP</strong>
@@ -311,10 +312,10 @@ function DemoWallet({ navigate }: { navigate: (path: string) => void }) {
                         </strong>
                         <small>
                           <span className="wallet-desktop-detail">
-                            SA** **** **** 1234 · 2024-05-01
+                            SA** **** **** 1234 · {formatCalendarDate('2024-05-01')}
                           </span>
                           <span className="wallet-responsive-detail">
-                            ATM · {item.responsive?.date}
+                            ATM · {formatCalendarDate(item.responsive?.date)}
                           </span>
                         </small>
                       </div>
@@ -350,22 +351,22 @@ function DemoWallet({ navigate }: { navigate: (path: string) => void }) {
             </p>
             <p className="phone-wallet-advisory">
               {tab === 'overview'
-                ? 'Withdrawals are processed in 3-5 business days. Min 500 Riyals.'
-                : 'Withdrawals are processed within 3-5 business days, with a minimum withdrawal amount of 500 Riyals — same terms apply as stated above the withdraw button.'}
+                ? 'تُعالَج السحوبات خلال 3–5 أيام عمل. الحد الأدنى 500 ريال.'
+                : 'تُعالَج السحوبات خلال 3–5 أيام عمل بحد أدنى 500 ريال — تطبّق الشروط نفسها المذكورة فوق زر السحب.'}
             </p>
           </div>
         </section>
         {notice && (
           <p className="remaining-notice" role="status">
             {notice}
-            <button aria-label="Dismiss notice" onClick={() => setNotice('')}>
+            <button aria-label="إغلاق التنبيه" onClick={() => setNotice('')}>
               ×
             </button>
           </p>
         )}
         {requestOpen && (
           <Modal
-            title="Withdrawal Request"
+            title="طلب سحب"
             className="remaining-modal withdrawal-modal wallet-demo-modal"
             closeIcon={<RemainingIcon name="close" />}
             onClose={() => setRequestOpen(false)}
@@ -375,7 +376,7 @@ function DemoWallet({ navigate }: { navigate: (path: string) => void }) {
               onPreview={(amount, method) => {
                 setRequestOpen(false)
                 setNotice(
-                  `Demo preview only: ${amount.toLocaleString('en-US')} SP via ${method === 'shamcash' ? 'Shamcash' : 'Al-Haram'}. No withdrawal request was sent and no money was moved.`,
+                  `معاينة تجريبية فقط: ${amount.toLocaleString('en-US')} ل.س عبر ${method === 'shamcash' ? 'شام كاش' : 'الحرم'}. لم يُرسل طلب سحب ولم يُنقل مال.`,
                 )
               }}
             />
@@ -387,8 +388,8 @@ function DemoWallet({ navigate }: { navigate: (path: string) => void }) {
 }
 
 const paymentMethods = [
-  { value: 'haram', label: 'Al-Haram transfer', selectedLabel: 'Al-Haram Transfer' },
-  { value: 'shamcash', label: 'Shamcash Transfer', selectedLabel: 'Shamcash Transfer' },
+  { value: 'haram', label: 'تحويل الحرم', selectedLabel: 'تحويل الحرم' },
+  { value: 'shamcash', label: 'تحويل شام كاش', selectedLabel: 'تحويل شام كاش' },
 ] as const
 
 function PaymentMethodMenu({
@@ -427,14 +428,14 @@ function PaymentMethodMenu({
       {/* Retain native select/form compatibility without a second focus or accessibility target. */}
       <select
         className="wallet-native-method"
-        aria-label="Select payment method"
+        aria-label="اختر طريقة الدفع"
         aria-hidden="true"
         tabIndex={-1}
         name="method"
         value={method}
         onChange={(event) => choose(event.target.value as Method)}
       >
-        <option value="">Select payment method</option>
+        <option value="">اختر طريقة الدفع</option>
         {paymentMethods.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
@@ -445,7 +446,7 @@ function PaymentMethodMenu({
         type="button"
         ref={trigger}
         role="combobox"
-        aria-label="Payment method"
+        aria-label="طريقة الدفع"
         aria-describedby={`${id}-value`}
         aria-required="true"
         aria-expanded={open}
@@ -507,7 +508,7 @@ function PaymentMethodMenu({
         )}
         <span id={`${id}-value`}>
           {paymentMethods.find((option) => option.value === method)?.selectedLabel ??
-            'Select payment method'}
+            'اختر طريقة الدفع'}
         </span>
         <svg
           className="wallet-method-chevron"
@@ -520,7 +521,7 @@ function PaymentMethodMenu({
         </svg>
       </button>
       {open && (
-        <div id={`${id}-options`} role="listbox" aria-label="Payment methods">
+        <div id={`${id}-options`} role="listbox" aria-label="طرق الدفع">
           {paymentMethods.map((option, index) => (
             <div
               id={`${id}-${option.value}`}
@@ -558,12 +559,12 @@ function WithdrawalForm({
     const data = new FormData(event.currentTarget),
       amount = Number(data.get('amount'))
     if (!method || !Number.isFinite(amount) || amount < 500 || amount > 12500) {
-      setError('Select a payment method and enter an amount between 500 and 12,500 SP.')
+      setError('اختر طريقة دفع وأدخل مبلغاً بين 500 و12,500 ل.س.')
       return
     }
     const fields = method === 'shamcash' ? ['code'] : ['name', 'phone', 'location']
     if (fields.some((name) => !String(data.get(name) ?? '').trim())) {
-      setError('Complete the payment details.')
+      setError('أكمل بيانات الدفع.')
       return
     }
     onPreview(amount, method)
@@ -580,22 +581,22 @@ function WithdrawalForm({
       />
       {method === 'haram' && (
         <div className="withdrawal-inputs" key="haram">
-          <input name="name" aria-label="Full name" placeholder="Enter Your Full Name" required />
+          <input name="name" aria-label="الاسم الكامل" placeholder="أدخل اسمك الكامل" required />
           <input
             type="tel"
             name="phone"
-            aria-label="Phone number"
-            placeholder="Enter Phone Number"
+            aria-label="رقم الجوال"
+            placeholder="أدخل رقم الجوال"
             required
           />
-          <input name="location" aria-label="Location" placeholder="Enter Your Location" required />
+          <input name="location" aria-label="Location" placeholder="أدخل موقعك" required />
         </div>
       )}
       <input
         name="amount"
         type="number"
-        aria-label="Withdrawal amount"
-        placeholder="Enter the ammount"
+        aria-label="مبلغ السحب"
+        placeholder="أدخل المبلغ"
         min="500"
         max="12500"
         step="0.01"
@@ -605,8 +606,8 @@ function WithdrawalForm({
         <input
           key="code"
           name="code"
-          aria-label="Shamcash Code"
-          placeholder="Enter Shamcash Code"
+          aria-label="رمز شام كاش"
+          placeholder="أدخل رمز شام كاش"
           required
         />
       )}

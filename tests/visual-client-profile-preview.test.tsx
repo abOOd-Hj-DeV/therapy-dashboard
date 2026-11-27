@@ -33,7 +33,7 @@ describe('development-only client profile Figma reference', () => {
     expect(screen.getByRole('heading', { name: 'Manage Clients / Profiles' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Manage Clients / Profile' })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true')
-    for (const text of ['Ahmed Mohamed', 'Age 28 · Male', '+966 50 123 4567', 'ahmed@example.com', '8-Week Package', '2024-01-15', 'Today 10:00 AM']) {
+    for (const text of ['Ahmed Mohamed', 'Age 28 · Male', '+966 50 123 4567', 'ahmed@example.com', '8-Week Package', '15 Jan 2024', 'Today 10:00 AM']) {
       expect(screen.getByText(text)).toBeInTheDocument()
     }
     expect(panel().getByText('8')).toBeInTheDocument()

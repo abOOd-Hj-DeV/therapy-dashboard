@@ -24,82 +24,82 @@ type PreviewClient = {
 // inactive fixture; this is preview behavior, not an inferred clinical status.
 const previewClients: readonly PreviewClient[] = [
   {
-    name: 'Saad Ali',
-    detail: 'Anxiety · 32 yrs',
-    status: 'Progressing well',
+    name: 'سعد علي',
+    detail: 'قلق · 32 سنة',
+    status: 'يتقدّم جيداً',
     tone: 'teal',
     activity: 40,
     stripWidth: 139,
     sessions: 7,
-    change: '3 more than last month',
-    nextSession: 'Friday, 9:30 AM',
+    change: '3 أكثر من الشهر الماضي',
+    nextSession: 'الجمعة، 9:30 ص',
     portrait: 'saad',
     active: true,
   },
   {
-    name: 'Jamal Thompson',
-    detail: 'Fatigue · 29 yrs',
-    status: 'Requires review',
+    name: 'جمال طومسون',
+    detail: 'إرهاق · 29 سنة',
+    status: 'يحتاج مراجعة',
     tone: 'amber',
     activity: 80,
     stripWidth: 285,
     sessions: 4,
-    change: '1 less than last month',
-    nextSession: 'Monday, 2:00 PM',
+    change: '1 أقل من الشهر الماضي',
+    nextSession: 'الاثنين، 2:00 م',
     portrait: 'jamal',
     active: true,
   },
   {
-    name: 'Yaser Ramirez',
-    detail: 'Mood · 27 yrs',
-    status: 'On schedule',
+    name: 'ياسر راميريز',
+    detail: 'مزاج · 27 سنة',
+    status: 'على الموعد',
     tone: 'teal',
     activity: 60,
     stripWidth: 204,
     sessions: 6,
-    change: 'Same as last month',
-    nextSession: 'Wednesday, 10:00 AM',
+    change: 'مثل الشهر الماضي',
+    nextSession: 'الأربعاء، 10:00 ص',
     portrait: 'yaser',
     active: true,
     systemChangeFont: true,
   },
   {
-    name: 'Ethan Clarke',
-    detail: 'Stress · 30 yrs',
-    status: 'Missed previous session',
+    name: 'إيثان كلارك',
+    detail: 'ضغط · 30 سنة',
+    status: 'فاتته الجلسة السابقة',
     tone: 'red',
     activity: 13,
     stripWidth: 31,
     sessions: 5,
-    change: '2 fewer than last month',
-    nextSession: 'Thursday, 3:30 PM',
+    change: '2 أقل من الشهر الماضي',
+    nextSession: 'الخميس، 3:30 م',
     portrait: 'ethan',
     active: false,
   },
   {
-    name: 'Maya Patel',
-    detail: 'Anxiety · 24 yrs',
-    status: 'On track',
+    name: 'مايا باتيل',
+    detail: 'قلق · 24 سنة',
+    status: 'على المسار',
     tone: 'teal',
     activity: 60,
     stripWidth: 204,
     sessions: 8,
-    change: 'Up by 1 from last month',
-    nextSession: 'Tuesday, 8:00 AM',
+    change: 'أعلى بـ1 عن الشهر الماضي',
+    nextSession: 'الثلاثاء، 8:00 ص',
     portrait: 'maya',
     active: true,
     systemChangeFont: true,
   },
   {
-    name: 'Noah Bennett',
-    detail: 'Mood · 28 yrs',
-    status: 'On track',
+    name: 'نوح بينيت',
+    detail: 'مزاج · 28 سنة',
+    status: 'على المسار',
     tone: 'teal',
     activity: 60,
     stripWidth: 204,
     sessions: 5,
-    change: '2 more than last month',
-    nextSession: 'Saturday, 1:00 PM',
+    change: '2 أكثر من الشهر الماضي',
+    nextSession: 'السبت، 1:00 م',
     portrait: 'jamal',
     active: true,
     systemChangeFont: true,
@@ -165,9 +165,9 @@ function ClientListFixture({ navigate }: { navigate: (path: string) => void }) {
 
   return (
     <div className="demo-client-list" data-density={density} data-compliance-open={filtersOpen} aria-label="Development client-list design reference">
-      <Workspace active="Clients" title="Manage Clients" navigate={navigate} onSearch={setSearch}>
+      <Workspace active="Clients" title="إدارة العملاء" navigate={navigate} onSearch={setSearch}>
         <p className="sr-only" id="demo-client-list-disclosure">
-          Development design fixtures only. Search and status filters operate locally; no server is
+          عناصر تصميم تطويرية فقط. البحث ومرشّحات الحالة تعمل محلياً؛ لا يوجد خادم
           connected. Every card opens the separate Ahmed Mohamed reference profile, not a live
           record.
         </p>
@@ -177,7 +177,7 @@ function ClientListFixture({ navigate }: { navigate: (path: string) => void }) {
             type="button"
             disabled
             aria-describedby="demo-client-list-add-unavailable"
-            title="Client creation is unavailable in this local design preview. No client will be created."
+            title="إنشاء العملاء غير متاح في معاينة التصميم المحلية. لن يُنشأ أي عميل."
           >
             <svg viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden="true">
               <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -192,7 +192,7 @@ function ClientListFixture({ navigate }: { navigate: (path: string) => void }) {
           <div
             className="demo-client-list-filters"
             role="group"
-            aria-label="Local demo client filters"
+            aria-label="مرشّحات عملاء العرض المحلي"
           >
             {filters.map((item) => (
               <button
@@ -217,7 +217,7 @@ function ClientListFixture({ navigate }: { navigate: (path: string) => void }) {
             ref={filterButton}
             className="demo-client-list-more-filters"
             type="button"
-            aria-label="Filter by Compliance"
+            aria-label="تصفية حسب الالتزام"
             aria-expanded={filtersOpen}
             aria-controls="demo-client-compliance-options"
             onClick={() => setFiltersOpen(!filtersOpen)}
@@ -225,17 +225,17 @@ function ClientListFixture({ navigate }: { navigate: (path: string) => void }) {
             <DesignIcon name="client-6934-imgIcon1.svg" />
           </button>
           {filtersOpen && <section id="demo-client-compliance-options" className="demo-client-list-compliance" aria-label="Compliance design options">
-            <h2>Filter by Compliance</h2>
+            <h2>تصفية حسب الالتزام</h2>
             <button type="button" aria-pressed="true" onClick={() => { setFilter('All'); setFiltersOpen(false) }}>All</button>
-            <button type="button" disabled title="Compliance data is not supplied; the activity strip is not a clinical compliance score.">High Compliance (80%+)</button>
-            <button type="button" disabled title="Compliance data is not supplied; the activity strip is not a clinical compliance score.">Low Compliance (Below 80%)</button>
+            <button type="button" disabled title="بيانات الالتزام غير متوفرة؛ شريط النشاط ليس درجة التزام إكلينيكية.">التزام عالٍ (80%+)</button>
+            <button type="button" disabled title="بيانات الالتزام غير متوفرة؛ شريط النشاط ليس درجة التزام إكلينيكية.">التزام منخفض (أقل من 80%)</button>
           </section>}
           </div>
         </div>
         <section
           id="demo-client-list-cards"
           className="demo-client-list-grid"
-          aria-label="Demo clients"
+          aria-label="عملاء العرض"
           aria-describedby="demo-client-list-disclosure"
         >
           {visibleClients.map((client) => (
@@ -243,7 +243,7 @@ function ClientListFixture({ navigate }: { navigate: (path: string) => void }) {
               key={client.name}
               className={`demo-client-list-card demo-client-list-${client.tone} ${client.portrait === 'yaser' ? 'demo-client-list-wide-card' : ''}`}
               type="button"
-              aria-label={`Open ${client.name} demo reference profile`}
+              aria-label={`فتح ملف ${client.name} التجريبي`}
               onClick={() => navigate('/clients/profile?id=demo-client')}
               style={
                 { '--demo-client-list-strip-width': `${client.stripWidth}px` } as CSSProperties
@@ -265,7 +265,7 @@ function ClientListFixture({ navigate }: { navigate: (path: string) => void }) {
               </span>
               <span className="demo-client-list-activity">
                 <span className="demo-client-list-activity-label">
-                  <span>Activity · past month</span>
+                  <span>النشاط · الشهر الماضي</span>
                   <span className="demo-client-list-percent">{client.activity}%</span>
                 </span>
                 {/* Fixed source strip lengths deliberately do not recalculate the printed percentages. */}
@@ -274,7 +274,7 @@ function ClientListFixture({ navigate }: { navigate: (path: string) => void }) {
                 </span>
               </span>
               <span
-                className={`demo-client-list-card-footer ${client.name === 'Saad Ali' ? 'demo-client-list-spread-footer' : ''}`}
+                className={`demo-client-list-card-footer ${client.name === 'سعد علي' ? 'demo-client-list-spread-footer' : ''}`}
               >
                 <span
                   className={`demo-client-list-pill ${client.systemChangeFont ? 'demo-client-list-muted-sessions' : ''}`}

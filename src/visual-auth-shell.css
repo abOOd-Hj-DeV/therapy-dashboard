@@ -230,6 +230,38 @@
   color: #616171;
 }
 
+.auth-page.live-auth .auth-form select {
+  width: 100%;
+  padding: 0.7rem;
+  border: 1px solid #d6dce7;
+  border-radius: 0.55rem;
+  font: inherit;
+}
+
+.live-auth[dir='rtl'] :is(.auth-heading p, .auth-legal, .auth-switch, .primary-button, .live-auth-feedback, .live-auth-help, .live-auth-field-error) {
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+  letter-spacing: normal;
+}
+
+.live-auth[dir='rtl'] :is(.live-auth-feedback, .live-auth-request) {
+  text-align: start;
+}
+
+.reviewed-profile-summary {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.reviewed-profile-summary dt {
+  font-weight: 600;
+}
+
+.reviewed-profile-summary dd {
+  margin-inline-start: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
 .visual-auth-shell .secondary-search input:disabled,
 .visual-auth-shell .secondary-mobile-search:disabled {
   cursor: not-allowed;

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { apiId, type ApiClient } from './api'
 import { useApiUser } from './api-hooks'
+import { formatCalendarDate, formatTimestamp } from './display-date'
 import { DesignIcon, Workspace } from './Workspace'
 import {
   CareAvatar,
@@ -43,11 +44,11 @@ export function ClientProfile({ api, navigate }: Props) {
     // Never use an untrusted route value in an API path.
   }
   if (!user || user.role !== 'therapist' || !user.is_active || !user.phone_verified_at)
-    return <p role="alert">Sign in with an active therapist account to view clients.</p>
+    return <p role="alert">سجّل الدخول بحساب معالج نشط لعرض العملاء.</p>
   if (!patientId)
     return (
-      <Workspace title="Manage Clients / Profiles" active="Clients" api={api} navigate={navigate}>
-        <p role="alert" className="client-profile-invalid">Select a client from your client list.</p>
+      <Workspace title="إدارة العملاء / الملفات" active="Clients" api={api} navigate={navigate}>
+        <p role="alert" className="client-profile-invalid">اختر عميلاً من قائمة عملائك.</p>
       </Workspace>
     )
   return (
@@ -61,6 +62,7 @@ export function ClientProfile({ api, navigate }: Props) {
 }
 
 function ClientProfileContent({ api, navigate, patientId }: Props & { patientId: string }) {
+  const timezone = api.getUser()?.timezone || 'UTC'
   const [tab, setTab] = useState<Tab>('overview')
   const [filter, setFilter] = useState('All')
   const [note, setNote] = useState('')
@@ -92,13 +94,13 @@ function ClientProfileContent({ api, navigate, patientId }: Props & { patientId:
     if (!ready || !notesReady || mutation.disabled || note.trim().length < 3 || note.trim().length > 5000) return
     await mutation.run(`${base}/notes`, { body: note.trim() }, {
       onSuccess: () => setNote(''),
-      success: 'Private therapist note added on the server.',
+      success: 'أُضيفت ملاحظة المعالج الخاصة على الخادم.',
     })
   }
   return (
     <Workspace
-      title="Manage Clients / Profiles"
-      mobileTitle="Manage Clients / Profile"
+      title="إدارة العملاء / الملفات"
+      mobileTitle="إدارة العملاء / الملف"
       active="Clients"
       api={api}
       navigate={navigate}
@@ -120,14 +122,14 @@ function ClientProfileContent({ api, navigate, patientId }: Props & { patientId:
             Contact patient
           </button>
           <div className="client-profile-actions">
-            <button className="soft-button" disabled title="Therapist booking is not supported by the API">
+            <button className="soft-button" disabled title="حجز المعالج غير مدعوم في API">
               Schedule
             </button>
-            <button className="soft-button" disabled title="Calling is not available in the API">
+            <button className="soft-button" disabled title="الاتصال غير متاح في API">
               Call
             </button>
           </div>
-          <h3>Contact Information</h3>
+          <h3>معلومات التواصل</h3>
           <p className="client-profile-unavailable">Contact details are not supplied by the therapist API.</p>
           <h3>Subscription</h3>
           <p className="client-profile-unavailable">Subscription details are not supplied by the therapist API.</p>
@@ -138,7 +140,7 @@ function ClientProfileContent({ api, navigate, patientId }: Props & { patientId:
               ['overview', 'Overview'],
               ['sessions', 'Sessions'],
               ['notes', 'Notes'],
-              ['content', 'Custom Content'],
+              ['content', 'محتوى مخصص'],
             ] as const).map(([value, label]) => (
               <button
                 key={value}
@@ -153,40 +155,40 @@ function ClientProfileContent({ api, navigate, patientId }: Props & { patientId:
           </div>
           <ResourceStatus resource={clients} label="clients" />
           {!clients.loading && !clients.error && !relationship && (
-            <p role="alert">This client is not in your current client list.</p>
+            <p role="alert">هذا العميل ليس في قائمة عملائك الحالية.</p>
           )}
           {relationship?.status === 'past' && (
-            <p role="alert">Current clinical information is unavailable for a former client.</p>
+            <p role="alert">المعلومات الإكلينيكية الحالية غير متاحة لعميل سابق.</p>
           )}
-          <ResourceStatus resource={profile} label="client profile" />
-          {!sameClient && <p role="alert">The returned profile does not match this client.</p>}
+          <ResourceStatus resource={profile} label="ملف العميل" />
+          {!sameClient && <p role="alert">الملف المعاد لا يطابق هذا العميل.</p>}
           {ready && tab === 'overview' && profile.data && (
             <div className="client-profile-overview">
               <div className="client-profile-stats">
-                <div><strong>{profile.data.stats.total_sessions}</strong><span>Total Sessions</span></div>
-                <div><strong>{profile.data.stats.completed}</strong><span>Completed Sessions</span></div>
-                <div><strong>{profile.data.stats.cancelled}</strong><span>Cancelled Sessions</span></div>
+                <div><strong>{profile.data.stats.total_sessions}</strong><span>إجمالي الجلسات</span></div>
+                <div><strong>{profile.data.stats.completed}</strong><span>الجلسات المكتملة</span></div>
+                <div><strong>{profile.data.stats.cancelled}</strong><span>الجلسات الملغاة</span></div>
               </div>
               <div className="client-profile-clinical">
-                <div><span>Assessment score</span><strong>{profile.data.clinical.assessment_score}</strong></div>
+                <div><span>درجة التقييم</span><strong>{profile.data.clinical.assessment_score}</strong></div>
                 <div><span>Compliance</span><strong>{profile.data.clinical.compliance_level || 'Unavailable'}</strong></div>
-                <div><span>Safety flag</span><strong>{profile.data.clinical.safety_flag ? 'Flagged' : 'Not flagged'}</strong></div>
+                <div><span>علامة السلامة</span><strong>{profile.data.clinical.safety_flag ? 'Flagged' : 'بدون علامة'}</strong></div>
                 {profile.data.clinical.latest_assessment && (
                   <div><span>Latest assessment · {profile.data.clinical.latest_assessment.type}</span><strong>{profile.data.clinical.latest_assessment.score}</strong></div>
                 )}
-                <p>Progress charts and clinical conclusions are not supplied by the API.</p>
+                <p>لا يوفّر API مخططات التقدم أو الاستنتاجات الإكلينيكية.</p>
               </div>
             </div>
           )}
           {ready && tab === 'sessions' && (
             <div className="client-profile-sessions">
               <div className="client-profile-session-controls">
-                <div role="group" aria-label="Filter client sessions">
+                <div role="group" aria-label="تصفية جلسات العميل">
                   {['All', 'Upcoming', 'Completed', 'Cancelled'].map((value) => (
                     <button key={value} className={filter === value ? 'selected' : ''} onClick={() => setFilter(value)}>{value}</button>
                   ))}
                 </div>
-                <button className="teal-button" disabled title="Therapist booking is not supported by the API">Schedule session</button>
+                <button className="teal-button" disabled title="حجز المعالج غير مدعوم في API">Schedule session</button>
               </div>
               {!sessionRows.length && <p className="client-profile-empty">No {filter.toLowerCase()} sessions available.</p>}
               {sessionRows.map((session) => (
@@ -196,7 +198,7 @@ function ClientProfileContent({ api, navigate, patientId }: Props & { patientId:
                   onClick={() => navigate(`/sessions/upcoming?id=${apiId(session.id)}`)}
                 >
                   <span className="client-profile-session-mark" aria-hidden="true"><DesignIcon name="part2-07-imgCalendarAlt.svg" /></span>
-                  <span className="client-profile-session-copy"><strong>{session.is_initial ? 'Initial consultation' : 'Therapy session'}</strong><small>{careDate(session, api.getUser()?.timezone || 'UTC')} · {session.medium}</small></span>
+                  <span className="client-profile-session-copy"><strong>{session.is_initial ? 'استشارة أولية' : 'جلسة علاج'}</strong><small>{careDate(session, timezone)} · {session.medium}</small></span>
                   <span className="client-profile-session-status">{session.status}</span>
                 </button>
               ))}
@@ -204,12 +206,12 @@ function ClientProfileContent({ api, navigate, patientId }: Props & { patientId:
           )}
           {active && tab === 'notes' && (
             <div className="client-profile-notes">
-              <ResourceStatus resource={notes} label="private notes" />
+              <ResourceStatus resource={notes} label="ملاحظات خاصة" />
               <form onSubmit={(event) => void addNote(event)} className="client-profile-note-form">
                 <label htmlFor="client-note">New Note</label>
                 <textarea
                   id="client-note"
-                  placeholder="Type your note here..."
+                  placeholder="اكتب ملاحظتك هنا..."
                   value={note}
                   maxLength={5000}
                   onChange={(event) => setNote(event.target.value)}
@@ -217,30 +219,36 @@ function ClientProfileContent({ api, navigate, patientId }: Props & { patientId:
                 <button className="teal-button" disabled={!ready || !notesReady || mutation.disabled || note.trim().length < 3}>Add Note</button>
               </form>
               <MutationStatus mutation={mutation} refreshed={notesReady} />
-              <h3>Previous Notes</h3>
-              {notesReady && !notes.data?.notes.length && <p>No private notes yet.</p>}
-              {notes.data?.notes.map((item) => (
-                <article className="client-profile-note" key={item.id}>
-                  <strong>Private therapist note</strong>
-                  {item.created_at && <time dateTime={item.created_at}>{item.created_at.slice(0, 10)}</time>}
-                  <p>{item.body}</p>
-                </article>
-              ))}
-              {!!notes.data?.session_reports.length && <h3>Session reports (patient-visible)</h3>}
-              {notes.data?.session_reports.map((item) => (
-                <article className="client-profile-note" key={item.session_id}>
-                  <strong>Session report</strong>
-                  {item.session_date && <time dateTime={item.session_date}>{item.session_date}</time>}
-                  <p>{item.summary}</p>
-                </article>
-              ))}
+              <h3>الملاحظات السابقة</h3>
+              {notesReady && !notes.data?.notes.length && <p>لا توجد ملاحظات خاصة بعد.</p>}
+              {notes.data?.notes.map((item) => {
+                const date = formatTimestamp(item.created_at, timezone)
+                return (
+                  <article className="client-profile-note" key={item.id}>
+                    <strong>ملاحظة المعالج الخاصة</strong>
+                    {date && <time dateTime={item.created_at ?? undefined}>{date}</time>}
+                    <p>{item.body}</p>
+                  </article>
+                )
+              })}
+              {!!notes.data?.session_reports.length && <h3>تقارير الجلسات (مرئية للمريض)</h3>}
+              {notes.data?.session_reports.map((item) => {
+                const date = formatCalendarDate(item.session_date)
+                return (
+                  <article className="client-profile-note" key={item.session_id}>
+                    <strong>تقرير الجلسة</strong>
+                    {date && <time dateTime={item.session_date ?? undefined}>{date}</time>}
+                    <p>{item.summary}</p>
+                  </article>
+                )
+              })}
             </div>
           )}
           {active && tab === 'content' && (
             <div className="client-profile-content-list">
-              <ResourceStatus resource={content} label="assigned content" />
-              <h3>Custom Content</h3>
-              {!content.loading && !content.error && !content.data?.length && <p>No assigned content yet.</p>}
+              <ResourceStatus resource={content} label="محتوى مسند" />
+              <h3>محتوى مخصص</h3>
+              {!content.loading && !content.error && !content.data?.length && <p>لا يوجد محتوى مسند بعد.</p>}
               {content.data?.map((item) => <article key={item.id} className="client-profile-note"><strong>{item.title}</strong><p>{item.content_type}</p></article>)}
             </div>
           )}

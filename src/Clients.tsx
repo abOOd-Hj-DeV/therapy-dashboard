@@ -3,6 +3,7 @@ import { ApiClient, apiId } from './api'
 import { useApiResource, useApiUser } from './api-hooks'
 import { DesignIcon, Workspace } from './Workspace'
 import { CareAvatar } from './api-sessions-and-clinical-support'
+import { formatCalendarDate } from './display-date'
 import './visual-clients.css'
 
 type Client = {
@@ -18,7 +19,7 @@ export function Clients({ api, navigate }: { api: ApiClient; navigate: (path: st
   return user ? (
     <ClientList key={api.getSessionKey()} api={api} navigate={navigate} />
   ) : (
-    <p role="alert">Your session has ended. Please sign in again.</p>
+    <p role="alert">انتهت جلستك. يرجى تسجيل الدخول مجدداً.</p>
   )
 }
 
@@ -36,7 +37,7 @@ function ClientList({ api, navigate }: { api: ApiClient; navigate: (path: string
   return (
     <Workspace
       api={api}
-      title="Manage Clients"
+      title="إدارة العملاء"
       active="Clients"
       navigate={navigate}
       onSearch={(value) => {
@@ -46,16 +47,16 @@ function ClientList({ api, navigate }: { api: ApiClient; navigate: (path: string
         setPage(1)
       }}
     >
-      <section className="clients-page" aria-label="Manage clients">
+      <section className="clients-page" aria-label="إدارة العملاء">
         <div className="clients-toolbar">
-          <div className="clients-filters" role="group" aria-label="Filter clients">
+          <div className="clients-filters" role="group" aria-label="تصفية العملاء">
             {([['all', 'All'], ['active', 'Active'], ['past', 'Past']] as const).map(([value, label]) => (
               <button key={value} className={status === value ? 'selected' : ''} aria-pressed={status === value} onClick={() => { setStatus(value); setPage(1) }}>
                 {label}{status === value && resource.data ? ` (${resource.data.pagination.total})` : ''}
               </button>
             ))}
           </div>
-          <button className="clients-filter-toggle" aria-label="Client filter options" aria-expanded={filtersOpen} aria-controls="client-filter-options" onClick={() => setFiltersOpen(!filtersOpen)}>
+          <button className="clients-filter-toggle" aria-label="خيارات تصفية العملاء" aria-expanded={filtersOpen} aria-controls="client-filter-options" onClick={() => setFiltersOpen(!filtersOpen)}>
             <DesignIcon name="client-6934-imgIcon1.svg" />
           </button>
         </div>
@@ -80,7 +81,7 @@ function ClientList({ api, navigate }: { api: ApiClient; navigate: (path: string
           <label>Sort clients<select value={sort} onChange={(event) => { setSort(event.target.value as 'name' | 'recent'); setPage(1) }}><option value="name">Name</option><option value="recent">Recent activity</option></select></label>
         </form>
         </div>
-        {resource.loading && <p role="status">Loading clients…</p>}
+        {resource.loading && <p role="status">جارٍ تحميل العملاء…</p>}
         {resource.error && (
           <p role="alert">
             {resource.error.message}
@@ -89,36 +90,39 @@ function ClientList({ api, navigate }: { api: ApiClient; navigate: (path: string
         )}
         {resource.data && (
           <>
-            {resource.data.data.length === 0 && <p>No clients found.</p>}
+            {resource.data.data.length === 0 && !resource.error && <p>No clients found.</p>}
             <div className="clients-grid">
-                  {resource.data.data.map((client) => (
-                    <article className="client-card" key={client.id}>
-                      <header>
-                        <button className="client-card-identity" onClick={() => navigate(`/clients/profile?id=${apiId(client.id)}`)}>
-                          <CareAvatar name={client.full_name} />
-                          <span><strong>{client.full_name}</strong>{client.age != null && <small>{client.age} yrs</small>}</span>
-                        </button>
-                        <span className={`client-card-status ${client.status}`}>{client.status}</span>
-                      </header>
-                      <div className="client-card-activity"><span>Activity · past month</span><small>Not supplied by the API</small></div>
-                      <div className="client-card-metrics"><span>Completed sessions</span><strong>{client.completed_sessions_count}</strong></div>
-                      <div className="client-card-next"><DesignIcon name="part2-07-imgCalendarAlt.svg" /><span>{client.next_session_date ? `Next · ${client.next_session_date}` : 'None scheduled'}</span></div>
-                      <footer>
-                        <button
-                          onClick={() => navigate(`/sessions/upcoming?client=${apiId(client.id)}`)}
-                        >
-                          Clinical record
-                        </button>
-                        {client.status === 'active' && (
-                          <button onClick={() => navigate(`/chats?client=${apiId(client.id)}`)}>
-                            Message
+                  {resource.data.data.map((client) => {
+                    const nextDate = formatCalendarDate(client.next_session_date)
+                    return (
+                      <article className="client-card" key={client.id}>
+                        <header>
+                          <button className="client-card-identity" onClick={() => navigate(`/clients/profile?id=${apiId(client.id)}`)}>
+                            <CareAvatar name={client.full_name} />
+                            <span><strong>{client.full_name}</strong>{client.age != null && <small>{client.age} yrs</small>}</span>
                           </button>
-                        )}
-                      </footer>
-                    </article>
-                  ))}
+                          <span className={`client-card-status ${client.status}`}>{client.status}</span>
+                        </header>
+                        <div className="client-card-activity"><span>Activity · past month</span><small>Not supplied by the API</small></div>
+                        <div className="client-card-metrics"><span>Completed sessions</span><strong>{client.completed_sessions_count}</strong></div>
+                        <div className="client-card-next"><DesignIcon name="part2-07-imgCalendarAlt.svg" /><span>{nextDate ? `Next · ${nextDate}` : 'None scheduled'}</span></div>
+                        <footer>
+                          <button
+                            onClick={() => navigate(`/sessions/upcoming?client=${apiId(client.id)}`)}
+                          >
+                            Clinical record
+                          </button>
+                          {client.status === 'active' && (
+                            <button onClick={() => navigate(`/chats?client=${apiId(client.id)}`)}>
+                              Message
+                            </button>
+                          )}
+                        </footer>
+                      </article>
+                    )
+                  })}
             </div>
-            <nav aria-label="Client pages">
+            <nav aria-label="صفحات العملاء">
               <button disabled={page <= 1 || resource.loading} onClick={() => setPage(page - 1)}>
                 Previous
               </button>

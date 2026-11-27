@@ -1,22 +1,20 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { ApiClient, ApiError, apiErrorMessage, apiId, type ApiUser } from './api'
 import { useApiResource, useApiUser } from './api-hooks'
+import { useMutation } from './api-mutation'
+import { formatCalendarDate } from './display-date'
 import { Workspace } from './Workspace'
+import { passwordPolicyMessage, validNewPassword } from './auth-policy'
 import { Modal } from './ui'
 import { FaqSummary, RemainingIcon, SettingRow, type RemainingIconName } from './RemainingUI'
+import { approvalLabel } from './therapist-approval'
+import { optionName, useTherapistOptions } from './therapist-options'
+import { TherapistProfileForm } from './TherapistProfileForm'
+import { profileReviewError, therapistLifecycle, therapistProfilePath, therapistSubmissionPath, type TherapistProfileResponse } from './therapist-profile-review'
 
 type Page = 'profile' | 'settings' | 'help'
 type Props = { page: Page; navigate: (path: string) => void; api?: ApiClient }
 type Therapist = {
-  id: string
-  full_name: string
-  specialty: string
-  country: string
-  languages: string[] | Record<string, string> | null
-  bio: string | null
-  rating: number
-  approval_status: 'pending' | 'approved' | 'rejected' | null
-  has_license: boolean
   availability: Partial<Record<Day, string[]>> | [] | null
 }
 type Dashboard = {
@@ -30,29 +28,26 @@ type PeriodBody = { start_date: string; end_date: string | null; reason: string 
 const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const
 type Day = (typeof days)[number]
 const titles = {
-  edit: 'Edit Profile',
-  hours: 'Work Hours Management',
-  holidays: 'Vacations and Breaks',
-  password: 'Change Password',
-  preferences: 'Notification Settings',
-  logout: 'Log out',
-  faq: 'Frequently Asked Questions',
-  contact: 'Contact support',
+  edit: 'تعديل الملف الشخصي',
+  withdrawProfile: 'سحب تعديلات الملف المهني',
+  hours: 'إدارة ساعات العمل',
+  holidays: 'الإجازات والاستراحات',
+  password: 'تغيير كلمة المرور',
+  preferences: 'إعدادات الإشعارات',
+  logout: 'تسجيل الخروج',
+  faq: 'الأسئلة الشائعة',
+  contact: 'التواصل مع الدعم',
 }
 type Dialog = keyof typeof titles | ''
 const fieldLabels: Record<string, string> = {
-  specialty: 'Specialty',
-  country: 'Country',
-  languages: 'Languages',
-  bio: 'Bio',
-  availability: 'Working hours',
-  current_password: 'Current password',
-  password: 'New password',
-  password_confirmation: 'Password confirmation',
-  start_date: 'Start date',
-  end_date: 'End date',
+  availability: 'ساعات العمل',
+  current_password: 'كلمة المرور الحالية',
+  password: 'كلمة المرور الجديدة',
+  password_confirmation: 'تأكيد كلمة المرور',
+  start_date: 'تاريخ البدء',
+  end_date: 'تاريخ الانتهاء',
   reason: 'Reason',
-  therapist: 'Therapist profile',
+  therapist: 'ملف المعالج',
 }
 
 function Failure({ error }: { error: unknown }) {
@@ -72,7 +67,7 @@ function Failure({ error }: { error: unknown }) {
       <p>
         {apiErrorMessage(error)}
         {error instanceof ApiError && error.retryAfter > 0
-          ? ` Retry after ${error.retryAfter} seconds.`
+          ? ` أعد المحاولة بعد ${error.retryAfter} ثانية.`
           : ''}
       </p>
       {labels.map((label) => (
@@ -82,53 +77,10 @@ function Failure({ error }: { error: unknown }) {
   )
 }
 
-// A synchronous lock prevents double clicks before React updates. Aborting/unmounting
-// and actor checks also protect against transports that resolve despite cancellation.
-function useMutation(api: ApiClient) {
-  const [pending, setPending] = useState(false)
-  const [error, setError] = useState<unknown>(null)
-  const active = useRef(false)
-  const request = useRef<AbortController | null>(null)
-  useEffect(() => {
-    active.current = true
-    return () => {
-      active.current = false
-      request.current?.abort()
-    }
-  }, [api])
-  async function run<T>(
-    work: (signal: AbortSignal) => Promise<T>,
-    success: (value: T) => void,
-    failed?: (error: unknown) => void,
-  ) {
-    if (request.current || !active.current || !api.getUser()) return
-    const actor = api.getUser()?.id
-    const controller = new AbortController()
-    request.current = controller
-    setPending(true)
-    setError(null)
-    const current = () =>
-      active.current && !controller.signal.aborted && api.getUser()?.id === actor
-    try {
-      const value = await work(controller.signal)
-      if (current()) success(value)
-    } catch (cause) {
-      if (current()) {
-        setError(cause)
-        failed?.(cause)
-      }
-    } finally {
-      if (request.current === controller) request.current = null
-      if (current()) setPending(false)
-    }
-  }
-  return { pending, error, run }
-}
-
 function Actions({
   pending,
   close,
-  label = 'Save Changes',
+  label = 'حفظ التغييرات',
 }: {
   pending: boolean
   close: () => void
@@ -150,7 +102,7 @@ export function LiveProfile({ api, ...props }: Props) {
   return api ? (
     <ProfileBoundary api={api} {...props} />
   ) : (
-    <p role="alert">A live API session is required.</p>
+    <p role="alert">يلزم جلسة API مباشرة.</p>
   )
 }
 function ProfileBoundary({ api, ...props }: Omit<Props, 'api'> & { api: ApiClient }) {
@@ -158,7 +110,7 @@ function ProfileBoundary({ api, ...props }: Omit<Props, 'api'> & { api: ApiClien
   return user ? (
     <ProfileActor key={api.getSessionKey()} api={api} user={user} {...props} />
   ) : (
-    <p role="status">You are signed out. Private profile data has been cleared.</p>
+    <p role="status">تم تسجيل خروجك. محُويت بيانات الملف الخاصة.</p>
   )
 }
 
@@ -178,28 +130,37 @@ function ProfileActor({
     api,
     validIdentity ? '/therapists/me/dashboard' : null,
   )
-  const [savedProfile, setSavedProfile] = useState<Therapist | null>(null)
-  const therapist = savedProfile ?? dashboard.data?.therapist ?? null
+  const profile = useApiResource<TherapistProfileResponse>(api, validIdentity ? therapistProfilePath : null)
+  const review = profile.data?.data
+  const published = review?.published
+  const pending = review?.pending_revision
+  const last = review?.last_review
+  const pendingUpdate = !!review && therapistLifecycle(review) === 'update_pending'
+  const rejectedUpdate = last?.kind === 'update' && last.status === 'rejected' ? last : null
+  const options = useTherapistOptions(api, !!published)
+  const approval = review && approvalLabel(review.approval_status)
   const timezone = dashboard.data?.timezone || identity.data?.user.timezone || user.timezone
   const [dialog, setDialog] = useState<Dialog>(() => {
     const requested = new URLSearchParams(window.location.search).get('state')
     return requested && Object.hasOwn(titles, requested) ? (requested as Dialog) : ''
   })
+  const reviewDialog = dialog === 'edit' || dialog === 'withdrawProfile'
   const [notice, setNotice] = useState('')
+  const [withdrawalRevisionId, setWithdrawalRevisionId] = useState<string | null>(null)
+  const [withdrawalConflict, setWithdrawalConflict] = useState(false)
   // Keys and uncertain submissions are kept only for this actor, across modal closes.
   const periodKeys = useRef(new Map<string, string>())
   const uncertainPeriod = useRef<PeriodBody | null>(null)
-  const close = () => setDialog('')
-  function saved(value: Therapist, message: string) {
-    setSavedProfile(value)
-    close()
-    setNotice(message)
+  const close = () => {
+    setWithdrawalRevisionId(null)
+    setDialog('')
   }
-  const name = therapist?.full_name || identity.data?.user.name || user.name
+  const name = published?.full_name || identity.data?.user.name || user.name
+  const settings = page === 'settings'
   return (
-    <Workspace title="Profile" active="Profile" navigate={navigate} api={api}>
-      <div className={`profile-layout profile-${page}`}>
-        <aside className="profile-summary" aria-label="Profile overview">
+    <Workspace title={settings ? 'إعدادات الملف المهني' : 'Profile'} active="Profile" navigate={navigate} api={api}>
+      <div className={`profile-layout profile-${page}`} lang={settings ? 'ar' : undefined} dir={settings ? 'rtl' : undefined}>
+        <aside className="profile-summary" aria-label={settings ? 'نبذة عن الملف المهني' : 'نظرة الملف'}>
           <div className="profile-identity">
             <span className="profile-avatar profile-avatar-initials" aria-label="Profile initials">
               {name
@@ -210,39 +171,38 @@ function ProfileActor({
             </span>
             <div>
               <h2>{name}</h2>
-              <p>
-                {therapist
-                  ? `Approval: ${therapist.approval_status ?? 'Not submitted'}`
-                  : 'Therapist account'}
+              <p lang="ar" dir="rtl">
+                {approval ? `حالة الموافقة: ${approval}` : 'حساب المعالج'}
               </p>
             </div>
           </div>
           <button
             className="remaining-primary profile-edit"
-            disabled={!therapist}
+            disabled={!published}
             onClick={() => setDialog('edit')}
           >
-            Edit Profile
+            {titles.edit}
           </button>
           <div className="profile-description">
-            <h3>Description</h3>
-            <p>{therapist?.specialty || 'Professional profile unavailable.'}</p>
+            <h3>{settings ? 'التخصص' : 'Description'}</h3>
+            <p>{published?.specialty ? optionName(options.specialties, published.specialty) :
+              settings ? 'بيانات الملف المهني غير متاحة الآن.' : 'الملف المهني غير متاح.'}</p>
           </div>
           {dashboard.data && (
             <div className="profile-counts">
               <div>
                 <strong>{dashboard.data.clients_count}</strong>
-                <span>Clients</span>
+                <span>{settings ? 'العملاء' : 'Clients'}</span>
               </div>
               <div>
                 <strong>{dashboard.data.stats.completed}</strong>
-                <span>Completed sessions</span>
+                <span>{settings ? 'الجلسات المكتملة' : 'الجلسات المكتملة'}</span>
               </div>
             </div>
           )}
         </aside>
-        <section className="profile-panel" aria-label="Profile details">
-          <nav className="profile-tabs" aria-label="Profile sections">
+        <section className="profile-panel" aria-label={settings ? 'تفاصيل الملف المهني' : 'تفاصيل الملف'}>
+          <nav className="profile-tabs" aria-label={settings ? 'أقسام الملف المهني' : 'أقسام الملف'}>
             {(['profile', 'settings', 'help'] as const).map((tab) => (
               <button
                 key={tab}
@@ -251,29 +211,50 @@ function ProfileActor({
                 onClick={() => navigate(tab === 'profile' ? '/profile' : `/profile/${tab}`)}
               >
                 <RemainingIcon name={`${tab}${page === tab ? 'Active' : 'Idle'}`} />
-                {tab === 'profile' ? 'Profile' : tab === 'settings' ? 'Settings' : 'Help'}
+                {settings
+                  ? { profile: 'الملف المهني', settings: 'الإعدادات', help: 'المساعدة' }[tab]
+                  : { profile: 'Profile', settings: 'Settings', help: 'Help' }[tab]}
               </button>
             ))}
           </nav>
-          {(identity.loading || dashboard.loading) && <p role="status">Loading profile…</p>}
+          {(identity.loading || dashboard.loading || profile.loading) && <p role="status">{settings ? 'جارٍ تحميل الملف المهني…' : 'جارٍ تحميل الملف…'}</p>}
           <Failure error={identity.error || dashboard.error} />
-          {(identity.error || dashboard.error) && (
+          {(identity.error || dashboard.error || profile.error) && (
             <>
-              <p>
-                Professional profile unavailable. Approval or care permissions may be required; the
-                API has no unrestricted self-profile read. No sample profile is substituted.
-              </p>
+              {profile.error && <p role="alert" lang="ar" dir="rtl">{profileReviewError(profile.error)}</p>}
               <button
                 className="remaining-cancel"
                 onClick={() => {
-                  setSavedProfile(null)
                   identity.reload()
                   dashboard.reload()
+                  profile.reload()
                 }}
               >
-                Retry profile
+                {settings ? 'إعادة محاولة تحميل الملف المهني' : 'إعادة تحميل الملف'}
               </button>
             </>
+          )}
+          {(pendingUpdate || rejectedUpdate) && (
+            <div className="profile-review-banner" lang="ar" dir="rtl">
+              {pendingUpdate && (
+                <>
+                  <p role="status">تعديلات ملفك المهني بانتظار المراجعة. يظل الملف المنشور دون تغيير حتى الموافقة.</p>
+                  {pending?.kind === 'update' && (
+                    <button type="button" className="remaining-cancel" onClick={() => {
+                      setWithdrawalRevisionId(pending.id)
+                      setWithdrawalConflict(false)
+                      setNotice('')
+                      setDialog('withdrawProfile')
+                    }}>
+                      سحب التعديلات
+                    </button>
+                  )}
+                </>
+              )}
+              {rejectedUpdate && (
+                <p>لم تُعتمد آخر تعديلات ملفك المهني.{rejectedUpdate.note && <> سبب الرفض: <bdi>{rejectedUpdate.note}</bdi></>}</p>
+              )}
+            </div>
           )}
           {identity.data && !validIdentity && (
             <p role="alert">
@@ -284,98 +265,95 @@ function ProfileActor({
           {page === 'profile' && (
             <div className="profile-information">
               <section className="profile-about">
-                <h3>About Me</h3>
+                <h3>نبذة عني</h3>
                 <p>
-                  {therapist
-                    ? therapist.bio || 'No bio provided.'
-                    : 'Professional profile unavailable.'}
+                  {published
+                    ? published.bio || 'لا توجد نبذة.'
+                    : 'الملف المهني غير متاح.'}
                 </p>
               </section>
               <div className="profile-information-grid">
                 <section>
-                  <h3>Professional Information</h3>
+                  <h3>المعلومات المهنية</h3>
                   <div className="profile-info-rows">
-                    <Info icon="briefcase" label="Specialty" value={therapist?.specialty} />
-                    <Info icon="location" label="Country" value={therapist?.country} />
+                    <Info icon="briefcase" label="المسمى الوظيفي" value={published?.job_title} arabic />
+                    <Info icon="briefcase" label="التخصص" value={published?.specialty && optionName(options.specialties, published.specialty)} arabic />
+                    <Info icon="location" label="المدينة" value={published?.city} arabic />
+                    <Info icon="location" label="البلد" value={published?.country && optionName(options.countries, published.country)} arabic />
                     <Info
                       icon="user"
-                      label="Languages"
-                      value={
-                        therapist?.languages
-                          ? Object.values(therapist.languages).join(', ')
-                          : undefined
-                      }
+                      label="اللغات"
+                      value={published?.languages?.map((code) => optionName(options.languages, code)).join('، ')}
+                      arabic
                     />
                     <Info
                       icon="award"
-                      label="License file"
-                      value={
-                        therapist
-                          ? therapist.has_license
-                            ? 'On file (not independent verification)'
-                            : 'Not on file'
-                          : undefined
-                      }
+                      label="سنوات الخبرة"
+                      value={published?.years_of_experience == null ? undefined : String(published.years_of_experience)}
+                      arabic
                     />
                     <Info
                       icon="user"
-                      label="Approval status"
-                      value={therapist?.approval_status ?? undefined}
+                      label="حالة الموافقة"
+                      value={approval}
+                      arabic
                     />
                   </div>
                 </section>
                 <section>
-                  <h3>Account Information</h3>
+                  <h3>معلومات الحساب</h3>
                   <div className="profile-info-rows">
                     <Info
                       icon="user"
-                      label="Account name"
+                      label="اسم الحساب"
                       value={identity.data?.user.name || user.name}
                     />
-                    <Info icon="mail" label="Email" value={identity.data?.user.email ?? user.email} />
+                    <Info icon="mail" label="البريد الإلكتروني" value={published?.email} arabic />
                     <Info
                       icon="phone"
-                      label="Mobile Number"
-                      value={identity.data?.user.whatsapp_number || user.whatsapp_number}
+                      label="رقم الجوال"
+                      value={review?.account.whatsapp_number ?? user.whatsapp_number}
+                      arabic
                     />
-                    <Info icon="clock" label="Scheduling timezone" value={timezone} />
+                    <Info icon="clock" label="المنطقة الزمنية للجدولة" value={timezone} />
                   </div>
                 </section>
               </div>
             </div>
           )}
-          {page === 'settings' && (
+          {settings && (
             <div className="profile-settings-grid">
               <section className="profile-availability">
-                <h3>Availability and Appointments</h3>
+                <h3>التوفّر والمواعيد</h3>
                 <SettingRow
                   icon="clock"
-                  title="Manage Working Hours"
-                  detail={`Weekly hours in ${timezone || 'your server timezone'}`}
+                  title="إدارة أوقات العمل"
+                  detail={timezone ? `أوقات العمل الأسبوعية (${timezone})` : 'أوقات العمل الأسبوعية'}
                   onClick={() => setDialog('hours')}
                 />
                 <SettingRow
                   icon="briefcase"
-                  title="Vacations and Breaks"
-                  detail="Whole-day blocked periods"
+                  title="الإجازات والاستراحات"
+                  detail="أيام لا تستقبل فيها المواعيد"
                   onClick={() => setDialog('holidays')}
                 />
                 <button className="remaining-danger" onClick={() => setDialog('logout')}>
-                  Log Out
+                  تسجيل الخروج
                 </button>
               </section>
               <section className="profile-account">
-                <h3>Account Settings</h3>
-                <SettingRow icon="user" title="Edit Profile" onClick={() => setDialog('edit')} />
+                <h3>إعدادات الحساب</h3>
+                <SettingRow icon="user" title={titles.edit} onClick={() => setDialog('edit')} />
+                <SettingRow icon="briefcase" title="المستندات المطلوبة" onClick={() => navigate('/profile/documents')} />
                 <SettingRow
                   icon="lock"
-                  title="Change Password"
+                  title="تغيير كلمة المرور"
                   onClick={() => setDialog('password')}
                 />
                 <SettingRow
                   icon="bell"
-                  title="Notification Settings"
-                  detail="Preferences unavailable in the API"
+                  title="إعدادات الإشعارات"
+                  detail="تفضيلات الإشعارات غير متاحة حاليًا"
                   onClick={() => setDialog('preferences')}
                 />
               </section>
@@ -385,7 +363,7 @@ function ProfileActor({
             <div className="profile-help-grid">
               <section className="help-live">
                 <div>
-                  <h3>Support availability</h3>
+                  <h3>توفر الدعم</h3>
                   <p>
                     Therapist support requests, live chat and callbacks are not supported by the
                     current API. Contact your platform management through your established support
@@ -401,13 +379,13 @@ function ProfileActor({
                 <SettingRow
                   icon="faq"
                   title="FAQs"
-                  detail="Published answers from the platform"
+                  detail="إجابات منشورة من المنصة"
                   onClick={() => setDialog('faq')}
                 />
                 <SettingRow
                   icon="mail"
                   title="Contact support"
-                  detail="Therapist ticket submission unavailable"
+                  detail="إرسال طلب المعالج غير متاح"
                   onClick={() => setDialog('contact')}
                 />
               </section>
@@ -415,10 +393,15 @@ function ProfileActor({
           )}
         </section>
       </div>
+      {withdrawalConflict && (
+        <p lang="ar" dir="rtl" className="remaining-error" role="alert">
+          تعذّر سحب التعديلات لأن الطلب لم يعد متاحًا. تحقّق من حالة طلبك بعد تحديث الملف المهني.
+        </p>
+      )}
       {notice && (
         <p className="remaining-notice" role="status">
           {notice}
-          <button aria-label="Dismiss notice" onClick={() => setNotice('')}>
+          <button aria-label="إغلاق التنبيه" onClick={() => setNotice('')}>
             ×
           </button>
         </p>
@@ -428,33 +411,69 @@ function ProfileActor({
           title={titles[dialog]}
           className={`remaining-modal ${dialog}-modal`}
           closeIcon={<RemainingIcon name="close" />}
+          lang={reviewDialog ? 'ar' : undefined}
+          dir={reviewDialog ? 'rtl' : undefined}
+          closeLabel={reviewDialog ? dialog === 'edit' ? 'إغلاق نافذة التعديل' : 'إغلاق نافذة سحب التعديلات' : undefined}
           onClose={close}
         >
           {dialog === 'edit' &&
-            (therapist ? (
-              <EditSettings
+            (published && review ? (
+              <TherapistProfileForm
                 api={api}
-                user={identity.data?.user || user}
-                therapist={therapist}
+                initial={(pending?.kind === 'update' ? pending.data : rejectedUpdate?.data) ?? published}
+                phone={review.account.whatsapp_number}
+                options={options}
                 close={close}
-                saved={(value) => saved(value, 'Profile settings updated on the server.')}
+                submitLabel="إرسال التعديلات للمراجعة"
+                saved={(response) => {
+                  profile.replace(response)
+                  close()
+                }}
               />
             ) : (
-              <Unavailable close={close} />
+              <>
+                <p role="alert">بيانات الملف المهني غير متاحة الآن.</p>
+                <button className="remaining-cancel" onClick={close}>إغلاق</button>
+              </>
             ))}
+          {dialog === 'withdrawProfile' && (
+            withdrawalRevisionId ? (
+              <WithdrawProfileUpdate
+                api={api}
+                revisionId={withdrawalRevisionId}
+                close={close}
+                saved={(response) => {
+                  profile.replace(response)
+                  close()
+                  setNotice('تم سحب التعديلات. لم يتغيّر الملف المنشور.')
+                }}
+                conflicted={() => {
+                  close()
+                  setWithdrawalConflict(true)
+                  profile.reload()
+                }}
+              />
+            ) : (
+              <>
+                <p role="status">{published
+                  ? 'لم تعد هناك تعديلات بانتظار المراجعة.'
+                  : 'بيانات الملف المهني غير متاحة الآن.'}</p>
+                <button type="button" className="remaining-cancel" onClick={close}>إغلاق</button>
+              </>
+            )
+          )}
           {dialog === 'hours' &&
-            (therapist && timezone ? (
+            (dashboard.data?.therapist && timezone ? (
               <WorkingHours
                 api={api}
-                therapist={therapist}
+                therapist={dashboard.data.therapist}
                 timezone={timezone}
                 close={close}
-                saved={(value) =>
-                  saved(
-                    value,
-                    'Working hours updated on the server. Existing appointments have not been cancelled.',
-                  )
-                }
+                saved={(value) => {
+                  if (dashboard.data) dashboard.replace({ ...dashboard.data, therapist: value })
+                  close()
+                  setNotice('حُدّثت ساعات العمل على الخادم. المواعيد الحالية لم تُلغَ.')
+                }}
               />
             ) : (
               <Unavailable close={close} />
@@ -475,7 +494,7 @@ function ProfileActor({
               saved={() => {
                 close()
                 setNotice(
-                  'Password changed. Other devices have been signed out. Your current session remains active.',
+                  'غُيّرت كلمة المرور. سُجّل خروج الأجهزة الأخرى، بينما تبقى جلستك الحالية نشطة.',
                 )
               }}
             />
@@ -489,11 +508,11 @@ function ProfileActor({
               </p>
               <fieldset disabled className="preferences-list">
                 {[
-                  'New client messages',
-                  'Client progress updates',
-                  'Payment and withdrawal notifications',
-                  'Platform news and offers',
-                  'Session reminders',
+                  'رسائل جديدة من العملاء',
+                  'تحديثات تقدّم العملاء',
+                  'إشعارات الدفع والسحب',
+                  'أخبار المنصة والعروض',
+                  'تذكيرات الجلسات',
                 ].map((label) => (
                   <label key={label}>
                     {label}
@@ -515,14 +534,14 @@ function ProfileActor({
               </p>
               <fieldset disabled className="live-contact-fields">
                 <Field label="Subject">
-                  <input placeholder="Subject (unavailable)" />
+                  <input placeholder="الموضوع (غير متاح)" />
                 </Field>
                 <Field label="Message">
-                  <textarea placeholder="Message (unavailable)" />
+                  <textarea placeholder="الرسالة (غير متاح)" />
                 </Field>
               </fieldset>
               <button className="remaining-primary" disabled>
-                Send Message (unavailable)
+                إرسال الرسالة (غير متاح)
               </button>
             </>
           )}
@@ -532,21 +551,55 @@ function ProfileActor({
     </Workspace>
   )
 }
+function WithdrawProfileUpdate({ api, revisionId, close, saved, conflicted }: {
+  api: ApiClient
+  revisionId: string
+  close: () => void
+  saved: (response: TherapistProfileResponse) => void
+  conflicted: () => void
+}) {
+  const mutation = useMutation(api)
+
+  function withdraw() {
+    void mutation.run(
+      (signal) => api.request<TherapistProfileResponse>(`${therapistSubmissionPath}/${apiId(revisionId)}`, 'DELETE', { signal }),
+      saved,
+      (error) => {
+        if (error instanceof ApiError && (error.status === 409 || error.status === 404)) conflicted()
+      },
+    )
+  }
+
+  return (
+    <>
+      <p>سيُلغى طلب مراجعة تعديلاتك. ستبقى بيانات ملفك المنشور كما هي.</p>
+      {!!mutation.error && <p role="alert" className="remaining-error">{profileReviewError(mutation.error)}</p>}
+      <footer className="remaining-form-actions">
+        <button type="button" className="remaining-cancel" disabled={mutation.pending} onClick={close}>إلغاء</button>
+        <button type="button" className="remaining-primary" disabled={mutation.pending} onClick={withdraw}>
+          {mutation.pending ? 'جارٍ سحب التعديلات…' : 'تأكيد السحب'}
+        </button>
+      </footer>
+    </>
+  )
+}
 function Info({
   icon,
   label,
   value,
+  arabic = false,
 }: {
   icon: RemainingIconName
   label: string
   value?: string | null
+  arabic?: boolean
 }) {
   return (
-    <div className="profile-info-row">
+    <div className="profile-info-row" dir={arabic ? 'rtl' : undefined} lang={arabic ? 'ar' : undefined}>
       <RemainingIcon name={icon} />
       <div>
         <small>{label}</small>
-        <p>{value || 'Not provided'}</p>
+        <p dir={arabic ? 'auto' : undefined}>{value || (arabic ? 'غير متوفرة' : 'غير متوفر')}</p>
       </div>
     </div>
   )
@@ -555,8 +608,7 @@ function Unavailable({ close }: { close: () => void }) {
   return (
     <>
       <p role="alert">
-        Professional profile is unavailable. Wait for loading or resolve approval/access issues
-        before editing. The API does not provide a self-profile read for all onboarding accounts.
+        Working hours are unavailable. Wait for loading or resolve access issues before editing.
       </p>
       <button className="remaining-cancel" onClick={close}>
         Close
@@ -570,115 +622,6 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
       {label}
       {children}
     </label>
-  )
-}
-
-function EditSettings({
-  api,
-  user,
-  therapist,
-  close,
-  saved,
-}: {
-  api: ApiClient
-  user: ApiUser
-  therapist: Therapist
-  close: () => void
-  saved: (therapist: Therapist) => void
-}) {
-  const [draft, setDraft] = useState({
-    specialty: therapist.specialty,
-    country: therapist.country,
-    languages: Object.values(therapist.languages ?? []).join(', '),
-    bio: therapist.bio ?? '',
-  })
-  const [validation, setValidation] = useState('')
-  const mutation = useMutation(api)
-  function submit(event: FormEvent) {
-    event.preventDefault()
-    const languages = draft.languages
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean)
-    if (
-      !draft.specialty.trim() ||
-      !draft.country.trim() ||
-      languages.some((item) => item.length > 10)
-    ) {
-      setValidation(
-        'Enter specialty and country; each comma-separated language must be at most 10 characters.',
-      )
-      return
-    }
-    setValidation('')
-    const body = {
-      specialty: draft.specialty.trim(),
-      country: draft.country.trim(),
-      languages,
-      bio: draft.bio.trim() || null,
-    }
-    void mutation.run(
-      (signal) =>
-        api.request<{ data: Therapist }>('/therapists/me/settings', 'PUT', { body, signal }),
-      (result) => saved(result.data),
-    )
-  }
-  return (
-    <form onSubmit={submit}>
-      <p className="remaining-muted">
-        Identity and contact details are server-owned and cannot be changed here. Only specialty,
-        country, languages and bio are supported.
-      </p>
-      <Field label="Professional name">
-        <input disabled value={therapist.full_name} />
-      </Field>
-      <div className="remaining-field-grid">
-        <Field label="Email">
-          <input disabled value={user.email ?? ''} />
-        </Field>
-        <Field label="Mobile Number">
-          <input disabled value={user.whatsapp_number} />
-        </Field>
-      </div>
-      <fieldset disabled={mutation.pending}>
-        <Field label="Specialty">
-          <input
-            required
-            maxLength={255}
-            value={draft.specialty}
-            onChange={(event) => setDraft({ ...draft, specialty: event.target.value })}
-          />
-        </Field>
-        <Field label="Country">
-          <input
-            required
-            maxLength={100}
-            value={draft.country}
-            onChange={(event) => setDraft({ ...draft, country: event.target.value })}
-          />
-        </Field>
-        <Field label="Languages (comma-separated)">
-          <input
-            value={draft.languages}
-            onChange={(event) => setDraft({ ...draft, languages: event.target.value })}
-          />
-        </Field>
-        <Field label="Bio (optional)">
-          <textarea
-            maxLength={2000}
-            value={draft.bio}
-            onChange={(event) => setDraft({ ...draft, bio: event.target.value })}
-          />
-        </Field>
-      </fieldset>
-      {validation && (
-        <p className="remaining-error" role="alert">
-          {validation}
-        </p>
-      )}
-      <Failure error={mutation.error} />
-      <Actions pending={mutation.pending} close={close} />
-    </form>
   )
 }
 
@@ -869,7 +812,7 @@ function BlockedPeriods({
       span > 90
     ) {
       setValidation(
-        'Use current or future dates in your scheduling timezone, with an inclusive range of at most 90 days.',
+        'استخدم تواريخ حالية أو مستقبلية بمنطقتك الزمنية للجدولة، بنطاق شامل لا يتجاوز 90 يوماً.',
       )
       return
     }
@@ -896,7 +839,7 @@ function BlockedPeriods({
         keys.delete(signature)
         setLocked(false)
         setDraft({ start_date: '', end_date: '', reason: '' })
-        setNotice('Blocked period added on the server.')
+        setNotice('أُضيفت فترة الحظر على الخادم.')
         periods.reload()
       },
       (error) => {
@@ -928,11 +871,11 @@ function BlockedPeriods({
         if (matching) {
           setDraft({ start_date: '', end_date: '', reason: '' })
           setNotice(
-            'A matching blocked period is present on the server. Review the list before submitting another.',
+            'توجد فترة حظر مطابقة على الخادم. راجع القائمة قبل إرسال أخرى.',
           )
         } else
           setNotice(
-            'Server list refreshed. An identical retry retains its original idempotency key.',
+            'حُدّثت قائمة الخادم. إعادة الإرسال المتطابقة تحتفظ بمفتاح عدم التكرار نفسه.',
           )
         periods.reload()
       },
@@ -942,7 +885,7 @@ function BlockedPeriods({
     void mutation.run(
       (signal) => api.request(`/therapists/me/blocked-periods/${apiId(id)}`, 'DELETE', { signal }),
       () => {
-        setNotice('Blocked period removed on the server.')
+        setNotice('أُزيلت فترة الحظر على الخادم.')
         periods.reload()
       },
     )
@@ -951,11 +894,11 @@ function BlockedPeriods({
   return (
     <div>
       <p>
-        Whole-day inclusive blocks in {timezone || 'your server timezone'}. Overlapping blocks or
+        Whole-day inclusive blocks in {timezone || 'منطقتك الزمنية على الخادم'}. Overlapping blocks or
         pending/confirmed appointments may prevent a new block. Existing appointments must be
         cancelled or rescheduled first.
       </p>
-      {periods.loading && <p role="status">Loading blocked periods…</p>}
+      {periods.loading && <p role="status">جارٍ تحميل فترات الحظر…</p>}
       <Failure error={periods.error} />
       <button
         type="button"
@@ -965,19 +908,21 @@ function BlockedPeriods({
       >
         Refresh blocked periods
       </button>
-      {!periods.loading && periods.data?.data.length === 0 && <p>No blocked periods.</p>}
+      {!periods.loading && !periods.error && periods.data?.data.length === 0 && (
+        <p>لا توجد فترات حظر.</p>
+      )}
       <div className="holiday-list">
         {periods.data?.data.map((period) => (
           <article key={period.id}>
             <span className="holiday-clock"><RemainingIcon name="pendingMobile" /></span>
             <div className="holiday-copy">
-              <strong>{period.reason || 'No reason provided'}</strong>
-              <p>{period.start_date} – {period.end_date}</p>
+              <strong>{period.reason || 'لم يُذكر سبب'}</strong>
+              <p>{formatCalendarDate(period.start_date) || 'التاريخ غير متاح'} – {formatCalendarDate(period.end_date) || 'التاريخ غير متاح'}</p>
             </div>
             <button
               className="icon-button holiday-remove"
               disabled={busy || locked}
-              aria-label={`Remove blocked period ${period.start_date}`}
+              aria-label={`Remove blocked period ${formatCalendarDate(period.start_date)}`.trimEnd()}
               onClick={() => remove(period.id)}
             >
               <RemainingIcon name="close" />
@@ -1003,7 +948,7 @@ function BlockedPeriods({
                 onChange={(event) => setDraft({ ...draft, start_date: event.target.value })}
               />
             </Field>
-            <Field label="End date (optional)">
+            <Field label="تاريخ الانتهاء (اختياري)">
               <input
                 type="date"
                 min={draft.start_date || today}
@@ -1012,7 +957,7 @@ function BlockedPeriods({
               />
             </Field>
           </div>
-          <Field label="Reason (optional)">
+          <Field label="السبب (اختياري)">
             <input
               maxLength={200}
               value={draft.reason ?? ''}
@@ -1030,7 +975,7 @@ function BlockedPeriods({
         <Actions
           pending={busy || !!periods.error || periods.loading || !today}
           close={close}
-          label={locked ? 'Retry identical submission' : 'Add blocked period'}
+          label={locked ? 'إعادة الإرسال نفسه' : 'إضافة فترة حظر'}
         />
       </form>
     </div>
@@ -1048,6 +993,7 @@ function ChangePassword({
 }) {
   const mutation = useMutation(api)
   const [validation, setValidation] = useState('')
+  const [reused, setReused] = useState(false)
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const form = event.currentTarget
@@ -1057,22 +1003,28 @@ function ChangePassword({
       password: String(data.get('password') ?? ''),
       password_confirmation: String(data.get('password_confirmation') ?? ''),
     }
-    if (
-      body.password !== body.password_confirmation ||
-      body.password === body.current_password ||
-      body.password.length < 8
-    ) {
-      setValidation(
-        'Use a different password of at least eight characters and matching confirmation.',
-      )
+    if (!validNewPassword(body.password)) {
+      setValidation(passwordPolicyMessage)
+      return
+    }
+    if (body.password === body.current_password) {
+      setValidation('يجب أن تختلف كلمة المرور الجديدة عن الحالية.')
+      return
+    }
+    if (body.password !== body.password_confirmation) {
+      setValidation('يجب أن تتطابق كلمة المرور الجديدة مع تأكيدها.')
       return
     }
     setValidation('')
+    setReused(false)
     void mutation.run(
       (signal) => api.request('/auth/user/password', 'PUT', { body, signal }),
       () => {
         form.reset()
         saved()
+      },
+      (error) => {
+        if (error instanceof ApiError && error.code === 'password_reused') setReused(true)
       },
     )
   }
@@ -1082,28 +1034,34 @@ function ChangePassword({
       <fieldset disabled={mutation.pending}>
         {(
           [
-            ['Current Password', 'current_password'],
-            ['New Password', 'password'],
-            ['Confirm New Password', 'password_confirmation'],
+            ['كلمة المرور الحالية', 'current_password'],
+            ['كلمة المرور الجديدة', 'password'],
+            ['تأكيد كلمة المرور الجديدة', 'password_confirmation'],
           ] as const
         ).map(([label, name]) => (
           <Field label={label} key={name}>
             <input
               type="password"
               name={name}
+              aria-label={label}
               required
-              minLength={name === 'current_password' ? 1 : 8}
               autoComplete={name === 'current_password' ? 'current-password' : 'new-password'}
+              onChange={() => {
+                setValidation('')
+                if (name === 'password') setReused(false)
+              }}
             />
+            {name === 'password' && (validation || reused) && (
+              <span className="remaining-error" role="alert">
+                {validation || 'يجب أن تختلف كلمة المرور الجديدة عن الحالية.'}
+              </span>
+            )}
           </Field>
         ))}
       </fieldset>
-      {validation && (
-        <p className="remaining-error" role="alert">
-          {validation}
-        </p>
+      {!(mutation.error instanceof ApiError && mutation.error.code === 'password_reused') && (
+        <Failure error={mutation.error} />
       )}
-      <Failure error={mutation.error} />
       <Actions pending={mutation.pending} close={close} />
     </form>
   )
@@ -1139,7 +1097,7 @@ function Logout({
   // Stage the explanation before local clearing can unmount this dialog.
   return (
     <>
-      <p>Log out of this device and revoke its server session?</p>
+      <p>تسجيل الخروج من هذا الجهاز وإلغاء جلسته على الخادم؟</p>
       <p role={started ? 'status' : undefined}>
         If the server cannot confirm revocation, you will still be signed out locally, but remote
         revocation is unknown and the session may remain active on the server.
@@ -1155,7 +1113,7 @@ function Logout({
             void logout()
           }}
         >
-          {pending ? 'Logging out…' : 'Log out'}
+          {pending ? 'جارٍ تسجيل الخروج…' : 'تسجيل الخروج'}
         </button>
       </footer>
     </>
@@ -1200,14 +1158,14 @@ function Faqs({ api }: { api: ApiClient }) {
   }, [api, page, revision])
   return (
     <div className="faq-list">
-      {loading && <p role="status">Loading FAQs…</p>}
+      {loading && <p role="status">جارٍ تحميل الأسئلة الشائعة…</p>}
       <Failure error={error} />
       {!!error && (
         <button className="remaining-cancel" onClick={() => setRevision((value) => value + 1)}>
           Retry FAQs
         </button>
       )}
-      {state?.data.length === 0 && <p>No published FAQs.</p>}
+      {state?.data.length === 0 && !error && <p>No published FAQs.</p>}
       {state?.data.map((faq, index) => (
         <details key={faq.id} open={index === 0}>
           <FaqSummary>{faq.question}</FaqSummary>

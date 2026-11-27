@@ -17,6 +17,7 @@ type WorkspaceProps = {
     | 'Profile'
     | 'Wallet'
     | 'Additional Content'
+    | 'RedFlags'
   navigate: (path: string) => void
   children: ReactNode
   offline?: boolean
@@ -32,6 +33,7 @@ const navigationIcons = [
   'part2-03-imgMessageCircleLinesAlt.svg',
   'part2-03-imgStars.svg',
   'part2-03-imgWallet.svg',
+  'part2-03-imgStars.svg',
 ]
 const mobileIcons = [
   'part2-06-imgHome.svg',
@@ -40,6 +42,7 @@ const mobileIcons = [
   'part2-06-imgFrame2147234899.svg',
   'part2-06-imgStars.svg',
   'part2-06-imgWalletAlt.svg',
+  'part2-06-imgStars.svg',
   'r4-chats-user-alt.svg',
 ]
 
@@ -130,31 +133,46 @@ export function Workspace({
   function openPage(label: string) {
     setExpanded(false)
     const route =
-      label === 'Dashboard'
+      label === 'حالات الخطر'
+        ? '/red-flags'
+        : label === 'لوحة التحكم'
         ? '/dashboard'
-        : label === 'Messages'
+        : label === 'الرسائل'
           ? '/chats'
-          : label === 'Sessions'
+          : label === 'الجلسات'
             ? '/sessions'
-            : label === 'Wallet'
+            : label === 'المحفظة'
               ? '/wallet'
-              : label === 'Additional Content'
+              : label === 'المحتوى الإضافي'
                 ? '/homework'
-              : label === 'Profile'
+              : label === 'الملف الشخصي'
                 ? '/profile'
-                : (label === 'Patients' || label === 'Clients') && (api || (import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === 'true'))
+                : (label === 'المرضى' || label === 'المرضى') && (api || (import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === 'true'))
                   ? '/clients'
                   : null
     if (route) navigate(route)
     else
       setNotice(
         api
-          ? `${label}: this feature is not available in the therapist API.`
-          : `${label}: this screen is not included in the supplied designs. No backend is connected.`,
+          ? `${label}: هذه الميزة غير متاحة في API المعالج.`
+          : `${label}: هذه الشاشة غير مضمّنة في التصاميم المتوفّرة. لا يوجد خادم متصل.`,
       )
   }
 
-  const activeLabel = active === 'Clients' ? 'Patients' : active
+  const activeLabel =
+    active === 'RedFlags'
+      ? 'حالات الخطر'
+      : (
+          {
+            Dashboard: 'لوحة التحكم',
+            Clients: 'المرضى',
+            Messages: 'الرسائل',
+            Sessions: 'الجلسات',
+            Profile: 'الملف الشخصي',
+            Wallet: 'المحفظة',
+            'Additional Content': 'المحتوى الإضافي',
+          } as const
+        )[active]
 
   return (
     <div
@@ -163,18 +181,18 @@ export function Workspace({
       {expanded && (
         <button
           className="sidebar-backdrop"
-          aria-label="Close navigation"
+          aria-label="إغلاق التنقل"
           onClick={() => setExpanded(false)}
         />
       )}
-      <aside ref={sidebarRef} tabIndex={expanded ? -1 : undefined} className="sidebar" aria-label="Main navigation">
+      <aside ref={sidebarRef} tabIndex={expanded ? -1 : undefined} className="sidebar" aria-label="التنقل الرئيسي">
         <div>
           <header className="sidebar-header">
             <Logo wordmark />
             <button
               className="icon-button collapse-button"
               aria-label={
-                expanded ? 'Close navigation' : collapsed ? 'Expand sidebar' : 'Collapse sidebar'
+                expanded ? 'إغلاق التنقل' : collapsed ? 'توسيع الشريط الجانبي' : 'طي الشريط الجانبي'
               }
               onClick={() => {
                 if (window.innerWidth <= 1100) setExpanded(!expanded)
@@ -191,7 +209,7 @@ export function Workspace({
             </button>
           </header>
           <nav className="navigation">
-            <p className="nav-label">MAIN MENU</p>
+            <p className="nav-label">القائمة الرئيسية</p>
             {menu.map((item, index) => (
               <button
                 key={item.label}
@@ -217,27 +235,27 @@ export function Workspace({
         <div className="sidebar-footer">
           <div className="client-reminder textured">
             <div>
-              <p>This week</p>
+              <p>هذا الأسبوع</p>
               <p>
                 {api
-                  ? 'Review your assigned clients and upcoming sessions.'
-                  : 'You have one client without assigned content for over a week.'}
+                  ? 'راجع عملاءك المسندين وجلساتك القادمة.'
+                  : 'لديك عميل دون محتوى مسند منذ أكثر من أسبوع.'}
               </p>
               <button onClick={() => navigate('/clients')}>
-                Client review
+                مراجعة العميل
               </button>
             </div>
           </div>
           <button
             className="compact-reminder icon-button"
-            aria-label="Client review"
+            aria-label="مراجعة العميل"
             onClick={() => navigate('/clients')}
           >
             <DesignIcon name="part2-10-imgMaterialSymbolsLightEmergencyHome.svg" />
           </button>
           <button
             className={`profile-card textured ${active === 'Profile' ? 'active' : ''}`}
-            aria-label="Open profile"
+            aria-label="فتح الملف الشخصي"
             aria-current={active === 'Profile' ? 'page' : undefined}
             onClick={() => navigate('/profile')}
           >
@@ -249,8 +267,8 @@ export function Workspace({
               <img src={asset('dashboard-imgContainer.png')} alt="Dr. Issa Alhadad" />
             )}
             <span className="profile-copy">
-              <strong>{api ? user?.name : 'Dr. Issa Alhadad'}</strong>
-              <small>{api ? 'Therapist' : 'Certified Psychotherapist'}</small>
+              <strong>{api ? user?.name : 'د. عيسى الحداد'}</strong>
+              <small>{api ? 'Therapist' : 'معالج نفسي مرخص'}</small>
             </span>
             <DesignIcon name="part2-03-imgIcon.svg" />
           </button>
@@ -261,7 +279,7 @@ export function Workspace({
           <div className="secondary-heading">
             <button
               className="icon-button secondary-mobile-menu"
-              aria-label="Open navigation"
+              aria-label="فتح التنقل"
               aria-expanded={expanded}
               onClick={() => setExpanded(!expanded)}
             >
@@ -274,19 +292,19 @@ export function Workspace({
             <label className={`secondary-search ${searchOpen ? 'open' : ''}`}>
               <DesignIcon name="part2-03-imgSearch.svg" />
               <input
-                aria-label={onSearch ? 'Search patients' : 'Search unavailable'}
-                title={onSearch ? undefined : 'Search is not available on this page.'}
+                aria-label={onSearch ? 'ابحث في المرضى' : 'البحث غير متاح'}
+                title={onSearch ? undefined : 'البحث غير متاح في هذه الصفحة.'}
                 disabled={!onSearch}
-                placeholder="Search..."
+                placeholder="ابحث..."
                 onChange={(event) => onSearch?.(event.target.value)}
               />
             </label>
             <button
               className="icon-button secondary-mobile-search"
-              aria-label="Open search"
+              aria-label="فتح البحث"
               aria-expanded={searchOpen}
               disabled={!onSearch}
-              title={onSearch ? undefined : 'Search is not available on this page.'}
+              title={onSearch ? undefined : 'البحث غير متاح في هذه الصفحة.'}
               onClick={() => setSearchOpen(!searchOpen)}
             >
               <DesignIcon name="part2-03-imgSearch.svg" />
@@ -314,14 +332,14 @@ export function Workspace({
               </g>
               <path fill="currentColor" d="M1.71967 1.71967C2.01256 1.42678 2.48744 1.42678 2.78033 1.71967L16.2803 15.2197C16.5732 15.5126 16.5732 15.9874 16.2803 16.2803C15.9874 16.5732 15.5126 16.5732 15.2197 16.2803L1.71967 2.78033C1.42678 2.48744 1.42678 2.01256 1.71967 1.71967Z" />
             </svg>
-            <span>You're offline. Some data may not be up to date.</span>
+            <span>أنت غير متصل. قد لا تكون بعض البيانات محدّثة.</span>
           </div>
         )}
         {children}
       </main>
       {(active === 'Messages' || isHelpPage) && (
-        <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
-          {[...menu.map((item) => item.label), 'Profile'].map((label, index) => (
+        <nav className="mobile-bottom-nav" aria-label="تنقل الجوال">
+          {[...menu.map((item) => item.label), 'الملف الشخصي'].map((label, index) => (
             <button
               key={label}
               className={label === activeLabel ? 'active' : ''}
@@ -344,7 +362,7 @@ export function Workspace({
             <h2>Notifications</h2>
             <button
               className="icon-button"
-              aria-label="Close notifications"
+              aria-label="إغلاق الإشعارات"
               onClick={() => setNotificationOpen(false)}
             >
               ×
@@ -367,9 +385,9 @@ export function Workspace({
                       <button
                         className="soft-button"
                         onClick={() =>
-                          item.action === 'Accept'
+                          item.action === 'قبول'
                             ? setDismissed([...dismissed, item.id])
-                            : setNotice('Demo only: no notification service is connected.')
+                            : setNotice('عرض تجريبي فقط: لا توجد خدمة إشعارات متصلة.')
                         }
                       >
                         {item.action}
@@ -383,7 +401,7 @@ export function Workspace({
       )}
       {notice && (
         <Modal
-          title={api ? 'Feature unavailable' : 'Frontend demo'}
+          title={api ? 'الميزة غير متاحة' : 'عرض الواجهة التجريبي'}
           className="part2-modal"
           onClose={() => setNotice('')}
         >

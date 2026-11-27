@@ -28,57 +28,57 @@ type FixtureRow = {
 // library and never fabricates clinical operations.
 const fixtureRows: readonly FixtureRow[] = [
   {
-    title: 'Daily Small Activity',
-    type: 'Article / Lesson',
-    duration: '10 min read',
+    title: 'نشاط يومي صغير',
+    type: 'مقال / درس',
+    duration: 'قراءة 10 د',
     patients: 0,
-    status: ['Published v2', '4 long-text fields', 'Not inserted yet'],
+    status: ['منشور v2', '4 حقول نص طويل', 'لم يُدرج بعد'],
     fresh: true,
   },
   {
-    title: 'Daily Breathing Exercise',
+    title: 'تمرين التنفس اليومي',
     type: 'Video',
-    duration: '12 min',
+    duration: '12 د',
     patients: 14,
-    status: ['Published v1', 'Assigned'],
+    status: ['منشور v1', 'Assigned'],
   },
   {
-    title: 'Sleep Journal',
-    type: 'Interactive Exercise',
-    duration: '5 min',
+    title: 'يوميات النوم',
+    type: 'تمرين تفاعلي',
+    duration: '5 د',
     patients: 8,
-    status: ['Published v1', 'Assigned'],
+    status: ['منشور v1', 'Assigned'],
   },
   {
-    title: 'Worry Time Practice',
+    title: 'تمرين وقت القلق',
     type: 'Goal',
-    duration: '15 min',
+    duration: '15 د',
     patients: 3,
-    status: ['Draft', 'Not inserted yet'],
+    status: ['Draft', 'لم يُدرج بعد'],
   },
 ]
 
 const fixturePatients = [
-  { name: 'Saad Ali', completion: '92%', status: 'On track' },
-  { name: 'Jamal Thompson', completion: '71%', status: 'Review due' },
-  { name: 'Yaser Ramirez', completion: '100%', status: 'On track' },
-  { name: 'Maya Patel', completion: '64%', status: 'On track' },
-  { name: 'Noah Bennett', completion: '38%', status: 'Review due' },
+  { name: 'سعد علي', completion: '92%', status: 'على المسار' },
+  { name: 'جمال طومسون', completion: '71%', status: 'مراجعة مستحقة' },
+  { name: 'ياسر راميريز', completion: '100%', status: 'على المسار' },
+  { name: 'مايا باتيل', completion: '64%', status: 'على المسار' },
+  { name: 'نوح بينيت', completion: '38%', status: 'مراجعة مستحقة' },
 ] as const
 
-const clinicalNeeds = ['All needs', 'Anxiety', 'Depression', 'Sleep', 'Stress', 'Mood']
+const clinicalNeeds = ['كل الاحتياجات', 'Anxiety', 'Depression', 'Sleep', 'Stress', 'Mood']
 const contentTypes = [
-  'All types',
-  'Interactive Exercise',
+  'كل الأنواع',
+  'تمرين تفاعلي',
   'Video',
   'Audio',
-  'Article / Lesson',
+  'مقال / درس',
   'Goal',
-  'Quick Check',
+  'فحص سريع',
 ]
 
 const instructions =
-  'Choose one small activity — no longer than 10 minutes — and do it without waiting for motivation. Then record what you did and how you felt before and after.'
+  'اختر نشاطاً صغيراً واحداً — لا يتجاوز 10 دقائق — وقم به دون انتظار الحماس. ثم سجّل ما فعلته وكيف شعرت قبله وبعده.'
 
 export function HomeworkLibrary({ navigate, api }: HomeworkLibraryProps) {
   const requested = new URLSearchParams(window.location.search).get('state')
@@ -93,8 +93,8 @@ export function HomeworkLibrary({ navigate, api }: HomeworkLibraryProps) {
   const [notice, setNotice] = useState('')
   const [deleteDismissed, setDeleteDismissed] = useState(false)
   const [search, setSearch] = useState('')
-  const [need, setNeed] = useState('All needs')
-  const [type, setType] = useState('All types')
+  const [need, setNeed] = useState('كل الاحتياجات')
+  const [type, setType] = useState('كل الأنواع')
   const [bannerDismissed, setBannerDismissed] = useState(false)
   const [tab, setTab] = useState<Tab>(variant === 'no-patients' ? 'patients' : 'content')
   const isDetails = variant === 'preview' || variant === 'no-patients'
@@ -102,19 +102,19 @@ export function HomeworkLibrary({ navigate, api }: HomeworkLibraryProps) {
   function unavailable(label: string) {
     setNotice(
       api
-        ? `${label}: this feature is not available in the therapist API.`
-        : `${label}: local design preview only — no homework service is connected.`,
+        ? `${label}: هذه الميزة غير متاحة في API المعالج.`
+        : `${label}: معاينة تصميم محلية فقط — لا توجد خدمة واجبات متصلة.`,
     )
   }
   function openCreate() {
-    if (api) unavailable('Create New Homework')
+    if (api) unavailable('إنشاء واجب جديد')
     else navigate('/homework/create')
   }
 
   const query = search.trim().toLocaleLowerCase()
   const rows = fixtureRows.filter(
     (row) =>
-      (type === 'All types' || row.type === type) &&
+      (type === 'كل الأنواع' || row.type === type) &&
       row.title.toLocaleLowerCase().includes(query),
   )
   const listVisible = variant === 'list' || variant === 'published'
@@ -123,11 +123,11 @@ export function HomeworkLibrary({ navigate, api }: HomeworkLibraryProps) {
     <Workspace
       title={
         <>
-          <span className="r5-hw-crumb">Additional Content / </span>
-          {isDetails ? 'Homework Details' : 'Homework Library'}
+          <span className="r5-hw-crumb">المحتوى الإضافي / </span>
+          {isDetails ? 'تفاصيل الواجب' : 'مكتبة الواجبات'}
         </>
       }
-      mobileTitle={isDetails ? 'Homework Details' : 'Sakina Library'}
+      mobileTitle={isDetails ? 'تفاصيل الواجب' : 'مكتبة سكينة'}
       active="Additional Content"
       navigate={navigate}
       onSearch={isDetails || api ? undefined : setSearch}
@@ -136,17 +136,17 @@ export function HomeworkLibrary({ navigate, api }: HomeworkLibraryProps) {
       <div className={`r5-homework r5-variant-${variant}`}>
         {!isDetails && (
           <header className="r5-hw-header">
-            <h2>Homework Library</h2>
+            <h2>مكتبة الواجبات</h2>
             <p>
               <span className="r5-hw-sub-long">
                 Manage, organize, and assign clinical homework resources to your patients.
               </span>
-              <span className="r5-hw-sub-short">Assign clinical exercises to patients.</span>
+              <span className="r5-hw-sub-short">أسند التمارين الإكلينيكية للمرضى.</span>
             </p>
             <div className="r5-hw-filters">
               <label className="r5-hw-select">
-                <span className="sr-only">Filter by Clinical needs</span>
-                <select aria-label="Filter by Clinical needs" value={need} onChange={(e) => setNeed(e.target.value)}>
+                <span className="sr-only">تصفية حسب الاحتياجات الإكلينيكية</span>
+                <select aria-label="تصفية حسب الاحتياجات الإكلينيكية" value={need} onChange={(e) => setNeed(e.target.value)}>
                   {clinicalNeeds.map((item) => (
                     <option key={item}>{item}</option>
                   ))}
@@ -163,8 +163,8 @@ export function HomeworkLibrary({ navigate, api }: HomeworkLibraryProps) {
               <label className="r5-hw-search">
                 <DesignIcon name="part2-03-imgSearch.svg" />
                 <input
-                  aria-label="Search homework templates"
-                  placeholder="Search..."
+                  aria-label="ابحث في قوالب الواجبات"
+                  placeholder="ابحث..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -176,13 +176,13 @@ export function HomeworkLibrary({ navigate, api }: HomeworkLibraryProps) {
           <p className="r5-hw-banner" role="status">
             <CheckIcon />
             Homework published successfully.
-            <button aria-label="Dismiss publish notice" onClick={() => setBannerDismissed(true)}>
+            <button aria-label="إغلاق تنبيه النشر" onClick={() => setBannerDismissed(true)}>
               ×
             </button>
           </p>
         )}
         {listVisible ? (
-          <section className="r5-hw-list" aria-label="Homework templates">
+          <section className="r5-hw-list" aria-label="قوالب الواجبات">
             {rows.map((row) => (
               <button
                 key={row.title}
@@ -202,8 +202,8 @@ export function HomeworkLibrary({ navigate, api }: HomeworkLibraryProps) {
                   <span className="r5-hw-row-detail">
                     <DesignIcon name="dashboard-imgSquareUserCheck.svg" />
                     {row.patients === 0
-                      ? 'No patients'
-                      : `${row.patients} patient${row.patients === 1 ? '' : 's'}`}
+                      ? 'لا يوجد مرضى'
+                      : `${row.patients} ${row.patients === 1 ? 'مريض' : 'مرضى'}`}
                   </span>
                 </span>
                 <span className={`r5-hw-status ${row.fresh ? 'r5-hw-status-fresh' : ''}`}>
@@ -219,7 +219,7 @@ export function HomeworkLibrary({ navigate, api }: HomeworkLibraryProps) {
             ))}
             {!rows.length && (
               <p className="r5-hw-empty-result" role="status">
-                No homework templates match this filter.
+                لا توجد قوالب واجبات تطابق هذا المرشّح.
               </p>
             )}
           </section>
@@ -228,7 +228,7 @@ export function HomeworkLibrary({ navigate, api }: HomeworkLibraryProps) {
             <span className="r5-hw-empty-icon">
               <DesignIcon name="r5-library-states-sparkles.svg" />
             </span>
-            <h3>No homework templates yet</h3>
+            <h3>لا توجد قوالب واجبات بعد</h3>
             <p>
               Create your first homework template to start assigning clinical exercises and
               tracking your patient progress.
@@ -251,7 +251,7 @@ export function HomeworkLibrary({ navigate, api }: HomeworkLibraryProps) {
       </div>
       {notice && (
         <Modal
-          title={api ? 'Feature unavailable' : 'Frontend demo'}
+          title={api ? 'الميزة غير متاحة' : 'عرض الواجهة التجريبي'}
           className="part2-modal"
           onClose={() => setNotice('')}
         >
@@ -265,7 +265,7 @@ export function HomeworkLibrary({ navigate, api }: HomeworkLibraryProps) {
           onClose={() => setDeleteDismissed(true)}
           onDelete={() => {
             setDeleteDismissed(true)
-            setNotice('Demo only: no template was deleted. No backend is connected.')
+            setNotice('عرض تجريبي فقط: لم يُحذف أي قالب. لا يوجد خادم متصل.')
           }}
         />
       )}
@@ -290,14 +290,14 @@ function DetailsView({
 }) {
   const stats = empty
     ? [
-        { label: 'Total Times Assigned', value: '0 times', chip: 'No activity' },
-        { label: 'Average Completion Rate', value: '0.0%', chip: 'N/A' },
-        { label: 'Patient Average Rating', value: '—', chip: 'No reviews yet' },
+        { label: 'إجمالي مرات الإسناد', value: '0 مرات', chip: 'لا يوجد نشاط' },
+        { label: 'متوسط نسبة الإكمال', value: '0.0%', chip: 'N/A' },
+        { label: 'متوسط تقييم المرضى', value: '—', chip: 'لا توجد مراجعات بعد' },
       ]
     : [
-        { label: 'Total Times Assigned', value: '48 times', chip: '+12% this mo' },
-        { label: 'Average Completion Rate', value: '92.4%', chip: '+4% vs avg' },
-        { label: 'Patient Average Rating', value: '4.8 / 5', chip: 'Highly Effective' },
+        { label: 'إجمالي مرات الإسناد', value: '48 مرة', chip: '+12% هذا الشهر' },
+        { label: 'متوسط نسبة الإكمال', value: '92.4%', chip: '+4% مقابل المتوسط' },
+        { label: 'متوسط تقييم المرضى', value: '4.8 / 5', chip: 'فعّالة جداً' },
       ]
   const patientCount = empty ? 0 : 14
   return (
@@ -306,20 +306,20 @@ function DetailsView({
         <button
           type="button"
           className="icon-button r5-hd-back"
-          aria-label="Back to Homework Library"
+          aria-label="عودة إلى مكتبة الواجبات"
           onClick={() => navigate(isDemoMode() ? '/homework?state=list' : '/homework')}
         >
           <DesignIcon name="r5-library-states-arrow-left.svg" />
         </button>
         <div className="r5-hd-titles">
           <h2>Daily Breathing Exercise</h2>
-          <p>Manage and review patient template preview.</p>
+          <p>أدر وراجع معاينة قالب المريض.</p>
         </div>
         {!empty && (
           <button
             type="button"
             className="soft-button r5-hd-edit-top"
-            onClick={() => (api ? onUnavailable('Edit Template') : navigate('/homework/create'))}
+            onClick={() => (api ? onUnavailable('تعديل القالب') : navigate('/homework/create'))}
           >
             Edit Template
           </button>
@@ -338,7 +338,7 @@ function DetailsView({
         <button
           role="tab"
           aria-selected={tab === 'content'}
-          aria-label="Content & Preview"
+          aria-label="المحتوى والمعاينة"
           className={tab === 'content' ? 'selected' : ''}
           onClick={() => setTab('content')}
         >
@@ -352,12 +352,12 @@ function DetailsView({
         <button
           role="tab"
           aria-selected={tab === 'patients'}
-          aria-label={`Assigned Patients (${patientCount})`}
+          aria-label={`المرضى المسندون (${patientCount})`}
           className={tab === 'patients' ? 'selected' : ''}
           onClick={() => setTab('patients')}
         >
           <span className="r5-hd-tab-long" aria-hidden="true">
-            Assigned Patients ({patientCount})
+            المرضى المسندون ({patientCount})
           </span>
           <span className="r5-hd-tab-short" aria-hidden="true">
             Patients ({patientCount})
@@ -370,16 +370,16 @@ function DetailsView({
           <PatientPreview />
         </div>
       ) : empty ? (
-        <section className="r5-hw-empty r5-hd-no-patients" aria-label="No patients assigned">
+        <section className="r5-hw-empty r5-hd-no-patients" aria-label="لا يوجد مرضى مسندون">
           <span className="r5-hw-empty-icon">
             <DesignIcon name="r5-library-states-users.svg" />
           </span>
-          <h3>No patients assigned yet</h3>
+          <h3>لا يوجد مرضى مسندون بعد</h3>
           <p>
             Assign this template to one or more of your active clinical patients to begin
             collecting logs.
           </p>
-          <button type="button" className="r5-hw-cta" onClick={() => onUnavailable('Assign Homework Now')}>
+          <button type="button" className="r5-hw-cta" onClick={() => onUnavailable('أسند الواجب الآن')}>
             Assign Homework Now
           </button>
         </section>
@@ -417,17 +417,17 @@ function TemplateCard({
         <span className="r5-hw-chip r5-hw-chip-type">Breathing Exercise</span>
       </header>
       <dl className="r5-hd-fields">
-        <dt>Title</dt>
-        <dd>Daily Small Activity</dd>
-        <dt>Instructions / Description</dt>
+        <dt>العنوان</dt>
+        <dd>نشاط يومي صغير</dd>
+        <dt>التعليمات / الوصف</dt>
         <dd>{instructions}</dd>
       </dl>
       <div className="r5-hd-uploads">
-        <button type="button" onClick={() => onUnavailable('Upload video')}>
+        <button type="button" onClick={() => onUnavailable('رفع فيديو')}>
           <DesignIcon name="r5-library-states-upload.svg" />
           Click here to Upload new video file
         </button>
-        <button type="button" onClick={() => onUnavailable('Upload thumbnail')}>
+        <button type="button" onClick={() => onUnavailable('رفع صورة مصغّرة')}>
           <DesignIcon name="r5-library-states-upload.svg" />
           Click here to Upload new thumbnail
         </button>
@@ -436,7 +436,7 @@ function TemplateCard({
         <button
           type="button"
           className="teal-button r5-hd-edit"
-          onClick={() => (api ? onUnavailable('Edit template') : navigate('/homework/create'))}
+          onClick={() => (api ? onUnavailable('تعديل القالب') : navigate('/homework/create'))}
         >
           Edit template
         </button>
@@ -462,7 +462,7 @@ function PatientPreview() {
           <span className="r5-hd-phone-back" aria-hidden="true">
             ‹
           </span>
-          <strong>Breathing Exercise 7,8,9</strong>
+          <strong>تمرين التنفس 7،8،9</strong>
         </div>
         <div className="r5-hd-phone-body">
           <div className="r5-hd-phone-video">

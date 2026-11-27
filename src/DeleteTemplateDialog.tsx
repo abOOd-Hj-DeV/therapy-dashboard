@@ -12,11 +12,11 @@ export function DeleteTemplateDialog({
   onDelete: () => void
 }) {
   return (
-    <Modal title="Delete Template?" className="r5-delete-template-modal" onClose={onClose}>
+    <Modal title="حذف القالب؟" className="r5-delete-template-modal" onClose={onClose}>
       <p className="r5-delete-template-copy">
         Are you sure you want to delete “{templateName}”? This action cannot be undone.
         {assignedCount !== undefined &&
-          ` This template is currently assigned to ${assignedCount} patients.`}
+          ` هذا القالب مسند حالياً إلى ${assignedCount} مريضاً.`}
       </p>
       <footer className="r5-delete-template-actions">
         <button type="button" className="r5-delete-template-cancel" onClick={onClose}>

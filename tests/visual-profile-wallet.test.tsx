@@ -6,6 +6,7 @@ const repairCss = readFileSync('src/visual-profile-wallet.css', 'utf8')
 import { ApiClient, type ApiSession } from '../src/api'
 import { Profile } from '../src/Profile'
 import { Wallet } from '../src/Wallet'
+import { profileReview, validProfile } from './therapist-profile-fixtures'
 
 vi.mock('../src/Workspace', () => ({
   Workspace: ({ children, active }: { children: ReactNode; active: string }) => (
@@ -37,6 +38,12 @@ async function harness(overrides: Record<string, unknown> = {}) {
     const path = String(input).replace('https://visual.example.test/api/v1', '')
     if (Object.hasOwn(overrides, path)) return json(overrides[path])
     if (path === '/auth/user') return json({ user })
+    if (path === '/therapists/me/profile') return json({
+      data: profileReview({
+        published: { ...validProfile, ...therapist, email: user.email },
+        account: { whatsapp_number: user.whatsapp_number, email: user.email },
+      }),
+    })
     if (path === '/therapists/me/dashboard') return json({
       therapist, clients_count: 7,
       stats: { pending: 2, confirmed: 3, completed: 12, today: 1 }, timezone: 'UTC',
@@ -154,9 +161,9 @@ describe('profile/wallet designed component regression contracts', () => {
     expect(avatar).toHaveTextContent('RT')
     expect(avatar.querySelector('img')).toBeNull()
     const rows = container.querySelectorAll('.profile-info-row')
-    expect(rows).toHaveLength(9)
+    expect(rows).toHaveLength(11)
     rows.forEach((row) => expect(row.querySelector(':scope > .remaining-icon')).not.toBeNull())
-    expect(screen.getByText('On file (not independent verification)')).toBeInTheDocument()
+    expect(screen.getByText(validProfile.job_title)).toBeInTheDocument()
     expect(container.querySelector('.profile-verified')).toBeNull()
   })
 
@@ -172,7 +179,7 @@ describe('profile/wallet designed component regression contracts', () => {
     const { api } = await harness()
     const { container } = render(<Profile page="settings" api={api} navigate={vi.fn()} />)
     await screen.findByRole('heading', { name: 'Real Therapist' })
-    fireEvent.click(screen.getByRole('button', { name: /Manage Working Hours/ }))
+    fireEvent.click(screen.getByRole('button', { name: /إدارة أوقات العمل/ }))
     await screen.findByLabelText('monday start 1')
     expect(container.querySelectorAll('.live-hours-day')).toHaveLength(7)
     expect(container.querySelectorAll('.live-hours-window')).toHaveLength(2)
@@ -189,12 +196,12 @@ describe('profile/wallet designed component regression contracts', () => {
     const { api } = await harness()
     const { container } = render(<Profile page="settings" api={api} navigate={vi.fn()} />)
     await screen.findByRole('heading', { name: 'Real Therapist' })
-    fireEvent.click(screen.getByRole('button', { name: /Vacations and Breaks/ }))
+    fireEvent.click(screen.getByRole('button', { name: /الإجازات والاستراحات/ }))
     await screen.findByText('Annual leave')
     const card = container.querySelector('.holiday-list article')
     expect(card?.querySelector('.holiday-clock')).not.toBeNull()
-    expect(card).toHaveTextContent('2030-06-10 – 2030-06-15')
-    expect(screen.getByRole('button', { name: 'Remove blocked period 2030-06-10' })).toHaveClass('holiday-remove')
+    expect(card).toHaveTextContent('10 Jun 2030 – 15 Jun 2030')
+    expect(screen.getByRole('button', { name: 'Remove blocked period 10 Jun 2030' })).toHaveClass('holiday-remove')
     expect(container.querySelector('.holidays-list')).toBeNull()
   })
 
