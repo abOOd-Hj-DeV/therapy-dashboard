@@ -35,7 +35,7 @@ export function LiveCarePage({
   const user = useApiUser(api)
   // This boundary immediately unmounts datasets and drafts when credentials or actor change.
   if (!user || user.role !== 'therapist' || !user.is_active || !user.phone_verified_at)
-    return <p role="alert">Sign in with an active, verified therapist account to view this page.</p>
+    return <p role="alert">سجّل الدخول بحساب معالج نشط وموثّق لعرض هذه الصفحة.</p>
   return page === 'detail' ? (
     <LiveCareRecord
       key={`${api.getSessionKey()}:${window.location.search}`}
@@ -75,7 +75,7 @@ function LiveCareOverview({ api, navigate, dashboard }: Props & { dashboard: boo
   const clientById = new Map(clients.data?.map((client) => [client.id, client]))
   const items = sessions.data ?? []
   const nameFor = (session: CareSession) =>
-    clientById.get(session.patient_id)?.full_name || 'Client identity unavailable'
+    clientById.get(session.patient_id)?.full_name || 'هوية العميل غير متاحة'
   const complete =
     !!sessions.data &&
     !!clients.data &&
@@ -106,7 +106,7 @@ function LiveCareOverview({ api, navigate, dashboard }: Props & { dashboard: boo
   const listHeader = (
     <header>
       <h2>
-        {dashboard ? 'Upcoming Sessions' : tab === 'All' ? 'All Sessions' : `${tab} Sessions`}
+        {dashboard ? 'الجلسات القادمة' : tab === 'All' ? 'كل الجلسات' : `${{'All':'الكل','Previous':'سابقة','Upcoming':'قادمة','Today':'اليوم'}[tab as 'All'|'Previous'|'Upcoming'|'Today']} الجلسات`}
       </h2>
       {dashboard && (
         <button className="see-all" onClick={() => navigate('/sessions')}>
@@ -132,7 +132,7 @@ function LiveCareOverview({ api, navigate, dashboard }: Props & { dashboard: boo
                 <section className="dashboard-hero textured" aria-label="Today’s overview">
                   <div className="hero-copy">
                     <div className="greeting">
-                      <p>Welcome back</p>
+                      <p>مرحباً بعودتك</p>
                       <h2>{overview.data.therapist.full_name}</h2>
                       <p>
                         You have {overview.data.stats.today} pending or confirmed sessions today.
@@ -144,7 +144,7 @@ function LiveCareOverview({ api, navigate, dashboard }: Props & { dashboard: boo
                     </div>
                   </div>
                   <div className="next-session">
-                    <p className="eyebrow">YOUR NEXT SESSION</p>
+                    <p className="eyebrow">جلستك القادمة</p>
                     {complete && next ? (
                       <>
                         <div className="next-patient">
@@ -174,19 +174,19 @@ function LiveCareOverview({ api, navigate, dashboard }: Props & { dashboard: boo
                     ) : (
                       <p>
                         {complete
-                          ? 'No upcoming sessions.'
-                          : 'Upcoming sessions are not yet available.'}
+                          ? 'لا توجد جلسات قادمة.'
+                          : 'الجلسات القادمة ليست متاحة بعد.'}
                       </p>
                     )}
                   </div>
                 </section>
               </div>
-              <section className="metrics" aria-label="Practice statistics">
+              <section className="metrics" aria-label="إحصاءات العيادة">
                 {[
-                  ['Active clients', overview.data.clients_count],
-                  ['Pending sessions', overview.data.stats.pending],
-                  ['Confirmed sessions', overview.data.stats.confirmed],
-                  ['Completed sessions', overview.data.stats.completed],
+                  ['عملاء نشطون', overview.data.clients_count],
+                  ['جلسات معلّقة', overview.data.stats.pending],
+                  ['جلسات مؤكدة', overview.data.stats.confirmed],
+                  ['جلسات مكتملة', overview.data.stats.completed],
                 ].map(([label, value]) => (
                   <article className="metric" key={label}>
                     <div className="metric-data">
@@ -199,19 +199,19 @@ function LiveCareOverview({ api, navigate, dashboard }: Props & { dashboard: boo
               <p className="section-caption">
                 Client capacity: {overview.data.clients_count} / {overview.data.clients_limit}.{' '}
                 {overview.data.can_accept_clients
-                  ? 'Can accept clients.'
-                  : 'Cannot currently accept clients.'}
+                  ? 'يستطيع قبول عملاء.'
+                  : 'لا يستطيع قبول عملاء حالياً.'}
               </p>
             </>
           )}
         </>
       )}
       <ResourceStatus resource={sessions} label="sessions" />
-      <ResourceStatus resource={clients} label="client identities" />
+      <ResourceStatus resource={clients} label="هويات العملاء" />
       {!dashboard && (
         <div className="sessions-toolbar">
-          <div className="session-tabs" role="tablist" aria-label="Session filters">
-            {['All', 'Previous', 'Upcoming', 'Today'].map((label) => (
+          <div className="session-tabs" role="tablist" aria-label="مرشّحات الجلسات">
+            {(['All', 'Previous', 'Upcoming', 'Today'] as const).map((label) => (
               <button
                 key={label}
                 role="tab"
@@ -219,7 +219,7 @@ function LiveCareOverview({ api, navigate, dashboard }: Props & { dashboard: boo
                 className={label === tab ? 'selected' : ''}
                 onClick={() => setTab(label)}
               >
-                {label}
+                {{'All':'الكل','Previous':'السابقة','Upcoming':'القادمة','Today':'اليوم'}[label]}
                 {complete && (
                   <span>
                     {' '}
@@ -239,7 +239,7 @@ function LiveCareOverview({ api, navigate, dashboard }: Props & { dashboard: boo
           <button
             className="teal-button"
             disabled
-            title="Only patients can book sessions through this API."
+            title="يستطيع المرضى فقط حجز الجلسات عبر هذا API."
           >
             Schedule New
           </button>
@@ -254,7 +254,7 @@ function LiveCareOverview({ api, navigate, dashboard }: Props & { dashboard: boo
       {complete && (
         <section
           className={dashboard ? 'sessions-section' : 'all-sessions'}
-          aria-label={dashboard ? 'Upcoming Sessions' : 'All Sessions'}
+          aria-label={dashboard ? 'الجلسات القادمة' : 'كل الجلسات'}
         >
           {!dashboard && listHeader}
           <div className={dashboard ? 'sessions-card' : 'sessions-list-scroll'}>
@@ -262,7 +262,7 @@ function LiveCareOverview({ api, navigate, dashboard }: Props & { dashboard: boo
             <table className="all-sessions-table">
               <thead>
                 <tr>
-                  <th>Patient Name</th>
+                  <th>اسم المريض</th>
                   <th>Date</th>
                   <th>Status</th>
                 </tr>
@@ -276,7 +276,7 @@ function LiveCareOverview({ api, navigate, dashboard }: Props & { dashboard: boo
                         <span>
                           <span className="patient-name">{nameFor(session)}</span>
                           <small>
-                            {session.is_initial ? 'Initial session' : 'Session'} · {session.medium}{' '}
+                            {session.is_initial ? 'جلسة أولية' : 'جلسة'} · {session.medium}{' '}
                             · Payment: {session.payment_status}
                           </small>
                         </span>
@@ -285,7 +285,7 @@ function LiveCareOverview({ api, navigate, dashboard }: Props & { dashboard: boo
                     <td className="session-date">{careDate(session, timezone)}</td>
                     <td>
                       <button
-                        aria-label={`Open session for ${nameFor(session)}`}
+                        aria-label={`فتح جلسة ${nameFor(session)}`}
                         onClick={() => open(session)}
                       >
                         <CareStatus status={session.status} />

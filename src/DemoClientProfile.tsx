@@ -4,46 +4,46 @@ import { DesignIcon, Workspace } from './Workspace'
 import { formatCalendarDate } from './display-date'
 import './visual-client-profile-preview.css'
 
-type Tab = 'Overview' | 'Sessions' | 'Notes' | 'Custom Content'
+type Tab = 'Overview' | 'Sessions' | 'Notes' | 'محتوى مخصص'
 type SessionStatus = 'Upcoming' | 'Completed' | 'Missed'
-type SessionFilter = 'All (6)' | SessionStatus
+type SessionFilter = 'الكل (6)' | SessionStatus
 
 // Development design fixtures ONLY. These are transcribed from cached Figma
 // nodes 1:9668, 1:10353, 1:11284 and their responsive counterparts, never API data.
-const tabs: Tab[] = ['Overview', 'Sessions', 'Notes', 'Custom Content']
-const filters: SessionFilter[] = ['All (6)', 'Upcoming', 'Completed', 'Missed']
+const tabs: Tab[] = ['Overview', 'Sessions', 'Notes', 'محتوى مخصص']
+const filters: SessionFilter[] = ['الكل (6)', 'Upcoming', 'Completed', 'Missed']
 const stats = [
-  ['8', 'Total Sessions'],
-  ['7', 'Completed Sessions'],
-  ['85%', 'Adherence Rate'],
-  ['21', 'Days in Program'],
+  ['8', 'إجمالي الجلسات'],
+  ['7', 'الجلسات المكتملة'],
+  ['85%', 'نسبة الالتزام'],
+  ['21', 'أيام في البرنامج'],
 ]
 const indicators = [
-  { value: '4/10', previous: '7/10 previously', label: 'Anxiety level', width: 347.35 },
-  { value: '7/10', previous: '5/10 previously', label: 'Sleep quality', width: 607.875 },
-  { value: '8/10', previous: '6/10 previously', label: 'Daily performance', width: 694.713 },
+  { value: '4/10', previous: 'سابقاً 7/10', label: 'مستوى القلق', width: 347.35 },
+  { value: '7/10', previous: 'سابقاً 5/10', label: 'جودة النوم', width: 607.875 },
+  { value: '8/10', previous: 'سابقاً 6/10', label: 'الأداء اليومي', width: 694.713 },
 ]
 const sessions: { id: string; title: string; date: string; description: string; status: SessionStatus }[] = [
-  { id: 'follow-up', title: 'Follow-up Session', date: 'May 22, 2024 · 10:00 AM · 60 minutes', description: 'Next regular check-in', status: 'Upcoming' },
-  { id: 'monthly', title: 'Progress Review', date: 'Jun 5, 2024 · 2:00 PM · 30 minutes', description: 'Scheduled monthly review', status: 'Upcoming' },
-  { id: 'review', title: 'Progress Review', date: 'May 15, 2024 · 4:00 PM · 30 minutes', description: 'Assessed improvements and adjusted plan', status: 'Completed' },
-  { id: 'one-on-one', title: 'One-on-One Session', date: 'May 15, 2024 · 10:00 AM · 60 minutes', description: 'Marked progress in managing anxiety', status: 'Completed' },
-  { id: 'exercises', title: 'Follow-up', date: 'May 1, 2024 · 45 minutes', description: 'Continued commitment to exercises', status: 'Completed' },
-  { id: 'missed', title: 'Individual Session', date: 'Apr 27, 2024 · 60 minutes', description: 'Patient did not attend — not rescheduled at the time', status: 'Missed' },
-  { id: 'initial', title: 'Initial Consultation', date: 'Apr 20, 2024 · 60 minutes', description: 'Discussed goals and challenges', status: 'Completed' },
+  { id: 'follow-up', title: 'جلسة متابعة', date: '22 أيار 2024 · 10:00 ص · 60 دقيقة', description: 'المراجعة الدورية التالية', status: 'Upcoming' },
+  { id: 'monthly', title: 'مراجعة التقدم', date: '5 حزيران 2024 · 2:00 م · 30 دقيقة', description: 'مراجعة شهرية مجدولة', status: 'Upcoming' },
+  { id: 'review', title: 'مراجعة التقدم', date: '15 أيار 2024 · 4:00 م · 30 دقيقة', description: 'قُيّمت التحسّنات وعُدّلت الخطة', status: 'Completed' },
+  { id: 'one-on-one', title: 'جلسة فردية', date: '15 أيار 2024 · 10:00 ص · 60 دقيقة', description: 'تقدّم ملحوظ في إدارة القلق', status: 'Completed' },
+  { id: 'exercises', title: 'Follow-up', date: '1 أيار 2024 · 45 دقيقة', description: 'التزام مستمر بالتمارين', status: 'Completed' },
+  { id: 'missed', title: 'جلسة فردية', date: '27 نيسان 2024 · 60 دقيقة', description: 'لم يحضر المريض — لم تُعَد الجدولة حينها', status: 'Missed' },
+  { id: 'initial', title: 'استشارة أولية', date: '20 نيسان 2024 · 60 دقيقة', description: 'نوقشت الأهداف والتحديات', status: 'Completed' },
 ]
 const existingNotes = [
   {
-    title: 'Comprehensive Summary of Therapy Session',
-    date: 'Session Date and Time: May 15, 2024, at 4:00 PM',
+    title: 'ملخص شامل لجلسة العلاج',
+    date: 'تاريخ ووقت الجلسة: 15 أيار 2024، 4:00 م',
     body: "During this session, we thoroughly reviewed the patient's progress since the last meeting, assessing improvements and identifying areas that require further attention. We discussed the effectiveness of the current treatment plan in detail, considering the patient's feedback and observed responses. Based on this comprehensive evaluation, we made necessary adjustments to the treatment strategy to better align with the patient's evolving needs and goals, ensuring a more tailored and effective therapeutic approach moving forward.",
   },
-  { title: 'Therapy: One-on-One Session', date: 'Date: May 15, 2024, 10 AM', body: 'Noticed clear progress in managing anxiety.' },
-  { title: 'Individual Therapy', date: 'Session on May 15, 2024, at 10 AM', body: 'Patient improved anxiety coping skills.' },
+  { title: 'العلاج: جلسة فردية', date: 'التاريخ: 15 أيار 2024، 10 ص', body: 'لُوحظ تقدّم واضح في إدارة القلق.' },
+  { title: 'علاج فردي', date: 'جلسة 15 أيار 2024، 10 ص', body: 'حسّن المريض مهارات التعامل مع القلق.' },
   {
-    title: 'Individual Therapy Session',
-    date: 'Date: May 15, 2024, 10:00 AM',
-    body: 'Reviewed anxiety symptoms and coping strategies in detail. Patient showed strong progress in identifying triggers and using new techniques confidently. Focused on relaxation and cognitive exercises, with plans to reinforce these skills and tackle new challenges for ongoing improvement.',
+    title: 'جلسة علاج فردي',
+    date: 'التاريخ: 15 أيار 2024، 10:00 ص',
+    body: 'رُوجعت أعراض القلق واستراتيجيات التأقلم بالتفصيل. أظهر المريض تقدّماً قوياً في تحديد المحفّزات واستخدام التقنيات الجديدة بثقة. رُكّز على تمارين الاسترخاء والتمارين المعرفية، مع خطط لتعزيز هذه المهارات ومواجهة تحديات جديدة للتحسّن المستمر.',
   },
 ]
 
@@ -59,7 +59,7 @@ export function DemoClientProfile({ navigate }: { navigate: (path: string) => vo
 
 function ClientProfileFixture({ navigate }: { navigate: (path: string) => void }) {
   const [tab, setTab] = useState<Tab>('Overview')
-  const [filter, setFilter] = useState<SessionFilter>('All (6)')
+  const [filter, setFilter] = useState<SessionFilter>('الكل (6)')
   const [notice, setNotice] = useState('')
   const [draft, setDraft] = useState('')
   const [error, setError] = useState('')
@@ -67,7 +67,7 @@ function ClientProfileFixture({ navigate }: { navigate: (path: string) => void }
   const [expandedNotes, setExpandedNotes] = useState<number[]>([0])
 
   function unavailable(action: string) {
-    setNotice(`Demo only: ${action} is not connected. No call, booking, or server change has been made.`)
+    setNotice(`عرض تجريبي فقط: ${action} غير متصل. لم يُجرَ اتصال أو حجز أو تغيير على الخادم.`)
   }
 
   function switchTab(next: Tab) {
@@ -91,13 +91,13 @@ function ClientProfileFixture({ navigate }: { navigate: (path: string) => void }
     event.preventDefault()
     const body = draft.trim()
     if (body.length < 3 || body.length > 5000) {
-      setError('Enter a note between 3 and 5,000 characters. Demo notes are local only.')
+      setError('أدخل ملاحظة بين 3 و5,000 حرف. ملاحظات العرض محلية فقط.')
       return
     }
     setLocalNotes((notes) => [...notes, body])
     setDraft('')
     setError('')
-    setNotice('Demo only: note added locally for this preview. It was not sent to a server and disappears when this page is closed.')
+    setNotice('عرض تجريبي فقط: أُضيفت ملاحظة محلياً لهذه المعاينة. لم تُرسل إلى خادم وتختفي عند إغلاق الصفحة.')
   }
 
   function sessionRow(session: (typeof sessions)[number]) {
@@ -127,14 +127,14 @@ function ClientProfileFixture({ navigate }: { navigate: (path: string) => void }
 
   return (
     <div className="demo-client-profile">
-      <Workspace active="Clients" title="Manage Clients / Profiles" mobileTitle="Manage Clients / Profile" navigate={navigate}>
+      <Workspace active="Clients" title="إدارة العملاء / الملفات" mobileTitle="إدارة العملاء / الملف" navigate={navigate}>
         {notice && <div className="dcp-notice" role="status"><p>{notice}</p><button type="button" onClick={() => setNotice('')}>Dismiss</button></div>}
         <div className={`dcp-layout ${tab === 'Overview' ? 'dcp-layout-overview' : ''}`}>
           <aside className="dcp-card dcp-identity" aria-label="Design fixture client information">
             <div className="dcp-identity-top">
               <div className="dcp-person">
-                <img className="dcp-avatar" src={asset('preview-client-profile-ahmed.png')} alt="Ahmed Mohamed — design fixture" />
-                <div><h2>Ahmed Mohamed</h2><p>Age 28 · Male</p></div>
+                <img className="dcp-avatar" src={asset('preview-client-profile-ahmed.png')} alt="أحمد محمد — عنصر تصميمي" />
+                <div><h2>أحمد محمد</h2><p>العمر 28 · ذكر</p></div>
               </div>
               <div className="dcp-contact-actions">
                 <button type="button" className="dcp-primary" title="Open demo chats, not a real patient conversation" onClick={() => navigate('/chats')}><PreviewIcon name="contact" />Contact patient</button>
@@ -169,15 +169,15 @@ function ClientProfileFixture({ navigate }: { navigate: (path: string) => void }
                       </div>
                       <button type="button" className="dcp-primary dcp-schedule-session" onClick={() => unavailable('Schedule session')}><PreviewIcon name="plus" />Schedule session</button>
                     </div>
-                    {(filter === 'All (6)' || filter === 'Upcoming') && <section className="dcp-session-group" aria-label="Upcoming sessions"><h2>Upcoming</h2><div>{upcoming.map(sessionRow)}</div></section>}
-                    {filter !== 'Upcoming' && <section className="dcp-session-group" aria-label={filter === 'Missed' ? 'Missed sessions' : 'Completed sessions'}><h2>{filter === 'Missed' ? 'Missed' : 'Completed'}</h2><div>{historical.filter((session) => filter === 'All (6)' || session.status === filter).map(sessionRow)}</div></section>}
+                    {(filter === 'الكل (6)' || filter === 'Upcoming') && <section className="dcp-session-group" aria-label="Upcoming sessions"><h2>Upcoming</h2><div>{upcoming.map(sessionRow)}</div></section>}
+                    {filter !== 'Upcoming' && <section className="dcp-session-group" aria-label={filter === 'Missed' ? 'Missed sessions' : 'Completed sessions'}><h2>{filter === 'Missed' ? 'Missed' : 'Completed'}</h2><div>{historical.filter((session) => filter === 'الكل (6)' || session.status === filter).map(sessionRow)}</div></section>}
                   </div>
                 )}
                 {tab === 'Notes' && (
                   <div className="dcp-panel-body dcp-notes-body">
                     <form className="dcp-note-form" noValidate onSubmit={addNote}>
-                      <label htmlFor="dcp-new-note">New Note</label>
-                      <textarea id="dcp-new-note" placeholder="Type your note here..." value={draft} maxLength={5000} aria-describedby={`dcp-demo-disclaimer${error ? ' dcp-note-error' : ''}`} aria-invalid={Boolean(error)} onChange={(event) => { setDraft(event.target.value); setError('') }} />
+                      <label htmlFor="dcp-new-note">ملاحظة جديدة</label>
+                      <textarea id="dcp-new-note" placeholder="اكتب ملاحظتك هنا..." value={draft} maxLength={5000} aria-describedby={`dcp-demo-disclaimer${error ? ' dcp-note-error' : ''}`} aria-invalid={Boolean(error)} onChange={(event) => { setDraft(event.target.value); setError('') }} />
                       {error && <p id="dcp-note-error" role="alert">{error}</p>}
                       <div className="dcp-note-submit"><button type="submit" className="dcp-primary"><PreviewIcon name="plus" />Add Note</button></div>
                     </form>
@@ -195,7 +195,7 @@ function ClientProfileFixture({ navigate }: { navigate: (path: string) => void }
                     </section>
                   </div>
                 )}
-                {tab === 'Custom Content' && <div className="dcp-panel-body dcp-missing-reference"><h2>Custom Content reference unavailable</h2><p>The supplied frame 1:11772 contains Notes, not a Custom Content design. No content or assignments have been invented.</p></div>}
+                {tab === 'محتوى مخصص' && <div className="dcp-panel-body dcp-missing-reference"><h2>Custom Content reference unavailable</h2><p>The supplied frame 1:11772 contains Notes, not a Custom Content design. No content or assignments have been invented.</p></div>}
               </div>
             </section>
             {tab === 'Overview' && <section className="dcp-card dcp-indicators" aria-label="Clinical indicators — design fixtures only">

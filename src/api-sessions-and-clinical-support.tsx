@@ -314,7 +314,7 @@ export function useCareMutation(api: ApiClient, refresh: () => void) {
       if (!current()) return false
       retryIntent.current = null
       options.onSuccess?.()
-      setNotice(options.success ?? 'Saved on the server.')
+      setNotice(options.success ?? 'حُفظ على الخادم.')
       refresh()
       return true
     } catch (failure) {
@@ -450,7 +450,7 @@ export function careDate(
     if (label) return `${label} · ${session.local.timezone}`
   }
   const label = formatWallDateTime(session.session_date?.slice(0, 10) ?? null, session.session_time)
-  return label ? `${label} · UTC` : 'Schedule unavailable'
+  return label ? `${label} · UTC` : 'الموعد غير متاح'
 }
 export function careMeetingUrl(session: CareSession): string | null {
   if (session.status !== 'confirmed') return null

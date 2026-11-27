@@ -47,29 +47,29 @@ export class ApiError extends Error {
   ) {
     super(
       status === 401
-        ? 'Your session has ended. Please sign in again.'
+        ? 'انتهت جلستك. يرجى تسجيل الدخول مجدداً.'
         : status === 403
-          ? 'This action is not permitted for your account.'
+          ? 'هذا الإجراء غير مسموح لحسابك.'
           : status === 404
-            ? 'The requested record is unavailable.'
+            ? 'السجل المطلوب غير متاح.'
             : status === 409
-              ? 'The request conflicts with the current server state. Refresh before retrying.'
+              ? 'يتعارض الطلب مع حالة الخادم الحالية. حدّث قبل إعادة المحاولة.'
               : status === 422
-                ? 'Please check the submitted information.'
+                ? 'تحقق من المعلومات المُدخلة.'
                 : status === 429
-                  ? 'Too many requests. Wait before trying again.'
+                  ? 'طلبات كثيرة جداً. انتظر قبل المحاولة مجدداً.'
                   : status === 413
-                    ? 'The submitted content is too large.'
+                    ? 'المحتوى المُرسل كبير جداً.'
                     : status === 0
-                      ? 'Unable to reach the server. Check your connection. The result may be unknown.'
-                      : 'The server could not complete the request. Refresh before retrying.',
+                      ? 'تعذّر الوصول إلى الخادم. تحقق من اتصالك. قد تكون النتيجة مجهولة.'
+                      : 'تعذّر على الخادم إكمال الطلب. حدّث قبل إعادة المحاولة.',
     )
     this.name = 'ApiError'
   }
 }
 
 export function apiErrorMessage(error: unknown): string {
-  return error instanceof ApiError ? error.message : 'The request could not be completed.'
+  return error instanceof ApiError ? error.message : 'تعذّر إكمال الطلب.'
 }
 
 export function apiId(value: string): string {
@@ -289,7 +289,7 @@ export class ApiClient {
     this.refreshing = (async () => {
       try {
         const tokens = await this.rotate(session.refresh_token)
-        if (generation !== this.generation) throw new DOMException('Session changed', 'AbortError')
+        if (generation !== this.generation) throw new DOMException('تغيّرت الجلسة', 'AbortError')
         const next = {
           user: session.user,
           access_token: tokens.access_token,
@@ -320,7 +320,7 @@ export class ApiClient {
       const generation = this.generation
       if (!this.session || this.closing) throw new ApiError(401)
       if (Date.parse(this.session.expires_at) <= Date.now() + 15000) await this.refresh()
-      if (generation !== this.generation) throw new DOMException('Session changed', 'AbortError')
+      if (generation !== this.generation) throw new DOMException('تغيّرت الجلسة', 'AbortError')
       if (!this.session || this.closing) throw new ApiError(401)
     }
     return this.raw<T>(
@@ -359,7 +359,7 @@ export class ApiClient {
       destination.origin !== new URL(this.base).origin ||
       !destination.pathname.startsWith(new URL(this.base).pathname + '/')
     )
-      throw new Error('Only API-relative paths are accepted.')
+      throw new Error('تُقبل فقط المسارات النسبية للـAPI.')
     const generation = this.generation
     const controller = new AbortController()
     const onAbort = () => controller.abort()
@@ -369,7 +369,7 @@ export class ApiClient {
     const timeout = setTimeout(() => controller.abort(), 60000)
     const assertCurrent = () => {
       if (controller.signal.aborted || (generation !== this.generation && !options.public))
-        throw new DOMException('Request cancelled', 'AbortError')
+        throw new DOMException('أُلغي الطلب', 'AbortError')
     }
     try {
       assertCurrent()
@@ -405,7 +405,7 @@ export class ApiClient {
           typeof value?.code === 'string'
             ? value.code
             : response.status === 403 &&
-                value?.message === 'Your therapist profile has not been approved yet.'
+                value?.message === 'لم يُعتمد ملف المعالج الخاص بك بعد.'
               ? 'therapist_pending_approval'
               : undefined
         const seconds = value?.meta?.retry_after
@@ -420,7 +420,7 @@ export class ApiClient {
           : 0
         throw new ApiError(
           response.status,
-          Object.fromEntries(keys.map((key) => [key, ['Please check this field.']])),
+          Object.fromEntries(keys.map((key) => [key, ['تحقق من هذا الحقل.']])),
           Number.isInteger(seconds) && seconds > 0 ? seconds : Number.isFinite(delay) ? delay : 0,
           code,
           {

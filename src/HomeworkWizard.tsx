@@ -10,54 +10,54 @@ type HomeworkWizardProps = { navigate: (path: string) => void; api?: ApiClient }
 type ContentType = 'exercise' | 'video' | 'audio' | 'article' | 'worksheet' | 'goal' | 'check'
 
 const contentTypes: readonly { id: ContentType; label: string; icon: string }[] = [
-  { id: 'exercise', label: 'Interactive Exercise', icon: 'r5-create-wizard-exercise.svg' },
+  { id: 'exercise', label: 'تمرين تفاعلي', icon: 'r5-create-wizard-exercise.svg' },
   { id: 'video', label: 'Video', icon: 'r5-create-wizard-video.svg' },
   { id: 'audio', label: 'Audio', icon: 'r5-create-wizard-audio.svg' },
-  { id: 'article', label: 'Article / Lesson', icon: 'r5-create-wizard-article.svg' },
+  { id: 'article', label: 'مقال / درس', icon: 'r5-create-wizard-article.svg' },
   { id: 'worksheet', label: 'Worksheet', icon: 'r5-create-wizard-worksheet.svg' },
   { id: 'goal', label: 'Goal', icon: 'r5-create-wizard-goal.svg' },
-  { id: 'check', label: 'Quick Check', icon: 'r5-create-wizard-check.svg' },
+  { id: 'check', label: 'فحص سريع', icon: 'r5-create-wizard-check.svg' },
 ]
 
 type ExtraField = { label: string; kind: 'upload' | 'input'; hint: string }
 
-// Field sets mirror the per-type upload rows in the "Additional Fields" Figma frames.
+// Field sets mirror the per-type upload rows in the "حقول إضافية" Figma frames.
 // Types without a supplied frame reuse the same upload-pair/input-pair composition.
 const extraFields: Record<ContentType, ExtraField[]> = {
   exercise: [
-    { label: 'Exercise File (Trial)', kind: 'upload', hint: 'Click here to exercise file' },
-    { label: 'Exercise thumbnail', kind: 'upload', hint: 'Click here to Upload image' },
+    { label: 'ملف التمرين (تجريبي)', kind: 'upload', hint: 'انقر هنا لملف التمرين' },
+    { label: 'صورة التمرين المصغّرة', kind: 'upload', hint: 'انقر هنا لرفع صورة' },
   ],
   video: [
-    { label: 'Video File (Trial)', kind: 'upload', hint: 'Click here to video file' },
-    { label: 'Video thumbnail', kind: 'upload', hint: 'Click here to Upload image' },
+    { label: 'ملف الفيديو (تجريبي)', kind: 'upload', hint: 'انقر هنا لملف الفيديو' },
+    { label: 'صورة الفيديو المصغّرة', kind: 'upload', hint: 'انقر هنا لرفع صورة' },
   ],
   audio: [
-    { label: 'Audio File (Trial)', kind: 'upload', hint: 'Click here to video file' },
-    { label: 'Audio thumbnail', kind: 'upload', hint: 'Click here to Upload image' },
+    { label: 'ملف الصوت (تجريبي)', kind: 'upload', hint: 'انقر هنا لملف الفيديو' },
+    { label: 'صورة الصوت المصغّرة', kind: 'upload', hint: 'انقر هنا لرفع صورة' },
   ],
   article: [
-    { label: 'Cover image', kind: 'upload', hint: 'Click here to Upload image' },
-    { label: 'Reading time (minutes)', kind: 'input', hint: 'e.g. 8' },
+    { label: 'صورة الغلاف', kind: 'upload', hint: 'انقر هنا لرفع صورة' },
+    { label: 'وقت القراءة (دقائق)', kind: 'input', hint: 'e.g. 8' },
   ],
   worksheet: [
-    { label: 'Worksheet File', kind: 'upload', hint: 'Click here to worksheet file' },
-    { label: 'Worksheet thumbnail', kind: 'upload', hint: 'Click here to Upload image' },
+    { label: 'ملف ورقة العمل', kind: 'upload', hint: 'انقر هنا لملف ورقة العمل' },
+    { label: 'صورة ورقة العمل المصغّرة', kind: 'upload', hint: 'انقر هنا لرفع صورة' },
   ],
   goal: [
-    { label: 'Goal target', kind: 'input', hint: 'e.g. 5 sessions' },
-    { label: 'Duration (weeks)', kind: 'input', hint: 'e.g. 4' },
+    { label: 'الهدف', kind: 'input', hint: 'مثال: 5 جلسات' },
+    { label: 'المدة (أسابيع)', kind: 'input', hint: 'e.g. 4' },
   ],
   check: [
-    { label: 'Number of questions', kind: 'input', hint: 'e.g. 3' },
-    { label: 'Estimated time (minutes)', kind: 'input', hint: 'e.g. 2' },
+    { label: 'عدد الأسئلة', kind: 'input', hint: 'e.g. 3' },
+    { label: 'الوقت المقدر (دقائق)', kind: 'input', hint: 'e.g. 2' },
   ],
 }
 
 const demoFill = {
-  title: 'Daily Small Activity',
+  title: 'نشاط يومي صغير',
   description:
-    'Pick one small activity — no longer than 10 minutes — and do it without waiting until you feel like it. Then record what you did and how you felt before and after.',
+    'اختر نشاطاً صغيراً واحداً — لا يتجاوز 10 دقائق — وقم به دون انتظار رغبتك. ثم سجّل ما فعلته وكيف شعرت قبله وبعده.',
 }
 
 const validTypes = new Set(contentTypes.map((item) => item.id))
@@ -117,7 +117,7 @@ function WizardForm({
   const [fields, setFields] = useState<Record<string, string>>({})
   const [touched, setTouched] = useState(showValidation)
   const [notice, setNotice] = useState('')
-  const titleError = touched && !title.trim() ? 'A title is required to publish.' : ''
+  const titleError = touched && !title.trim() ? 'العنوان مطلوب للنشر.' : ''
 
   function selectType(next: ContentType) {
     setType(next)
@@ -134,7 +134,7 @@ function WizardForm({
 
   function pickFile(label: string) {
     if (live) {
-      setNotice('Uploading content files is not available in the therapist API.')
+      setNotice('رفع ملفات المحتوى غير متاح في API المعالج.')
       return
     }
     setFields((current) => ({ ...current, [label]: `${label.toLowerCase().replace(/\s+/g, '-')}-demo.pdf` }))
@@ -146,7 +146,7 @@ function WizardForm({
       return
     }
     if (live) {
-      setNotice('Publishing content is not available in the therapist API.')
+      setNotice('نشر المحتوى غير متاح في API المعالج.')
       return
     }
     navigate('/homework?state=published')
@@ -162,13 +162,13 @@ function WizardForm({
         <div className="hw-layout">
           <section className="hw-preview-panel" aria-labelledby="hw-preview-heading">
             <header className="hw-panel-head">
-              <h2 id="hw-preview-heading">Patient Preview</h2>
-              <span className="hw-live-badge">Live Preview</span>
+              <h2 id="hw-preview-heading">معاينة المريض</h2>
+              <span className="hw-live-badge">معاينة مباشرة</span>
             </header>
             <PatientPhone type={type} title={title} description={description} />
           </section>
           <section className="hw-form-panel" aria-labelledby="hw-form-heading">
-            <h2 id="hw-form-heading">Add new content</h2>
+            <h2 id="hw-form-heading">إضافة محتوى جديد</h2>
             <p className="hw-form-subtitle">
               Create new therapeutic content, place it in the patient’s library and preview how it
               will appear to the patient in the app.
@@ -179,7 +179,7 @@ function WizardForm({
               </p>
             )}
             <fieldset className="hw-type-picker">
-              <legend>Content Type</legend>
+              <legend>نوع المحتوى</legend>
               <div className="hw-type-grid">
                 {contentTypes.map((item) => (
                   <button
@@ -212,7 +212,7 @@ function WizardForm({
               )}
             </div>
             <div className="hw-field">
-              <label htmlFor="hw-description">Instructions / Description</label>
+              <label htmlFor="hw-description">التعليمات / الوصف</label>
               <textarea
                 id="hw-description"
                 rows={4}
@@ -221,7 +221,7 @@ function WizardForm({
               />
             </div>
             <fieldset className="hw-extra-fields">
-              <legend>Additional Fields by Content Type</legend>
+              <legend>حقول إضافية حسب نوع المحتوى</legend>
               <div className="hw-extra-grid">
                 {extraFields[type].map((field) => (
                   <div className="hw-field" key={field.label}>
@@ -263,7 +263,7 @@ function WizardForm({
         </div>
       </div>
       {notice && (
-        <Modal title="Feature unavailable" className="part2-modal" onClose={() => setNotice('')}>
+        <Modal title="الميزة غير متاحة" className="part2-modal" onClose={() => setNotice('')}>
           <p>{notice}</p>
         </Modal>
       )}
@@ -280,7 +280,7 @@ function PatientPhone({
   title: string
   description: string
 }) {
-  const heading = title.trim() || 'New content'
+  const heading = title.trim() || 'محتوى جديد'
   return (
     <div className="hw-phone" aria-hidden="false">
       <div className="hw-phone-screen">
@@ -301,7 +301,7 @@ function PatientPhone({
         <div className="hw-phone-body">
           <PhoneContent type={type} />
           <p className="hw-phone-caption">
-            {description.trim() || 'Preview updates as you fill in the form.'}
+            {description.trim() || 'تتحدث المعاينة أثناء ملء النموذج.'}
           </p>
         </div>
         <span className="hw-phone-homebar" aria-hidden="true" />
@@ -335,7 +335,7 @@ function PhoneContent({ type }: { type: ContentType }) {
     return (
       <div className="hw-widget-card">
         <img src={asset('r5-create-wizard-exercise.svg')} alt="" aria-hidden="true" />
-        <span>Interactive exercise</span>
+        <span>تمرين تفاعلي</span>
         <button type="button" tabIndex={-1}>Start</button>
       </div>
     )
@@ -343,7 +343,7 @@ function PhoneContent({ type }: { type: ContentType }) {
     return (
       <div className="hw-widget-card">
         <img src={asset('r5-create-wizard-worksheet.svg')} alt="" aria-hidden="true" />
-        <span>Worksheet · PDF</span>
+        <span>ورقة عمل · PDF</span>
         <button type="button" tabIndex={-1}>Open</button>
       </div>
     )
@@ -351,9 +351,9 @@ function PhoneContent({ type }: { type: ContentType }) {
     return (
       <div className="hw-widget-card">
         <img src={asset('r5-create-wizard-goal.svg')} alt="" aria-hidden="true" />
-        <span>Weekly goal</span>
+        <span>هدف أسبوعي</span>
         <span className="hw-goal-bar"><i /></span>
-        <small>0 of 5 done</small>
+        <small>0 من 5 منجزة</small>
       </div>
     )
   return (

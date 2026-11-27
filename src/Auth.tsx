@@ -19,7 +19,7 @@ export type AuthProps = {
   api?: ApiClient
 }
 const legal =
-  "By continuing, you agree to Langbase's Terms of Service and Privacy Policy, and to receive periodic emails with updates."
+  "بمتابعتك، توافق على شروط الخدمة وسياسة الخصوصية الخاصة بسكينة، وعلى استلام رسائل بريدية دورية بالتحديثات."
 
 export function Auth(props: AuthProps) {
   if (!props.api) return <DemoAuth {...props} />
@@ -77,8 +77,8 @@ function DemoAuth({ page, navigate, verificationEmail, onCreateAccount }: AuthPr
                     <header className="auth-heading">
                       <Logo />
                       <div>
-                        <h1 id="auth-heading">{signup ? 'Create Your Account' : 'log in to Sakina'}</h1>
-                        <p>Welcome back! Please sign in to continue</p>
+                        <h1 id="auth-heading">{signup ? 'أنشئ حسابك' : 'تسجيل الدخول إلى سكينة'}</h1>
+                        <p>مرحباً بعودتك! سجّل الدخول للمتابعة</p>
                       </div>
                     </header>
                     <button className="google-button" onClick={() => setModal('google')}>
@@ -102,7 +102,7 @@ function DemoAuth({ page, navigate, verificationEmail, onCreateAccount }: AuthPr
                           autoComplete="given-name"
                           value={firstName}
                           onChange={(e) => setFirstName(e.target.value)}
-                          placeholder="First name"
+                          placeholder="الاسم الأول"
                           required
                         />
                       </label>
@@ -113,19 +113,19 @@ function DemoAuth({ page, navigate, verificationEmail, onCreateAccount }: AuthPr
                           autoComplete="family-name"
                           value={lastName}
                           onChange={(e) => setLastName(e.target.value)}
-                          placeholder="Last name"
+                          placeholder="اسم العائلة"
                           required
                         />
                       </label>
                     </div>
                   )}
                   <label>
-                    {signup ? 'Work Email' : 'Email Address'}
+                    {signup ? 'البريد المهني' : 'البريد الإلكتروني'}
                     <input
                       name="email"
                       type="email"
                       autoComplete="email"
-                      placeholder={signup ? 'First name' : 'Enter your email address'}
+                      placeholder={signup ? 'الاسم الأول' : 'أدخل بريدك الإلكتروني'}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -147,7 +147,7 @@ function DemoAuth({ page, navigate, verificationEmail, onCreateAccount }: AuthPr
                       <button
                         type="button"
                         className="password-toggle"
-                        aria-label={visible ? 'Hide password' : 'Show password'}
+                        aria-label={visible ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
                         aria-pressed={visible}
                         onClick={() => setVisible(!visible)}
                       >
@@ -175,7 +175,7 @@ function DemoAuth({ page, navigate, verificationEmail, onCreateAccount }: AuthPr
                   {busy ? (
                     <>
                       <span className="spinner" />
-                      {signup ? 'Creating…' : 'Logging in…'}
+                      {signup ? 'Creating…' : 'جارٍ تسجيل الدخول…'}
                     </>
                   ) : signup ? (
                     'Create'
@@ -190,13 +190,13 @@ function DemoAuth({ page, navigate, verificationEmail, onCreateAccount }: AuthPr
         {page === 'verify' ? (
           <p className="auth-switch">
             Not receiving code?
-            <button onClick={() => setNotice('Demo: a new code was requested. No email is sent.')}>
+            <button onClick={() => setNotice('عرض تجريبي: طُلب رمز جديد. لا يُرسل بريد.')}>
               Resend
             </button>
           </p>
         ) : (
           <p className="auth-switch">
-            {signup ? 'I already have an account' : 'Don’t have an account?'}
+            {signup ? 'لديّ حساب بالفعل' : 'ليس لديك حساب؟'}
             <a
               href={signup ? '/login' : '/signup'}
               onClick={(event) => {
@@ -204,7 +204,7 @@ function DemoAuth({ page, navigate, verificationEmail, onCreateAccount }: AuthPr
                 navigate(signup ? '/login' : '/signup')
               }}
             >
-              {signup ? 'Sign in now!' : 'Sign up now!'}
+              {signup ? 'سجّل الدخول الآن!' : 'أنشئ حساباً الآن!'}
             </a>
           </p>
         )}
@@ -217,13 +217,13 @@ function DemoAuth({ page, navigate, verificationEmail, onCreateAccount }: AuthPr
       </div>
       {modal && (
         <Modal
-          title={modal === 'google' ? 'Google sign-in' : 'Reset your password'}
+          title={modal === 'google' ? 'تسجيل الدخول عبر Google' : 'استعادة كلمة المرور'}
           onClose={() => setModal(null)}
         >
           <p>
             {modal === 'google'
-              ? 'Google authentication is not connected in this frontend demo.'
-              : 'Password reset needs the authentication API. No email will be sent from this demo.'}
+              ? 'مصادقة Google غير متصلة في هذا العرض التجريبي.'
+              : 'استعادة كلمة المرور تحتاج API المصادقة. لن يُرسل بريد من هذا العرض.'}
           </p>
           <button
             className="primary-button"
@@ -265,18 +265,18 @@ function Verification({ email, onVerified }: { email: string; onVerified: () => 
     >
       <Icon name="otp-imgMood.svg" className="verification-mood" />
       <header>
-        <h1 id="auth-heading">We just emailed you.</h1>
-        <p>Please enter the code we emailed you.</p>
+        <h1 id="auth-heading">أرسلنا إليك بريداً للتو.</h1>
+        <p>أدخل الرمز الذي أرسلناه إليك بالبريد.</p>
       </header>
       <p>{email}</p>
-      <div className="otp-inputs" role="group" aria-label="Verification code">
+      <div className="otp-inputs" role="group" aria-label="رمز التحقق">
         {code.map((digit, index) => (
           <input
             key={index}
             ref={(node) => {
               inputs.current[index] = node
             }}
-            aria-label={`Code digit ${index + 1}`}
+            aria-label={`الخانة ${index + 1} من الرمز`}
             inputMode="numeric"
             autoComplete={index === 0 ? 'one-time-code' : 'off'}
             pattern="[0-9]"

@@ -32,45 +32,45 @@ type ProfileData = {
 type Hours = { day: string; enabled: boolean; from: string; to: string }[]
 type Holiday = { id: number; reason: string; from: string; to: string }
 const initialProfile: ProfileData = {
-  name: 'Ahmed Mohamed',
-  title: 'Certified Psychotherapist',
-  specialization: 'Anxiety and Depression Disorders',
+  name: 'أحمد محمد',
+  title: 'معالج نفسي مرخص',
+  specialization: 'اضطرابات القلق والاكتئاب',
   about:
-    "I specialize in anxiety and depression, helping people build tools that hold up in daily life — grounded in eight years of individual and group therapy, and a master's in clinical psychology from King Saud University.",
+    "أتخصص في القلق والاكتئاب، وأساعد الأشخاص على بناء أدوات تصمد في الحياة اليومية، استناداً إلى ثماني سنوات من العلاج الفردي والجماعي وماجستير في علم النفس الإكلينيكي من جامعة الملك سعود.",
   phone: '+966 50 123 4567',
   email: 'dr.khaled@example.com',
-  location: 'Riyadh, Saudi Arabia',
+  location: 'الرياض، السعودية',
 }
 const notificationLabels = [
-  'New client messages',
-  'Client progress updates',
-  'Payment & withdrawal notifications',
-  'Platform news and offers',
-  'Session reminders',
+  'رسائل جديدة من العملاء',
+  'تحديثات تقدّم العملاء',
+  'إشعارات الدفع والسحب',
+  'أخبار المنصة والعروض',
+  'تذكيرات الجلسات',
 ]
 const faqQuestions = [
-  'How do I add a new client?',
-  'How are my earnings calculated?',
-  'What is the Additional Content?',
-  'What is the expected processing time for withdrawals?',
-  'How do I update my working hours?',
+  'كيف أضيف عميلاً جديداً؟',
+  'كيف تُحتسب أرباحي؟',
+  'ما المحتوى الإضافي؟',
+  'ما المدة المتوقعة لمعالجة السحوبات؟',
+  'كيف أحدّث ساعات عملي؟',
 ]
 const faqAnswers = [
-  "From the Clients page, click Add Client and enter the client's basic details, then save.",
-  'Demo guidance: the Wallet shows sample session earnings, available balance and withdrawals. No live earnings service is connected.',
-  'Demo guidance: additional content supports between-session exercises. The content library is available in the session homework area.',
-  'Withdrawals are processed in 3–5 business days according to the supplied design. This demo cannot process withdrawals.',
-  'Open Settings, choose Manage Working Hours, select your working days and enter their start and end times.',
+  "من صفحة العملاء، اضغط «إضافة عميل» وأدخل بياناته الأساسية ثم احفظ.",
+  'إرشاد تجريبي: تعرض المحفظة عينة من أرباح الجلسات والرصيد المتاح والسحوبات. لا توجد خدمة أرباح مباشرة متصلة.',
+  'إرشاد تجريبي: يدعم المحتوى الإضافي تمارين ما بين الجلسات. مكتبة المحتوى متاحة في قسم واجبات الجلسة.',
+  'تُعالَج السحوبات خلال 3–5 أيام عمل وفق التصميم المتوفّر. لا يستطيع هذا العرض معالجة السحوبات.',
+  'افتح الإعدادات واختر «إدارة ساعات العمل» ثم حدّد أيام عملك وأدخل أوقات البدء والانتهاء.',
 ]
 const dialogTitles: Record<Exclude<Dialog, ''>, string> = {
-  edit: 'Edit Profile',
-  password: 'Change Password',
-  preferences: 'Notification Settings',
-  hours: 'Work Hours Management',
-  holidays: 'Work Hours Management',
-  logout: 'Log out',
-  faq: 'Frequently Asked Questions',
-  contact: 'Contact support',
+  edit: 'تعديل الملف',
+  password: 'تغيير كلمة المرور',
+  preferences: 'إعدادات الإشعارات',
+  hours: 'إدارة ساعات العمل',
+  holidays: 'إدارة ساعات العمل',
+  logout: 'تسجيل الخروج',
+  faq: 'الأسئلة الشائعة',
+  contact: 'التواصل مع الدعم',
 }
 
 export function Profile({
@@ -103,12 +103,12 @@ function DemoProfile({ page, navigate }: { page: Page; navigate: (path: string) 
     ),
   )
   const [holidays, setHolidays] = useState<Holiday[]>([
-    { id: 1, reason: 'Annual Leave', from: '2024-06-10', to: '2024-06-15' },
+    { id: 1, reason: 'إجازة سنوية', from: '2024-06-10', to: '2024-06-15' },
   ])
   const close = () => setDialog('')
   function saved(message: string) {
     close()
-    setNotice(`${message} locally for this demo. No backend is connected.`)
+    setNotice(`${message} محلياً لهذا العرض التجريبي. لا يوجد خادم متصل.`)
   }
   return (
     <Workspace title="Profile" active="Profile" navigate={navigate}>
@@ -123,7 +123,7 @@ function DemoProfile({ page, navigate }: { page: Page; navigate: (path: string) 
             </span>
             <div>
               <h2>{profile.name}</h2>
-              <p>Age 28 · Male</p>
+              <p>العمر 28 · ذكر</p>
             </div>
           </div>
           <button className="remaining-primary profile-edit" onClick={() => setDialog('edit')}>
@@ -175,16 +175,16 @@ function DemoProfile({ page, navigate }: { page: Page; navigate: (path: string) 
           {page === 'settings' && (
             <div className="profile-settings-grid">
               <section className="profile-availability">
-                <h3>Availability and Appointments</h3>
+                <h3>التوفر والمواعيد</h3>
                 <SettingRow
                   icon="clock"
-                  title="Manage Working Hours"
-                  badge={`${hours.filter((day) => day.enabled).length} days`}
+                  title="إدارة ساعات العمل"
+                  badge={`${hours.filter((day) => day.enabled).length} أيام`}
                   onClick={() => setDialog('hours')}
                 />
                 <SettingRow
                   icon="briefcase"
-                  title="Vacations and Breaks"
+                  title="الإجازات والاستراحات"
                   badge={holidays.length}
                   onClick={() => setDialog('holidays')}
                 />
@@ -193,7 +193,7 @@ function DemoProfile({ page, navigate }: { page: Page; navigate: (path: string) 
                 </button>
               </section>
               <section className="profile-account">
-                <h3>Account Settings</h3>
+                <h3>إعدادات الحساب</h3>
                 <SettingRow icon="user" title="Edit Profile" onClick={() => setDialog('edit')} />
                 <SettingRow
                   icon="lock"
@@ -212,46 +212,46 @@ function DemoProfile({ page, navigate }: { page: Page; navigate: (path: string) 
             <div className="profile-help-grid">
               <section className="help-live">
                 <div>
-                  <h3>Need help so fast?</h3>
+                  <h3>تحتاج مساعدة سريعة؟</h3>
                   <p>
                     Our support team is available for live chat Sunday to Thursday, 9 AM to 5 PM.
                   </p>
                   <button
                     className="remaining-cancel"
                     onClick={() =>
-                      setNotice('Demo only: live chat and phone support are not connected.')
+                      setNotice('عرض تجريبي فقط: الدردشة المباشرة والدعم الهاتفي غير متصلين.')
                     }
                   >
                     <span className="help-desktop-call">Give Me A Call</span>
                     <span className="help-compact-chat">Start Live Chat</span>
                   </button>
                 </div>
-                <small>App version v1.0.0</small>
+                <small>إصدار التطبيق v1.0.0</small>
               </section>
               <section className="help-links">
-                <h3>Support &amp; Help</h3>
+                <h3>الدعم والمساعدة</h3>
                 <SettingRow
                   icon="faq"
                   chevron="helpArrow"
                   title="FAQs"
-                  detail="Quick answers to common questions"
+                  detail="إجابات سريعة عن الأسئلة الشائعة"
                   onClick={() => setDialog('faq')}
                 />
                 <SettingRow
                   icon="mail"
                   chevron="helpArrow"
-                  title="Email us"
-                  detail="Response within 24 hours max"
+                  title="راسلنا عبر البريد"
+                  detail="الرد خلال 24 ساعة كحد أقصى"
                   onClick={() => setDialog('contact')}
                 />
                 <SettingRow
                   icon="phone"
-                  title="Contact us"
-                  detail="+966 11 000 5000 — Weekdays only"
-                  badge="Available now"
+                  title="تواصل معنا"
+                  detail="+966 11 000 5000 — أيام العمل فقط"
+                  badge="متاح الآن"
                   onClick={() =>
                     setNotice(
-                      'Demo only: the design contains a sample support phone number. No call was placed.',
+                      'عرض تجريبي فقط: يحتوي التصميم على رقم دعم تجريبي. لم يُجرَ أي اتصال.',
                     )
                   }
                 />
@@ -263,7 +263,7 @@ function DemoProfile({ page, navigate }: { page: Page; navigate: (path: string) 
       {notice && (
         <p className="remaining-notice" role="status">
           {notice}
-          <button aria-label="Dismiss notice" onClick={() => setNotice('')}>
+          <button aria-label="إغلاق التنبيه" onClick={() => setNotice('')}>
             ×
           </button>
         </p>
@@ -281,7 +281,7 @@ function DemoProfile({ page, navigate }: { page: Page; navigate: (path: string) 
               onClose={close}
               onSave={(value) => {
                 setProfile(value)
-                saved('Profile updated')
+                saved('حُدّث الملف')
               }}
             />
           )}
@@ -291,7 +291,7 @@ function DemoProfile({ page, navigate }: { page: Page; navigate: (path: string) 
               onSave={() => {
                 close()
                 setNotice(
-                  'Demo only: validation passed, but your password has not been changed. No authentication service is connected.',
+                  'عرض تجريبي فقط: نجح التحقق لكن كلمة مرورك لم تتغير. لا توجد خدمة مصادقة متصلة.',
                 )
               }}
             />
@@ -302,7 +302,7 @@ function DemoProfile({ page, navigate }: { page: Page; navigate: (path: string) 
               onClose={close}
               onSave={(value) => {
                 setPreferences(value)
-                saved('Notification preferences saved')
+                saved('حُفظت تفضيلات الإشعارات')
               }}
             />
           )}
@@ -312,7 +312,7 @@ function DemoProfile({ page, navigate }: { page: Page; navigate: (path: string) 
               onClose={close}
               onSave={(value) => {
                 setHours(value)
-                saved('Working hours saved')
+                saved('حُفظت ساعات العمل')
               }}
             />
           )}
@@ -321,7 +321,7 @@ function DemoProfile({ page, navigate }: { page: Page; navigate: (path: string) 
           )}
           {dialog === 'logout' && (
             <>
-              <p>Are you sure you want to log out of your account?</p>
+              <p>هل أنت متأكد أنك تريد تسجيل الخروج من حسابك؟</p>
               <p className="remaining-muted">Demo only: no authenticated server session exists.</p>
               <footer className="remaining-form-actions">
                 <button className="remaining-cancel" onClick={close}>
@@ -349,7 +349,7 @@ function DemoProfile({ page, navigate }: { page: Page; navigate: (path: string) 
               onSend={() => {
                 close()
                 setNotice(
-                  'Demo only: your support message was not sent. No email or support API is connected.',
+                  'عرض تجريبي فقط: لم تُرسل رسالة الدعم. لا توجد خدمة بريد أو دعم متصلة.',
                 )
               }}
             />
@@ -362,25 +362,25 @@ function DemoProfile({ page, navigate }: { page: Page; navigate: (path: string) 
 
 function ProfileInformation({ profile }: { profile: ProfileData }) {
   const professional: [RemainingIconName, string, string][] = [
-    ['award', 'License Number', 'PSY-2024-1234'],
-    ['calendar', 'Joining Date', formatCalendarDate('2023-01-15')],
-    ['experience', 'Years of Experience', '8 years'],
+    ['award', 'رقم الترخيص', 'PSY-2024-1234'],
+    ['calendar', 'تاريخ الانضمام', formatCalendarDate('2023-01-15')],
+    ['experience', 'سنوات الخبرة', '8 سنوات'],
   ]
   const contact: [RemainingIconName, string, string][] = [
     ['mail', 'Email', profile.email],
-    ['phone', 'Mobile Number', profile.phone],
+    ['phone', 'رقم الجوال', profile.phone],
     ['location', 'Location', profile.location],
   ]
   return (
     <div className="profile-information">
       <section className="profile-about">
-        <h3>About Me</h3>
+        <h3>نبذة عني</h3>
         <p>{profile.about}</p>
       </section>
       <div className="profile-information-grid">
         {[
-          ['Professional Information', professional],
-          ['Contact Information', contact],
+          ['المعلومات المهنية', professional],
+          ['معلومات التواصل', contact],
         ].map(([heading, rows]) => (
           <section key={heading as string}>
             <h3>{heading as string}</h3>
@@ -427,10 +427,10 @@ function EditProfile({
 }) {
   const [draft, setDraft] = useState({
     ...profile,
-    name: profile.name === initialProfile.name ? 'Dr. Khaled Al Saadi' : profile.name,
+    name: profile.name === initialProfile.name ? 'د. خالد السعدي' : profile.name,
     about:
       profile.about === initialProfile.about
-        ? "Certified psychotherapist specializing in anxiety and depression disorders. Holds a master's degree in clinical psychology from King Saud University. Eight years of experience in individual and group therapy."
+        ? "معالج نفسي مرخص متخصص في اضطرابات القلق والاكتئاب. حاصل على ماجستير في علم النفس الإكلينيكي من جامعة الملك سعود. ثماني سنوات من الخبرة في العلاج الفردي والجماعي."
         : profile.about,
   })
   const [error, setError] = useState('')
@@ -455,7 +455,7 @@ function EditProfile({
   function submit(event: FormEvent) {
     event.preventDefault()
     if (!Object.values(draft).every((value) => value.trim())) {
-      setError('Complete all profile fields; blank spaces are not valid values.')
+      setError('أكمل جميع حقول الملف؛ الفراغات ليست قيماً صالحة.')
       return
     }
     onSave(
@@ -467,7 +467,7 @@ function EditProfile({
   return (
     <form onSubmit={submit}>
       <div className="remaining-field-grid">
-        {field('Job Title', 'title')}
+        {field('المسمى الوظيفي', 'title')}
         {field('Name', 'name')}
       </div>
       {field('Specialization', 'specialization')}
@@ -480,7 +480,7 @@ function EditProfile({
         />
       </label>
       <div className="remaining-field-grid">
-        {field('Mobile Number', 'phone', 'tel')}
+        {field('رقم الجوال', 'phone', 'tel')}
         {field('Email', 'email', 'email')}
       </div>
       {field('Location', 'location')}
@@ -500,8 +500,8 @@ function PasswordForm({ onClose, onSave }: { onClose: () => void; onSave: () => 
     event.preventDefault()
     const data = new FormData(event.currentTarget)
     const password = String(data.get('new'))
-    if (password !== data.get('confirm')) setError('The new passwords must match.')
-    else if (password === data.get('current')) setError('Choose a different new password.')
+    if (password !== data.get('confirm')) setError('يجب أن تتطابق كلمتا المرور الجديدتان.')
+    else if (password === data.get('current')) setError('اختر كلمة مرور جديدة مختلفة.')
     else {
       event.currentTarget.reset()
       onSave()
@@ -510,9 +510,9 @@ function PasswordForm({ onClose, onSave }: { onClose: () => void; onSave: () => 
   return (
     <form onSubmit={submit}>
       {[
-        ['Current Password', 'current'],
-        ['New Password', 'new'],
-        ['Confirm New Password', 'confirm'],
+        ['كلمة المرور الحالية', 'current'],
+        ['كلمة المرور الجديدة', 'new'],
+        ['تأكيد كلمة المرور الجديدة', 'confirm'],
       ].map(([label, name]) => (
         <label className="remaining-field" key={name}>
           {label}
@@ -569,7 +569,7 @@ function PreferencesForm({
           </label>
         ))}
       </div>
-      <FormActions onClose={onClose} label="Save Preferences" />
+      <FormActions onClose={onClose} label="حفظ التفضيلات" />
     </form>
   )
 }
@@ -593,7 +593,7 @@ function HoursForm({
     const invalid = draft.find(
       (day) => day.enabled && (day.from || day.to) && (!day.from || !day.to || day.from >= day.to),
     )
-    if (invalid) setError(`Enter an end time after the start time for ${invalid.day}.`)
+    if (invalid) setError(`أدخل وقت انتهاء بعد وقت البدء ليوم ${invalid.day}.`)
     else onSave(draft)
   }
   return (
@@ -613,20 +613,20 @@ function HoursForm({
               <>
                 <input
                   type="time"
-                  aria-label={`${day.day} start time`}
+                  aria-label={`وقت بدء ${day.day}`}
                   value={day.from}
                   onChange={(event) => update(index, { from: event.target.value })}
                 />
                 <span>To</span>
                 <input
                   type="time"
-                  aria-label={`${day.day} end time`}
+                  aria-label={`وقت انتهاء ${day.day}`}
                   value={day.to}
                   onChange={(event) => update(index, { to: event.target.value })}
                 />
               </>
             ) : (
-              <span>Day Off</span>
+              <span>يوم إجازة</span>
             )}
           </div>
         ))}
@@ -636,7 +636,7 @@ function HoursForm({
           {error}
         </p>
       )}
-      <FormActions onClose={onClose} label="Save Preferences" />
+      <FormActions onClose={onClose} label="حفظ التفضيلات" />
     </form>
   )
 }
@@ -659,7 +659,7 @@ function HolidaysForm({
       from = String(data.get('from')),
       to = String(data.get('to'))
     if (!reason || from > to) {
-      setError('Enter a reason and a valid date range.')
+      setError('أدخل سبباً ونطاق تاريخ صالحاً.')
       return
     }
     onChange([...values, { id: Date.now(), reason, from, to }])
@@ -671,7 +671,7 @@ function HolidaysForm({
     <form onSubmit={submit}>
       <label className="remaining-field">
         Reason
-        <input name="reason" required placeholder="Example: Annual leave, travel..." />
+        <input name="reason" required placeholder="مثال: إجازة سنوية، سفر..." />
       </label>
       <div className="remaining-field-grid">
         <label className="remaining-field">
@@ -701,7 +701,7 @@ function HolidaysForm({
             <button
               type="button"
               className="icon-button holiday-remove"
-              aria-label={`Remove ${holiday.reason}`}
+              aria-label={`إزالة ${holiday.reason}`}
               onClick={() => onChange(values.filter((item) => item.id !== holiday.id))}
             >
               <span className="remaining-icon" aria-hidden="true">
@@ -716,7 +716,7 @@ function HolidaysForm({
           {error}
         </p>
       )}
-      <FormActions onClose={onClose} label="Add Holiday" cancelLabel="Close" />
+      <FormActions onClose={onClose} label="إضافة إجازة" cancelLabel="إغلاق" />
       <p className="remaining-muted">
         Changes are local to this demo; no calendar service is connected.
       </p>
@@ -732,16 +732,16 @@ function ContactForm({ onClose, onSend }: { onClose: () => void; onSend: () => v
         event.preventDefault()
         const data = new FormData(event.currentTarget)
         if (String(data.get('subject')).trim() && String(data.get('message')).trim()) onSend()
-        else setError('Enter a subject and message, not just blank spaces.')
+        else setError('أدخل موضوعاً ورسالة، وليس فراغات فقط.')
       }}
     >
       <label className="remaining-field">
         Subject
-        <input name="subject" required placeholder="Example: Annual leave, travel..." />
+        <input name="subject" required placeholder="مثال: إجازة سنوية، سفر..." />
       </label>
       <label className="remaining-field">
         Message
-        <textarea name="message" placeholder="Example: Annual leave, travel..." required />
+        <textarea name="message" placeholder="مثال: إجازة سنوية، سفر..." required />
       </label>
       <FormActions onClose={onClose} label="Send" />
       {error && (

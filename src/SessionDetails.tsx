@@ -27,7 +27,7 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
   const params = new URLSearchParams(window.location.search)
   const initial = params.get('state')
   const patient = params.get('patient')
-  const client = patient || 'Ahmed Mohamed'
+  const client = patient || 'أحمد محمد'
   const [tab, setTab] = useState(
     initial === 'record' || initial === 'create' || initial === 'library' ? 'record' : 'before',
   )
@@ -45,7 +45,7 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
   const [completed, setCompleted] = useState([true, true])
   const [feedback, setFeedback] = useState('')
   const [savedOutcome, setSavedOutcome] = useState('')
-  const [date, setDate] = useState('Sep 25 · 10:00 AM · 45 min · Follow-up')
+  const [date, setDate] = useState('25 أيلول · 10:00 ص · 45 د · متابعة')
 
   // The assign-homework modal is superseded by the /homework library routes;
   // the old fixture states now open the new library pages instead.
@@ -55,9 +55,9 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
   }, [initial, navigate])
 
   return (
-    <Workspace title="Sessions / Upcoming Session" active="Sessions" navigate={navigate}>
+    <Workspace title="الجلسات / الجلسة القادمة" active="Sessions" navigate={navigate}>
       <div className={`session-detail demo-session-detail ${tab === 'record' ? 'show-record' : ''}`}>
-        <div className="detail-tabs segmented-control" role="tablist" aria-label="Session view">
+        <div className="detail-tabs segmented-control" role="tablist" aria-label="عرض الجلسة">
           <button
             role="tab"
             aria-selected={tab === 'before'}
@@ -82,7 +82,7 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
               <DesignIcon name="part2-08-imgIcon1.svg" />
             </span>
             <div>
-              <h2>{patient || 'Mark lory'}</h2>
+              <h2>{patient || 'مارك لوري'}</h2>
               <p>{date}</p>
             </div>
           </div>
@@ -90,7 +90,7 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
             <div className="session-action-container">
               <button
                 className="icon-button"
-                aria-label="Session actions"
+                aria-label="إجراءات الجلسة"
                 aria-expanded={actions}
                 onClick={() => setActions(!actions)}
               >
@@ -118,26 +118,26 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
               )}
             </div>
             <button className="teal-button" onClick={() => setModal('meeting')}>
-              Start Session
+              بدء الجلسة
             </button>
           </div>
         </header>
         <div className="detail-grid">
           <aside className="detail-overview">
             <section className="detail-card overview-card">
-              <h3>Client Overview</h3>
+              <h3>نظرة عامة على العميل</h3>
               <dl>
                 <div>
                   <dt>Age</dt>
                   <dd>29</dd>
                 </div>
                 <div>
-                  <dt>Primary Concern</dt>
+                  <dt>المشكلة الأساسية</dt>
                   <dd>Anxiety</dd>
                 </div>
                 <div>
                   <dt>Sessions</dt>
-                  <dd>Two Completed Sessions</dd>
+                  <dd>جلستان مكتملتان</dd>
                 </div>
               </dl>
               <button className="teal-button" onClick={() => setModal('profile')}>
@@ -145,11 +145,11 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
               </button>
             </section>
             <section className="detail-card checklist-card">
-              <h3>Before You Begin</h3>
+              <h3>قبل أن تبدأ</h3>
               {[
-                'Clinical Summary Reviewed',
-                'Assigned Homework Reviewed',
-                "The client's latest response has not been reviewed yet",
+                'رُوجع الملخص الإكلينيكي',
+                'رُوجعت الواجبات المسندة',
+                "لم تُراجَع أحدث إجابة من العميل بعد",
               ].map((label, index) => (
                 <label key={label}>
                   <input
@@ -176,14 +176,14 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
             {tab === 'before' ? (
               <>
                 <section className="detail-card clinical-summary">
-                  <h3>Quick Clinical Summary</h3>
+                  <h3>ملخص إكلينيكي سريع</h3>
                   <div>
-                    <strong>Assigned Homework</strong>
-                    <p>Daily Activity Log - Fully Completed</p>
+                    <strong>الواجبات المسندة</strong>
+                    <p>سجل النشاط اليومي - مكتمل بالكامل</p>
                     <span className="clinical-badge completed">Completed</span>
                   </div>
                   <div>
-                    <strong>Client Response</strong>
+                    <strong>استجابة العميل</strong>
                     <p>{client} reported difficulty applying the breathing exercise at work</p>
                     <span className="clinical-badge needs-review">Needs Review</span>
                   </div>
@@ -192,17 +192,17 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
                   </button>
                 </section>
                 <section className="detail-card suggested-focus">
-                  <h3>Suggested Focus for This Session</h3>
+                  <h3>التركيز المقترح لهذه الجلسة</h3>
                   <ul>
                     <li>
-                      <strong>Sleep-Related Anxiety</strong>
+                      <strong>قلق مرتبط بالنوم</strong>
                       <p>
                         The client noted difficulty sleeping twice this week in the activity log —
                         deserves dedicated time today instead of being overlooked.
                       </p>
                     </li>
                     <li>
-                      <strong>Difficulty Applying Homework at Work</strong>
+                      <strong>صعوبة تطبيق الواجب في العمل</strong>
                       <p>
                         The assigned exercise was not applied as expected at work — warrants
                         discussion about practical obstacles rather than just re-explaining the
@@ -212,33 +212,33 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
                   </ul>
                   {savedOutcome && (
                     <div className="saved-continuity">
-                      <strong>Next Step / Continuity Note</strong>
+                      <strong>الخطوة التالية / ملاحظة الاستمرارية</strong>
                       <p>{savedOutcome}</p>
                     </div>
                   )}
                 </section>
                 <section className="detail-card clinical-pathway">
-                  <h3>Clinical Pathway</h3>
+                  <h3>المسار الإكلينيكي</h3>
                   <div>
                     <i />
                     <span>
-                      <strong>Initial Setup</strong>
-                      <small>Basic Information Collected</small>
+                      <strong>الإعداد الأولي</strong>
+                      <small>جُمعت المعلومات الأساسية</small>
                     </span>
                   </div>
                   <button onClick={() => setModal('notes')}>
                     <i />
                     <span>
-                      <strong>Two Previous Sessions</strong>
-                      <small>Available for Note Review</small>
+                      <strong>جلستان سابقتان</strong>
+                      <small>متاح لمراجعة الملاحظات</small>
                     </span>
                     <span>‹</span>
                   </button>
                   <div>
                     <i />
                     <span>
-                      <strong>Next Session</strong>
-                      <small>Today · 10:00 AM</small>
+                      <strong>الجلسة التالية</strong>
+                      <small>اليوم · 10:00 ص</small>
                     </span>
                   </div>
                 </section>
@@ -246,10 +246,10 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
             ) : (
               <>
                 <section className="detail-card notes-card">
-                  <h3>New Note</h3>
+                  <h3>ملاحظة جديدة</h3>
                   <textarea
-                    aria-label="New Note"
-                    placeholder="Type your note here..."
+                    aria-label="ملاحظة جديدة"
+                    placeholder="اكتب ملاحظتك هنا..."
                     value={note}
                     onChange={(event) => setNote(event.target.value)}
                   />
@@ -260,7 +260,7 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
                         setNotes([...notes, note.trim()])
                         setNote('')
                         setFeedback(
-                          'Demo note added locally. No clinical record was saved to a server.',
+                          'أُضيفت ملاحظة تجريبية محلياً. لم يُحفظ سجل إكلينيكي على الخادم.',
                         )
                       }
                     }}
@@ -271,10 +271,10 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
                   <button className="previous-note" onClick={() => setModal('notes')}>
                     <span>
                       <span className="previous-note-heading">
-                        <strong>Therapy: One-on-One Session</strong>
-                        <small>Date: May 15, 2024, 10 AM</small>
+                        <strong>العلاج: جلسة فردية</strong>
+                        <small>التاريخ: 15 أيار 2024، 10 ص</small>
                       </span>
-                      <p>Noticed clear progress in managing anxiety.</p>
+                      <p>لُوحظ تقدّم واضح في إدارة القلق.</p>
                     </span>
                     <DesignIcon name="preview-client-profile-chevron.svg" />
                   </button>
@@ -285,9 +285,9 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
                   ))}
                 </section>
                 <section className="detail-card homework-card">
-                  <h3>Homework and Exercises</h3>
+                  <h3>الواجبات والتمارين</h3>
                   <p className="section-caption">Review previous session's homework</p>
-                  {['Cognitive Restructuring', 'Avoid news and social media'].map(
+                  {['إعادة البناء المعرفي', 'تجنّب الأخبار ووسائل التواصل'].map(
                     (title, index) => (
                       <label key={title} className="homework-check">
                         <input
@@ -304,7 +304,7 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
                         <span aria-hidden="true">{completed[index] ? '✓' : ''}</span>
                         <span>
                           <strong>{title}</strong>
-                          <small>Ongoing Exercise</small>
+                          <small>تمرين مستمر</small>
                         </span>
                       </label>
                     ),
@@ -318,7 +318,7 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
                         <strong>{item.title}</strong>
                         <small>{item.type}</small>
                         <button
-                          aria-label={`Remove ${item.title}`}
+                          aria-label={`إزالة ${item.title}`}
                           onClick={() =>
                             setAssignments(
                               assignments.filter((current) => current.title !== item.title),
@@ -337,11 +337,11 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
                   </div>
                 </section>
                 <section className="detail-card outcome-card">
-                  <h3>Session Outcome</h3>
+                  <h3>نتيجة الجلسة</h3>
                   <label>
                     Next Step / Continuity Note
                     <textarea
-                      placeholder="What should be built upon in the next session?"
+                      placeholder="على ماذا يجب البناء في الجلسة التالية؟"
                       value={outcome}
                       onChange={(event) => setOutcome(event.target.value)}
                     />
@@ -395,7 +395,7 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
                     onClick={() => {
                       setSavedOutcome(outcome.trim())
                       setFeedback(
-                        `Demo session record updated locally${clinicalFlag ? '; clinical flag selected, but no supervisor was notified' : ''}. No backend is connected.`,
+                        `حُدّث سجل الجلسة التجريبي محلياً${clinicalFlag ? '؛ اختيرت علامة إكلينيكية لكن لم يُبلَّغ أي مشرف' : ''}. لا يوجد خادم متصل.`,
                       )
                     }}
                   >
@@ -414,12 +414,12 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
       </div>
       {modal === 'delete-template' && (
         <DeleteTemplateDialog
-          templateName="Daily Breathing Exercise"
+          templateName="تمرين التنفس اليومي"
           assignedCount={14}
           onClose={() => setModal(null)}
           onDelete={() => {
             setModal(null)
-            setFeedback('Demo only: no template was deleted. No backend is connected.')
+            setFeedback('عرض تجريبي فقط: لم يُحذف أي قالب. لا يوجد خادم متصل.')
           }}
         />
       )}
@@ -427,15 +427,15 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
         <ScheduleDialog
           onClose={() => setModal(null)}
           onSchedule={(item) => {
-            setDate(`${item.date} · ${item.time} · ${item.duration} · Follow-up`)
+            setDate(`${item.date} · ${item.time} · ${item.duration} · متابعة`)
             setModal(null)
-            setFeedback('Demo session rescheduled locally. No calendar was updated.')
+            setFeedback('أُعيدت جدولة الجلسة التجريبية محلياً. لم يُحدَّث أي تقويم.')
           }}
         />
       )}
       {modal === 'delete' && (
-        <Modal title="Delete this session?" className="part2-modal" onClose={() => setModal(null)}>
-          <p>This only closes the demo session. No patient record will be deleted.</p>
+        <Modal title="حذف هذه الجلسة؟" className="part2-modal" onClose={() => setModal(null)}>
+          <p>هذا يغلق الجلسة التجريبية فقط. لن يُحذف أي سجل مريض.</p>
           <footer className="form-footer">
             <button className="soft-button" onClick={() => setModal(null)}>
               Cancel
@@ -447,8 +447,8 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
         </Modal>
       )}
       {modal === 'meeting' && (
-        <Modal title="Start Session" className="part2-modal" onClose={() => setModal(null)}>
-          <p>Demo only: no live meeting service is connected.</p>
+        <Modal title="بدء الجلسة" className="part2-modal" onClose={() => setModal(null)}>
+          <p>عرض تجريبي فقط: لا توجد خدمة اجتماعات مباشرة متصلة.</p>
           <button className="teal-button" onClick={() => setModal(null)}>
             Back to session
           </button>
@@ -456,9 +456,9 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
       )}
       {modal === 'notes' && (
         <Modal title="Previous Notes" className="part2-modal" onClose={() => setModal(null)}>
-          <strong>Therapy: One-on-One Session</strong>
-          <p>Date: May 15, 2024, 10 AM</p>
-          <p>Noticed clear progress in managing anxiety.</p>
+          <strong>العلاج: جلسة فردية</strong>
+          <p>التاريخ: 15 أيار 2024، 10 ص</p>
+          <p>لُوحظ تقدّم واضح في إدارة القلق.</p>
           {notes.map((text, index) => (
             <p key={index}>{text}</p>
           ))}
@@ -466,12 +466,12 @@ function DemoSessionDetails({ navigate }: { navigate: (path: string) => void }) 
       )}
       {modal === 'profile' && (
         <Modal
-          title={patient || 'Mark lory'}
+          title={patient || 'مارك لوري'}
           className="part2-modal"
           onClose={() => setModal(null)}
         >
-          <p>Age: 29 · Primary concern: Anxiety</p>
-          <p>Two Completed Sessions</p>
+          <p>العمر: 29 · المشكلة الأساسية: القلق</p>
+          <p>جلستان مكتملتان</p>
           <p>
             Demo overview only. A full patient-profile design and patient API were not supplied.
           </p>
