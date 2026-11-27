@@ -434,6 +434,15 @@
   height: 42px;
   color: #111;
 }
+
+.profile-review-banner {
+  margin-block: 1rem;
+  padding: 0.75rem 1rem;
+  border-inline-start: 3px solid #4163d9;
+  background: #eef2ff;
+  border-radius: 0.5rem;
+  overflow-wrap: anywhere;
+}
 .remaining-field select[multiple],
 .remaining-field textarea {
   height: 88px;

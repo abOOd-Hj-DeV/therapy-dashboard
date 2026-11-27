@@ -264,6 +264,32 @@
   border: 0;
 }
 
+.reviewed-profile-form fieldset {
+  min-inline-size: 0;
+  border: none;
+  padding: 0;
+  margin-inline: 0;
+}
+
+.approval-page .reviewed-profile-form fieldset {
+  display: block;
+}
+
+.reviewed-profile-summary {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.reviewed-profile-summary dt {
+  font-weight: 600;
+}
+
+.reviewed-profile-summary dd {
+  margin-inline-start: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
 .visual-auth-shell .secondary-search input:disabled,
 .visual-auth-shell .secondary-mobile-search:disabled {
   cursor: not-allowed;

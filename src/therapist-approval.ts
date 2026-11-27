@@ -10,15 +10,15 @@ export function approvalLabel(status: TherapistApprovalStatus): string {
   }
 }
 
-export const approvalFileTypes = 'image/jpeg,image/png,application/pdf'
+export const documentFileTypes = 'image/jpeg,image/png,application/pdf'
 
-export function approvalFileError(file: File | undefined): string | undefined {
+export function documentFileError(file: File | undefined): string | undefined {
   if (!file || !file.size) return 'يرجى اختيار ملف صالح للرفع.'
   if (file.size > 5 * 1024 * 1024) return 'حجم الملف يتجاوز الحد المسموح به (٥ ميغابايت).'
-  if (!approvalFileTypes.split(',').includes(file.type)) return 'نوع الملف غير مدعوم. اختر ملف PDF أو JPG أو PNG.'
+  if (!documentFileTypes.split(',').includes(file.type)) return 'نوع الملف غير مدعوم. اختر ملف PDF أو JPG أو PNG.'
 }
 
-export function onboardingError(error: unknown, uploading = false): string {
+export function documentError(error: unknown, uploading = false): string {
   if (error instanceof ApiError) {
     switch (error.status) {
       case 0:

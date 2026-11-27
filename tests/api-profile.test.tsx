@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { ApiClient, type ApiSession } from '../src/api'
 import { Profile } from '../src/Profile'
+import { profileReview, validProfile } from './therapist-profile-fixtures'
 
 // Keep these tests focused on this domain while verifying Workspace receives api.
 vi.mock('../src/Workspace', () => ({
@@ -89,6 +90,7 @@ async function client(handler?: Handler) {
     if (result !== undefined) return await result
     if (call.path === '/auth/user') return json({ user, roles: ['therapist'] })
     if (call.path === '/therapists/me/dashboard') return json(dashboard)
+    if (call.path === '/therapists/me/profile') return json({ data: profileReview() })
     if (call.path === '/therapists/me/blocked-periods' && call.method === 'GET')
       return json({ data: [] })
     throw new Error('Unexpected test request')
@@ -109,6 +111,7 @@ async function loaded() {
 beforeEach(() => {
   window.history.replaceState({}, '', '/profile')
   vi.restoreAllMocks()
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
 })
 
 describe('live Profile API integration', () => {
@@ -119,6 +122,8 @@ describe('live Profile API integration', () => {
         ? identity.promise
         : call.path === '/therapists/me/dashboard'
           ? json({ message: 'private backend exception' }, 403)
+          : call.path === '/therapists/me/profile'
+            ? deferred<Response>().promise
           : undefined,
     )
     render(<Profile page="profile" api={api} navigate={vi.fn()} />)
@@ -126,8 +131,8 @@ describe('live Profile API integration', () => {
     expect(calls.map((call) => call.path)).toEqual(['/auth/user'])
     await act(async () => identity.resolve(json({ user, roles: ['therapist'] })))
     expect(await screen.findByRole('alert')).toHaveTextContent('not permitted')
-    expect(screen.getByText(/API has no unrestricted self-profile read/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Edit Profile' })).toBeDisabled()
+    expect(screen.getAllByText('Professional profile unavailable.').length).toBeGreaterThan(0)
+    expect(screen.getByRole('button', { name: 'تعديل الملف الشخصي' })).toBeDisabled()
     expect(screen.queryByText('Ahmed Mohamed')).not.toBeInTheDocument()
     expect(screen.queryByText('Age 28 · Male')).not.toBeInTheDocument()
     expect(screen.queryByText('private backend exception')).not.toBeInTheDocument()
@@ -135,47 +140,67 @@ describe('live Profile API integration', () => {
     expect(calls.every((call) => call.method === 'GET')).toBe(true)
   })
 
-  it('sends only supported settings keys, permits clearing bio and uses the returned therapist', async () => {
+  it('submits all reviewed fields and shows a pending banner without publishing the draft', async () => {
     const interaction = userEvent.setup()
-    const { api, calls } = await client((call) =>
-      call.method === 'PUT'
-        ? json({
-            data: {
-              ...therapist,
-              specialty: 'Server normalized specialty',
-              country: 'DE',
-              languages: ['de', 'ku'],
-              bio: null,
-            },
-          })
-        : undefined,
-    )
+    const submitted = { ...validProfile, specialty: 'trauma', country: 'DE', languages: ['ku', 'de'] }
+    const pendingRevision = {
+      id: periodId, kind: 'update', status: 'pending', submitted_at: '2026-11-27T12:00:00Z', data: submitted,
+    } as const
+    let review = profileReview()
+    const { api, calls } = await client((call) => {
+      if (call.method === 'POST' && call.path.endsWith('/profile-submission')) {
+        review = profileReview({ pending_revision: pendingRevision })
+        return json({ data: review }, 201)
+      }
+      if (call.path === '/therapists/me/profile') return json({ data: review })
+    })
     render(<Profile page="profile" api={api} navigate={vi.fn()} />)
     await loaded()
-    fireEvent.click(screen.getByRole('button', { name: 'Edit Profile' }))
-    expect(modal().getByLabelText('Professional name')).toBeDisabled()
-    expect(modal().getByLabelText('Email')).toBeDisabled()
-    expect(modal().getByLabelText('Mobile Number')).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'تعديل الملف الشخصي' }))
+    expect(screen.getByRole('dialog')).toHaveAttribute('dir', 'rtl')
+    expect(modal().getByLabelText('الاسم')).toHaveValue(validProfile.full_name)
+    expect(modal().getByLabelText('البريد الإلكتروني')).toHaveValue(validProfile.email)
+    expect(modal().getByLabelText('رقم الجوال')).toHaveAttribute('readonly')
     change('التخصص', 'trauma')
     change('البلد', 'DE')
     const languages = modal().getByRole('listbox', { name: 'اللغات' })
     await interaction.deselectOptions(languages, ['ar', 'en'])
     await interaction.selectOptions(languages, ['de', 'ku'])
-    change('Bio (optional)', '')
-    fireEvent.click(modal().getByRole('button', { name: 'Save Changes' }))
-    await screen.findByText('Profile settings updated on the server.')
-    expect(calls.find((call) => call.method === 'PUT')).toMatchObject({
-      path: '/therapists/me/settings',
-      body: { specialty: 'trauma', country: 'DE', languages: ['ku', 'de'], bio: null },
+    fireEvent.click(modal().getByRole('button', { name: 'إرسال التعديلات للمراجعة' }))
+    expect(await screen.findByText(/تعديلات ملفك المهني بانتظار المراجعة/)).toBeInTheDocument()
+    expect(calls.find((call) => call.method === 'POST')).toMatchObject({
+      path: '/therapists/me/profile-submission', body: submitted,
     })
-    expect(screen.getAllByText('Server normalized specialty').length).toBeGreaterThan(0)
-    expect(screen.getByText('No bio provided.')).toBeInTheDocument()
+    expect(screen.getByText('الأردن')).toBeInTheDocument()
+    expect(screen.queryByText('ألمانيا')).not.toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'تعديل الملف الشخصي' }))
+    expect(modal().getByLabelText('البلد')).toHaveValue('DE')
+    fireEvent.click(modal().getByRole('button', { name: 'إلغاء' }))
+    review = profileReview({ published: submitted })
+    fireEvent(window, new Event('focus'))
+    expect(await screen.findByText('ألمانيا')).toBeInTheDocument()
+    expect(screen.queryByText(/تعديلات ملفك المهني بانتظار المراجعة/)).not.toBeInTheDocument()
   })
 
-  it('renders server option labels and preserves raw legacy values when editing the bio', async () => {
-    const legacy = { ...therapist, languages: ['ar', 'Legacy language'] }
-    const { api, calls } = await client((call) => {
+  it('shows the last update rejection in settings and keeps published values', async () => {
+    const { api } = await client((call) => call.path === '/therapists/me/profile' ? json({
+      data: profileReview({ last_review: {
+        revision_id: periodId, kind: 'update', status: 'rejected', note: 'يرجى مراجعة معلومات التخصص',
+        reviewed_at: '2026-11-27T12:00:00Z',
+      } }),
+    }) : undefined)
+    render(<Profile page="settings" api={api} navigate={vi.fn()} />)
+    expect(await screen.findByText('يرجى مراجعة معلومات التخصص')).toBeInTheDocument()
+    expect(screen.queryByText(/تعديلات ملفك المهني بانتظار المراجعة/)).not.toBeInTheDocument()
+    fireEvent.click(screen.getAllByRole('button', { name: 'تعديل الملف الشخصي' })[0])
+    expect(modal().getByLabelText('التخصص')).toHaveValue(validProfile.specialty)
+  })
+
+  it('renders server option labels and displays raw legacy values', async () => {
+    const legacy = { ...validProfile, specialty: 'Counselling', country: 'Jordan', languages: ['ar', 'Legacy language'] }
+    const { api } = await client((call) => {
       if (call.path === '/meta/therapist-options') return json({
         data: {
           countries: [{ code: 'SY', name_ar: 'سورية' }],
@@ -183,8 +208,7 @@ describe('live Profile API integration', () => {
           specialties: [{ code: 'general', name_ar: 'التخصص العام' }],
         },
       })
-      if (call.path === '/therapists/me/dashboard') return json({ ...dashboard, therapist: legacy })
-      if (call.method === 'PUT') return json({ data: { ...legacy, bio: 'New biography' } })
+      if (call.path === '/therapists/me/profile') return json({ data: profileReview({ published: legacy }) })
     })
     render(<Profile page="profile" api={api} navigate={vi.fn()} />)
     await loaded()
@@ -192,45 +216,58 @@ describe('live Profile API integration', () => {
     expect(screen.getAllByText('Counselling').length).toBeGreaterThan(0)
     expect(screen.getByText('Jordan')).toBeInTheDocument()
     expect(screen.getByText('حالة الموافقة: تمت الموافقة')).toHaveAttribute('dir', 'rtl')
-    fireEvent.click(screen.getByRole('button', { name: 'Edit Profile' }))
+    fireEvent.click(screen.getByRole('button', { name: 'تعديل الملف الشخصي' }))
     expect(modal().getByRole('option', { name: 'سورية' })).toHaveValue('SY')
     expect(modal().getByRole('option', { name: 'التخصص العام' })).toHaveValue('general')
     expect(modal().getByLabelText('التخصص')).toHaveDisplayValue('Counselling')
     expect(modal().getByLabelText('البلد')).toHaveDisplayValue('Jordan')
     expect(modal().getByLabelText('اللغات')).toHaveDisplayValue(['اللغة العربية', 'Legacy language'])
-    change('Bio (optional)', 'New biography')
-    fireEvent.click(modal().getByRole('button', { name: 'Save Changes' }))
-    await screen.findByText('Profile settings updated on the server.')
-    expect(calls.find((call) => call.method === 'PUT')?.body).toEqual({ bio: 'New biography' })
   })
 
-  it('preserves drafts on sanitized save errors and synchronously guards duplicate submissions', async () => {
+  it('preserves drafts on sanitized field errors and guards duplicate submissions', async () => {
     const response = deferred<Response>()
     const { api, calls } = await client((call) =>
-      call.method === 'PUT' ? response.promise : undefined,
+      call.method === 'POST' ? response.promise : undefined,
     )
     render(<Profile page="profile" api={api} navigate={vi.fn()} />)
     await loaded()
-    fireEvent.click(screen.getByRole('button', { name: 'Edit Profile' }))
-    change('Bio (optional)', 'Unsaved private draft')
-    const form = modal().getByLabelText('Bio (optional)').closest('form')!
+    fireEvent.click(screen.getByRole('button', { name: 'تعديل الملف الشخصي' }))
+    const draft = 'Unsaved private profile draft'
+    change('النبذة التعريفية', draft)
+    const form = modal().getByLabelText('النبذة التعريفية').closest('form')!
     fireEvent.submit(form)
     fireEvent.submit(form)
-    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(1)
-    expect(modal().getByRole('button', { name: 'Saving…' })).toBeDisabled()
+    expect(calls.filter((call) => call.method === 'POST')).toHaveLength(1)
+    expect(modal().getByRole('button', { name: 'جارٍ الإرسال…' })).toBeDisabled()
     await act(async () =>
-      response.resolve(
-        json(
-          { message: 'server secret', errors: { bio: ['private draft echoed by backend'] } },
-          422,
-        ),
-      ),
+      response.resolve(json({
+        message: 'server secret', errors: { email: ['private draft echoed by backend'], 'languages.0': ['invalid'] },
+      }, 422)),
     )
-    expect(await screen.findByRole('alert')).toHaveTextContent('Bio: Please check this field.')
-    expect(modal().getByLabelText('Bio (optional)')).toHaveValue('Unsaved private draft')
+    expect(modal().getByRole('alert')).toHaveTextContent('يرجى مراجعة الحقول')
+    expect(modal().getByLabelText('البريد الإلكتروني')).toHaveAccessibleDescription(/ربما يكون مستخدمًا/)
+    expect(modal().getByLabelText('اللغات')).toHaveAttribute('aria-invalid', 'true')
+    expect(modal().getByLabelText('النبذة التعريفية')).toHaveValue(draft)
     expect(screen.queryByText('server secret')).not.toBeInTheDocument()
     expect(screen.queryByText('private draft echoed by backend')).not.toBeInTheDocument()
-    expect(screen.queryByText('Profile settings updated on the server.')).not.toBeInTheDocument()
+    expect(screen.queryByText(/تعديلات ملفك المهني بانتظار المراجعة/)).not.toBeInTheDocument()
+  })
+
+  it.each([
+    [422, 'لا توجد تعديلات'],
+    [429, 'تم إرسال طلبات كثيرة'],
+    [0, 'تعذّر الاتصال بالخادم'],
+  ])('explains profile-submission error %s in Arabic', async (status, message) => {
+    const { api } = await client((call) => {
+      if (call.method !== 'POST') return
+      if (!status) throw new TypeError('Offline')
+      return json({ code: status === 422 ? 'no_changes' : undefined }, status)
+    })
+    render(<Profile page="profile" api={api} navigate={vi.fn()} />)
+    await loaded()
+    fireEvent.click(screen.getByRole('button', { name: 'تعديل الملف الشخصي' }))
+    fireEvent.click(modal().getByRole('button', { name: 'إرسال التعديلات للمراجعة' }))
+    expect(await modal().findByRole('alert')).toHaveTextContent(message)
   })
 
   it('replaces the full availability map, preserves every server window and uses server timezone', async () => {
@@ -464,23 +501,23 @@ describe('live Profile API integration', () => {
   it('aborts and discards an in-flight private draft/save on actor change', async () => {
     const save = deferred<Response>()
     const { api, calls } = await client((call) =>
-      call.method === 'PUT' ? save.promise : undefined,
+      call.method === 'POST' ? save.promise : undefined,
     )
     render(<Profile page="profile" api={api} navigate={vi.fn()} />)
     await loaded()
-    fireEvent.click(screen.getByRole('button', { name: 'Edit Profile' }))
-    change('Bio (optional)', 'Private old actor draft')
-    fireEvent.click(modal().getByRole('button', { name: 'Save Changes' }))
-    const write = calls.find((call) => call.method === 'PUT')!
+    fireEvent.click(screen.getByRole('button', { name: 'تعديل الملف الشخصي' }))
+    change('النبذة التعريفية', 'Private old actor draft')
+    fireEvent.click(modal().getByRole('button', { name: 'إرسال التعديلات للمراجعة' }))
+    const write = calls.find((call) => call.method === 'POST')!
     await act(async () => {
       await api.establish(session({ ...user, id: periodId, name: 'New Actor' }))
     })
     expect(write.signal?.aborted).toBe(true)
     await act(async () =>
-      save.resolve(json({ data: { ...therapist, bio: 'Private old actor draft' } })),
+      save.resolve(json({ data: profileReview({ published: { ...validProfile, bio: 'Private old actor draft' } }) })),
     )
     expect(screen.queryByText('Private old actor draft')).not.toBeInTheDocument()
-    expect(screen.queryByText('Profile settings updated on the server.')).not.toBeInTheDocument()
+    expect(screen.queryByText(/تعديلات ملفك المهني بانتظار المراجعة/)).not.toBeInTheDocument()
   })
 
   it('refuses dashboard reads when auth/user no longer describes an active verified therapist', async () => {

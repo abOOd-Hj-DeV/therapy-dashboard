@@ -1,7 +1,9 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from '../src/App'
 import { api } from '../src/api'
+import { profileReview, validProfile } from './therapist-profile-fixtures'
 
 beforeEach(() => {
   vi.stubEnv('VITE_DEMO_MODE', 'false')
@@ -34,30 +36,52 @@ describe('live routing boundaries', () => {
   }
   const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
-  const approvalError = (status: string | null, note?: string) => json({
-    code: 'therapist_pending_approval',
-    meta: { approval_status: status, approval_note: note },
-  }, 403)
-  const licenseField = 'ترخيص مزاولة المهنة'
-  const attach = (file = new File(['synthetic license'], 'license.pdf', { type: 'application/pdf' })) => {
-    fireEvent.change(screen.getByLabelText(licenseField), { target: { files: [file] } })
-    return file
-  }
+  const revision = {
+    id: 'af04c10b-58cc-4372-a567-0e02b2c3d480',
+    kind: 'initial',
+    status: 'pending',
+    submitted_at: '2026-11-27T12:00:00Z',
+    data: validProfile,
+  } as const
+  const notSubmitted = profileReview({
+    approval_status: null,
+    account: { whatsapp_number: identity.whatsapp_number, email: null },
+    published: {
+      full_name: identity.name, job_title: null, specialty: null, bio: null, email: null,
+      city: null, country: null, languages: [], years_of_experience: null,
+    },
+  })
+  const pending = profileReview({ ...notSubmitted, approval_status: 'pending', pending_revision: revision })
+  const rejected = profileReview({
+    ...notSubmitted, approval_status: 'rejected',
+    last_review: {
+      revision_id: revision.id, kind: 'initial', status: 'rejected',
+      note: 'يرجى تحديث المسمى الوظيفي', reviewed_at: '2026-11-27T12:01:00Z',
+    },
+  })
+  const isProfile = (input: RequestInfo | URL) => String(input).endsWith('/therapists/me/profile')
+  const isSubmit = (input: RequestInfo | URL) => String(input).endsWith('/therapists/me/profile-submission')
+  const change = (name: string, value: string) =>
+    fireEvent.change(screen.getByLabelText(name), { target: { value } })
 
   it.each(['/dashboard', '/sessions', '/clients', '/red-flags'])(
-    'blocks a pending therapist who opens %s directly',
+    'blocks a pending therapist who opens %s directly and shows the submitted profile',
     async (path) => {
       await api.establish({ ...tokens, user: identity })
       window.history.replaceState({}, '', path)
-      const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(approvalError('pending'))
+      const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) =>
+        isProfile(input) ? json({ data: pending }) : json({}, 404),
+      )
       vi.stubGlobal('fetch', fetch)
       render(<App />)
       const heading = await screen.findByRole('heading', { name: 'بانتظار الموافقة' })
       expect(heading.closest('main')).toHaveAttribute('dir', 'rtl')
-      expect(screen.getByText('الحالة: بانتظار الموافقة')).toBeInTheDocument()
-      expect(screen.queryByLabelText(licenseField)).not.toBeInTheDocument()
-      expect(fetch).toHaveBeenCalledTimes(1)
-      expect(fetch.mock.calls[0][0]).toEqual(expect.stringMatching(/\/therapists\/me\/dashboard$/))
+      expect(screen.getByText(validProfile.job_title)).toBeInTheDocument()
+      expect(screen.getByText(validProfile.email)).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'تعديل الطلب' })).toBeInTheDocument()
+      expect(fetch.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual([
+        '/api/v1/therapists/me/profile', '/api/v1/meta/therapist-options',
+      ])
     },
   )
 
@@ -111,42 +135,68 @@ describe('live routing boundaries', () => {
     expect(screen.getByLabelText('WhatsApp number')).toBe(phone)
   })
 
-  it('shows the not-submitted license form and links to working document and profile settings', async () => {
+  it('submits the initial reviewed profile, but not the read-only WhatsApp number', async () => {
     await api.establish({ ...tokens, user: identity })
     window.history.replaceState({}, '', '/dashboard')
-    vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
-    const fetch = vi.fn<typeof globalThis.fetch>()
-      .mockResolvedValueOnce(approvalError(null))
-      .mockResolvedValueOnce(json({ data: [] }))
-      .mockResolvedValueOnce(json({}, 503))
-      .mockResolvedValueOnce(json({ data: {} }))
+    const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) =>
+      isProfile(input) ? json({ data: notSubmitted }) :
+        isSubmit(input) ? json({ data: pending }, 201) : json({}, 503),
+    )
     vi.stubGlobal('fetch', fetch)
     render(<App />)
-    expect(await screen.findByRole('heading', { name: 'لم يُرسل الطلب' })).toBeInTheDocument()
-    expect(screen.getByText('الحالة: لم يُرسل الطلب')).toBeInTheDocument()
-    expect(screen.getByLabelText(licenseField)).toBeRequired()
-    expect(fetch).toHaveBeenCalledTimes(1)
-    expect(fetch.mock.calls[0][0]).toEqual(expect.stringMatching(/\/therapists\/me\/dashboard$/))
-    fireEvent.click(screen.getByRole('link', { name: 'المستندات المطلوبة' }))
-    expect(await screen.findByText('لا توجد مستندات مطلوبة.')).toBeInTheDocument()
-    expect(fetch.mock.calls[1][0]).toEqual(expect.stringMatching(/\/therapists\/me\/documents$/))
-    fireEvent.click(screen.getByRole('link', { name: 'إعدادات الملف الشخصي' }))
+    expect(await screen.findByRole('heading', { name: 'أكمل ملفك المهني' })).toBeInTheDocument()
+    expect(screen.getByLabelText('الاسم')).toHaveValue(identity.name)
+    expect(screen.getByLabelText('رقم الجوال')).toHaveAttribute('readonly')
+    expect(screen.getByLabelText('رقم الجوال')).toHaveValue(identity.whatsapp_number)
+    expect(document.querySelector('input[type="file"]')).not.toBeInTheDocument()
     const countries = Array.from(screen.getByLabelText<HTMLSelectElement>('البلد').options)
     expect(countries.slice(1).map((option) => option.value)).toEqual(
       'SY LB JO PS IQ SA AE QA KW BH OM YE EG SD LY TN DZ MA MR SO DJ KM TR DE GB US CA FR SE NL'.split(' '),
     )
     expect(countries[1]).toHaveTextContent('سوريا')
-    fireEvent.change(screen.getByLabelText('التخصص'), { target: { value: 'anxiety' } })
-    fireEvent.click(screen.getByRole('button', { name: 'حفظ إعدادات الملف الشخصي' }))
-    expect(await screen.findByText('تم حفظ إعدادات الملف الشخصي.')).toBeInTheDocument()
-    expect(fetch.mock.calls[2][0]).toEqual(expect.stringMatching(/\/meta\/therapist-options$/))
-    expect(fetch.mock.calls[3][0]).toEqual(expect.stringMatching(/\/therapists\/me\/settings$/))
-    expect(fetch.mock.calls[3][1]).toMatchObject({ method: 'PUT', body: '{"specialty":"anxiety"}' })
-    expect(screen.getByRole('link', { name: 'إرسال طلب الموافقة' })).toHaveAttribute('href', '/profile/approval')
-    expect(fetch).toHaveBeenCalledTimes(4)
+    const submit = screen.getByRole('button', { name: 'إرسال الملف للمراجعة' })
+    fireEvent.click(submit)
+    expect(screen.getByLabelText('سنوات الخبرة')).toHaveAttribute('aria-invalid', 'true')
+    expect(fetch.mock.calls.some(([url]) => isSubmit(url))).toBe(false)
+
+    change('الاسم', validProfile.full_name)
+    change('المسمى الوظيفي', validProfile.job_title)
+    change('التخصص', validProfile.specialty)
+    change('النبذة التعريفية', validProfile.bio)
+    change('البريد الإلكتروني', validProfile.email)
+    change('المدينة', validProfile.city)
+    change('البلد', validProfile.country)
+    change('سنوات الخبرة', '0')
+    await userEvent.setup().selectOptions(screen.getByRole('listbox', { name: 'اللغات' }), validProfile.languages)
+    fireEvent.click(submit)
+    expect(await screen.findByRole('heading', { name: 'بانتظار الموافقة' })).toBeInTheDocument()
+    expect(JSON.parse(String(fetch.mock.calls.find(([url]) => isSubmit(url))?.[1]?.body))).toEqual(validProfile)
   })
 
-  it('restores a protected route before rendering login and handles the legacy approval response', async () => {
+  it('keeps requested documents accessible and uses the existing document upload endpoint', async () => {
+    await api.establish({ ...tokens, user: identity })
+    window.history.replaceState({}, '', '/dashboard')
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+    const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) => {
+      if (isProfile(input)) return json({ data: pending })
+      if (String(input).endsWith('/me/documents')) return json({
+        data: [{ id: revision.id, doc_type: 'certificate', status: 'requested', reason: null, review_note: null, accepts_upload: true }],
+      })
+      return json({ data: {} })
+    })
+    vi.stubGlobal('fetch', fetch)
+    render(<App />)
+    fireEvent.click(await screen.findByRole('link', { name: 'المستندات المطلوبة' }))
+    const field = await screen.findByLabelText('شهادة')
+    const file = new File(['synthetic document'], 'certificate.pdf', { type: 'application/pdf' })
+    fireEvent.change(field, { target: { files: [file] } })
+    fireEvent.submit(screen.getByRole('button', { name: 'رفع المستند' }).closest('form')!)
+    expect(await screen.findByText('تم إرسال المستند للمراجعة.')).toBeInTheDocument()
+    const call = fetch.mock.calls.find(([url]) => String(url).endsWith(`/me/documents/${revision.id}/upload`))
+    expect((call?.[1]?.body as FormData).get('file')).toEqual(file)
+  })
+
+  it('restores a protected route before rendering login and checks the self-profile', async () => {
     await api.establish({ ...tokens, user: identity })
     const key = window.sessionStorage.key(0)!
     api.clear()
@@ -155,154 +205,90 @@ describe('live routing boundaries', () => {
     vi.stubGlobal('fetch', vi.fn<typeof globalThis.fetch>()
       .mockResolvedValueOnce(json({ ...tokens, refresh_token: 's'.repeat(64) }))
       .mockResolvedValueOnce(json({ user: identity }))
-      .mockResolvedValueOnce(json({ message: 'Your therapist profile has not been approved yet.' }, 403)))
+      .mockResolvedValueOnce(json({ data: pending }))
+      .mockResolvedValueOnce(json({}, 404)))
     render(<App />)
     expect(screen.getByText('جارٍ استعادة جلستك…')).toBeInTheDocument()
     expect(screen.queryByLabelText('WhatsApp number')).not.toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'بانتظار الموافقة' })).toBeInTheDocument()
   })
 
-  it.each(['/profile/approval', '/profile/documents'])(
-    'automatically redirects an approved therapist from %s to their dashboard on focus',
-    async (path) => {
-      await api.establish({ ...tokens, user: identity })
-      window.history.replaceState({}, '', path)
-      let approved = false
-      const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) =>
-        String(input).endsWith('/therapists/me/dashboard')
-          ? approved
-            ? json({
-                therapist: { id: identity.id, full_name: identity.name, rating: 0, approval_status: 'approved' },
-                stats: { pending: 0, confirmed: 0, completed: 0, today: 0 },
-              })
-            : json({ code: 'therapist_pending_approval', meta: { approval_status: 'pending' } }, 403)
-          : json({ data: [], pagination: { last_page: 1 } }),
-      )
-      vi.stubGlobal('fetch', fetch)
-      render(<App />)
-      expect(await screen.findByRole('heading', { name: 'بانتظار الموافقة' })).toBeInTheDocument()
-      approved = true
-      fireEvent(window, new Event('focus'))
-      expect(await screen.findByRole('heading', { name: 'Upcoming Sessions' })).toBeInTheDocument()
-      expect(window.location.pathname).toBe('/dashboard')
-      expect(screen.queryByLabelText('WhatsApp number')).not.toBeInTheDocument()
-    },
-  )
+  it('automatically opens the dashboard after approval on focus', async () => {
+    await api.establish({ ...tokens, user: identity })
+    window.history.replaceState({}, '', '/profile/approval')
+    let approved = false
+    const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) => {
+      if (isProfile(input)) return json({ data: approved ? profileReview() : pending })
+      if (String(input).endsWith('/therapists/me/dashboard')) return json({
+        therapist: { id: identity.id, full_name: identity.name, rating: 0, approval_status: 'approved' },
+        stats: { pending: 0, confirmed: 0, completed: 0, today: 0 },
+      })
+      return json({ data: [], pagination: { last_page: 1 } })
+    })
+    vi.stubGlobal('fetch', fetch)
+    render(<App />)
+    expect(await screen.findByRole('heading', { name: 'بانتظار الموافقة' })).toBeInTheDocument()
+    approved = true
+    fireEvent(window, new Event('focus'))
+    expect(await screen.findByRole('heading', { name: 'Upcoming Sessions' })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/dashboard')
+    expect(screen.queryByLabelText('WhatsApp number')).not.toBeInTheDocument()
+  })
 
-  it('shows a new rejection reason when the background approval poll runs', async () => {
+  it('lets a pending therapist supersede the previous submission using its prefilled data', async () => {
+    await api.establish({ ...tokens, user: identity })
+    window.history.replaceState({}, '', '/profile/approval')
+    const changed = 'اختصاصي العلاج النفسي'
+    const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) =>
+      isProfile(input) ? json({ data: pending }) : isSubmit(input) ? json({
+        data: { ...pending, pending_revision: { ...revision, id: 'new-revision', data: { ...validProfile, job_title: changed } } },
+      }, 201) : json({}, 404),
+    )
+    vi.stubGlobal('fetch', fetch)
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'تعديل الطلب' }))
+    expect(screen.getByLabelText('المسمى الوظيفي')).toHaveValue(validProfile.job_title)
+    change('المسمى الوظيفي', changed)
+    fireEvent.click(screen.getByRole('button', { name: 'إعادة إرسال الطلب للمراجعة' }))
+    expect(await screen.findByText(changed)).toBeInTheDocument()
+    expect(JSON.parse(String(fetch.mock.calls.find(([url]) => isSubmit(url))?.[1]?.body)))
+      .toEqual({ ...validProfile, job_title: changed })
+  })
+
+  it('shows a new rejection reason and prefills the last observed revision after polling', async () => {
     vi.useFakeTimers()
     try {
       await api.establish({ ...tokens, user: identity })
       window.history.replaceState({}, '', '/dashboard')
-      vi.stubGlobal('fetch', vi.fn<typeof globalThis.fetch>()
-        .mockResolvedValueOnce(approvalError('pending'))
-        .mockResolvedValueOnce(approvalError('rejected', 'الترخيص منتهي الصلاحية')))
+      let review = pending
+      vi.stubGlobal('fetch', vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) =>
+        isProfile(input) ? json({ data: review }) : json({}, 404),
+      ))
       await act(async () => { render(<App />) })
       expect(screen.getByRole('heading', { name: 'بانتظار الموافقة' })).toBeInTheDocument()
-
+      review = rejected
       await act(async () => { await vi.advanceTimersByTimeAsync(30_000) })
-      expect(screen.getByText('الترخيص منتهي الصلاحية')).toBeInTheDocument()
-      expect(screen.getByLabelText(licenseField)).toBeRequired()
+      expect(screen.getByText('يرجى تحديث المسمى الوظيفي')).toBeInTheDocument()
+      expect(screen.getByLabelText('المسمى الوظيفي')).toHaveValue(validProfile.job_title)
     } finally {
       vi.useRealTimers()
     }
   })
 
-  it.each([
-    ['rejected', 'لم تتم الموافقة على طلبك', 'مرفوض'],
-    ['suspended', 'معلّق', 'معلّق'],
-  ])('shows the server’s %s decision after the therapist resubmits a license', async (status, heading, label) => {
+  it('prefills available data for a rejected therapist returning to the app and allows resubmission', async () => {
     await api.establish({ ...tokens, user: identity })
     window.history.replaceState({}, '', '/profile/approval')
-    let finishCheck!: (response: Response) => void
-    const fetch = vi.fn<typeof globalThis.fetch>()
-      .mockResolvedValueOnce(approvalError('rejected', 'يرجى رفع نسخة واضحة من الترخيص'))
-      .mockResolvedValueOnce(json({ data: { approval_status: 'pending' } }, 202))
-      .mockImplementationOnce(() => new Promise((resolve) => { finishCheck = resolve }))
+    const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) =>
+      isProfile(input) ? json({ data: { ...rejected, published: validProfile } }) :
+        isSubmit(input) ? json({ data: pending }, 201) : json({}, 404),
+    )
     vi.stubGlobal('fetch', fetch)
     render(<App />)
-
-    expect(await screen.findByRole('heading', { name: 'لم تتم الموافقة على طلبك' })).toBeInTheDocument()
-    expect(screen.getByText('يرجى رفع نسخة واضحة من الترخيص')).toBeInTheDocument()
-    const file = attach()
-    fireEvent.submit(screen.getByRole('button', { name: 'إعادة الإرسال للمراجعة' }).closest('form')!)
-    expect(await screen.findByText('تم إرسال طلبك للمراجعة.')).toBeInTheDocument()
-    expect(screen.getByText('الحالة: بانتظار الموافقة')).toBeInTheDocument()
-    expect(screen.queryByText('يرجى رفع نسخة واضحة من الترخيص')).not.toBeInTheDocument()
-    const [route, request] = fetch.mock.calls[1]
-    expect(route).toEqual(expect.stringMatching(/\/therapists\/me\/approval$/))
-    expect(request?.method).toBe('POST')
-    expect((request?.body as FormData).get('license')).toBe(file)
-
-    await act(async () => finishCheck(approvalError(status, 'ملاحظة جديدة')))
-    expect(await screen.findByRole('heading', { name: heading })).toBeInTheDocument()
-    expect(screen.getByText(`الحالة: ${label}`)).toBeInTheDocument()
-    if (status === 'rejected') expect(screen.getByText('ملاحظة جديدة')).toBeInTheDocument()
-    expect(fetch).toHaveBeenCalledTimes(3)
-  })
-
-  it.each(['not submitted', 'unavailable'])(
-    'keeps a selected license attached while rechecking and after a %s result',
-    async (result) => {
-      await api.establish({ ...tokens, user: identity })
-      window.history.replaceState({}, '', '/profile/approval')
-      let finishCheck!: (response: Response) => void
-      vi.stubGlobal('fetch', vi.fn<typeof globalThis.fetch>()
-        .mockResolvedValueOnce(approvalError(null))
-        .mockImplementationOnce(() => new Promise((resolve) => { finishCheck = resolve })))
-      render(<App />)
-      const license = await screen.findByLabelText<HTMLInputElement>(licenseField)
-      const file = attach()
-      const check = screen.getByRole('button', { name: 'التحقق من حالة الموافقة' })
-      fireEvent.click(check)
-      expect(check).toBeDisabled()
-      expect(screen.getByLabelText(licenseField)).toBe(license)
-      expect(license.files?.[0]).toBe(file)
-      await act(async () => finishCheck(result === 'not submitted' ? approvalError(null) : json({}, 503)))
-      expect(check).toBeEnabled()
-      expect(screen.getByLabelText(licenseField)).toBe(license)
-      expect(license.files?.[0]).toBe(file)
-      if (result === 'unavailable')
-        expect(screen.getByRole('alert')).toHaveTextContent('تعذّر التحقق من حالة الموافقة.')
-    },
-  )
-
-  it.each([
-    ['license.txt', 'text/plain', 1, 'نوع الملف غير مدعوم'],
-    ['license.pdf', 'application/pdf', 5 * 1024 * 1024 + 1, 'حجم الملف يتجاوز الحد'],
-  ])('rejects an invalid license before uploading: %s', async (name, type, size, message) => {
-    await api.establish({ ...tokens, user: identity })
-    window.history.replaceState({}, '', '/profile/approval')
-    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(approvalError(null))
-    vi.stubGlobal('fetch', fetch)
-    render(<App />)
-    const submit = await screen.findByRole('button', { name: 'إرسال الطلب للمراجعة' })
-    attach(new File([new Uint8Array(size)], name, { type }))
-    fireEvent.submit(submit.closest('form')!)
-    expect(screen.getByRole('alert')).toHaveTextContent(message)
-    expect(fetch).toHaveBeenCalledTimes(1)
-  })
-
-  it.each([
-    [413, 'حجم الملف يتجاوز الحد'],
-    [415, 'نوع الملف غير مدعوم'],
-    [429, 'تم إرسال طلبات كثيرة'],
-    [0, 'تعذّر الاتصال بالخادم'],
-  ])('explains an upload failure in Arabic (%s)', async (status, message) => {
-    await api.establish({ ...tokens, user: identity })
-    window.history.replaceState({}, '', '/profile/approval')
-    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(approvalError(null))
-    if (status) fetch.mockResolvedValueOnce(json({ message: 'Internal detail' }, status))
-    else fetch.mockRejectedValueOnce(new TypeError('Network unavailable'))
-    vi.stubGlobal('fetch', fetch)
-    render(<App />)
-    const submit = await screen.findByRole('button', { name: 'إرسال الطلب للمراجعة' })
-    const file = attach()
-    fireEvent.submit(submit.closest('form')!)
-    expect(await screen.findByRole('alert')).toHaveTextContent(message)
-    expect(screen.getByLabelText<HTMLInputElement>(licenseField).files?.[0]).toBe(file)
-    expect(submit).toBeEnabled()
-    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(await screen.findByText('يرجى تحديث المسمى الوظيفي')).toBeInTheDocument()
+    expect(screen.getByLabelText('الاسم')).toHaveValue(validProfile.full_name)
+    fireEvent.click(screen.getByRole('button', { name: 'إعادة إرسال الطلب للمراجعة' }))
+    expect(await screen.findByRole('heading', { name: 'بانتظار الموافقة' })).toBeInTheDocument()
+    expect(screen.queryByText('يرجى تحديث المسمى الوظيفي')).not.toBeInTheDocument()
   })
 
   it.each(['/dashboard', '/sessions', '/chats', '/clients', '/profile/settings', '/wallet'])(

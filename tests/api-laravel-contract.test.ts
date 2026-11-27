@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { afterAll, describe, expect, it } from 'vitest'
 import { ApiClient, type ApiSession } from '../src/api'
+import type { TherapistProfileResponse } from '../src/therapist-profile-review'
 
 const enabled =
   !!process.env.SAKINA_CONTRACT_API &&
@@ -17,7 +18,6 @@ describe.skipIf(!enabled)('opt-in HTTP contract against isolated Laravel fixture
       })
     : null
   const client = new ApiClient(process.env.SAKINA_CONTRACT_API || 'http://127.0.0.1:8000/api/v1')
-  let originalBio: string | null = null
   afterAll(async () => {
     await client.logout().catch(() => undefined)
   })
@@ -47,7 +47,6 @@ describe.skipIf(!enabled)('opt-in HTTP contract against isolated Laravel fixture
     expect(dashboard.therapist.id).toBe(fixture!.therapist)
     expect(dashboard.stats.completed).toBe(1)
     expect(dashboard.timezone).toBe('UTC')
-    originalBio = dashboard.therapist.bio
     const clients = await client.get<{
       data: { id: string; status: string }[]
       pagination: { last_page: number }
@@ -65,15 +64,15 @@ describe.skipIf(!enabled)('opt-in HTTP contract against isolated Laravel fixture
       true,
     )
   })
-  it('saves only supported therapist profile settings', async () => {
-    const result = await client.mutate<{ data: { bio: string } }>(
-      '/therapists/me/settings',
-      { bio: 'Synthetic HTTP contract check' },
-      {},
-      'PUT',
-    )
-    expect(result.data.bio).toBe('Synthetic HTTP contract check')
-    await client.mutate('/therapists/me/settings', { bio: originalBio }, {}, 'PUT')
+  it('loads the reviewed self-profile and rejects direct professional edits', async () => {
+    const { data } = await client.get<TherapistProfileResponse>('/therapists/me/profile')
+    expect(data.approval_status).toBe('approved')
+    expect(data.account.whatsapp_number).toBe(fixture!.phone)
+    await expect(
+      client.mutate('/therapists/me/settings', { bio: 'Synthetic HTTP contract check' }, {}, 'PUT'),
+    ).rejects.toMatchObject({ status: 422, fields: { bio: expect.any(Array) } })
+    expect((await client.get<TherapistProfileResponse>('/therapists/me/profile')).data.published)
+      .toEqual(data.published)
   })
   it('matches real clinical read and private-note shapes without patient-visible report confusion', async () => {
     const detail = await client.get<{ session: { id: string; patient_id: string } }>(
