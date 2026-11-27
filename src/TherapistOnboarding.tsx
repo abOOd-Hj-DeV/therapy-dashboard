@@ -46,7 +46,6 @@ export function TherapistOnboarding({
   const [editing, setEditing] = useState(false)
   const [latestInitial, setLatestInitial] = useState<ProfileRevision | null>(null)
   const showDocuments = path === '/profile/documents'
-  const options = useTherapistOptions(api, !showDocuments)
   const status = review.approval_status
   const pending = review.pending_revision
   const last = review.last_review
@@ -57,6 +56,7 @@ export function TherapistOnboarding({
     email: review.published.email ?? review.account.email,
   }
   const shownForm = status === null || status === 'rejected' || (status === 'pending' && editing && !!pending)
+  const options = useTherapistOptions(api, !showDocuments || shownForm)
 
   function link(event: MouseEvent<HTMLAnchorElement>, next: string) {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
@@ -79,40 +79,39 @@ export function TherapistOnboarding({
           المستندات المطلوبة
         </a>
       </nav>
-      {showDocuments ? <RequestedDocuments api={api} /> : (
-        <>
-          {status === null && <p>أكمل بيانات ملفك المهني ثم أرسله للمراجعة.</p>}
-          {status === 'pending' && <p>طلبك قيد المراجعة. ستتحدّث الحالة تلقائيًا عند صدور القرار.</p>}
-          {status === 'rejected' && (
-            <>
-              {last?.status === 'rejected' && last.note && <p>سبب الرفض: <bdi>{last.note}</bdi></p>}
-              <p>عدّل بيانات ملفك المهني وأعد إرساله للمراجعة.</p>
-            </>
-          )}
-          {status === 'pending' && !editing && pending && (
-            <section aria-labelledby="submitted-profile">
-              <h2 id="submitted-profile">البيانات المرسلة للمراجعة</h2>
-              <TherapistProfileSummary profile={pending.data} phone={review.account.whatsapp_number} options={options} />
-              <button type="button" className="soft-button" onClick={() => setEditing(true)}>تعديل الطلب</button>
-            </section>
-          )}
-          {shownForm && (
-            <TherapistProfileForm
-              key={pending?.id ?? previous?.id ?? status ?? 'initial'}
-              api={api}
-              initial={initial}
-              phone={review.account.whatsapp_number}
-              options={options}
-              submitLabel={status === null ? 'إرسال الملف للمراجعة' : 'إعادة إرسال الطلب للمراجعة'}
-              saved={(response) => {
-                setEditing(false)
-                saved(response)
-              }}
-              close={status === 'pending' ? () => setEditing(false) : undefined}
-            />
-          )}
-        </>
-      )}
+      {showDocuments && <RequestedDocuments api={api} />}
+      <div hidden={showDocuments}>
+        {status === null && <p>أكمل بيانات ملفك المهني ثم أرسله للمراجعة.</p>}
+        {status === 'pending' && <p>طلبك قيد المراجعة. ستتحدّث الحالة تلقائيًا عند صدور القرار.</p>}
+        {status === 'rejected' && (
+          <>
+            {last?.status === 'rejected' && last.note && <p>سبب الرفض: <bdi>{last.note}</bdi></p>}
+            <p>عدّل بيانات ملفك المهني وأعد إرساله للمراجعة.</p>
+          </>
+        )}
+        {status === 'pending' && !editing && pending && (
+          <section aria-labelledby="submitted-profile">
+            <h2 id="submitted-profile">البيانات المرسلة للمراجعة</h2>
+            <TherapistProfileSummary profile={pending.data} phone={review.account.whatsapp_number} options={options} />
+            <button type="button" className="soft-button" onClick={() => setEditing(true)}>تعديل الطلب</button>
+          </section>
+        )}
+        {shownForm && (
+          <TherapistProfileForm
+            key={pending?.id ?? previous?.id ?? status ?? 'initial'}
+            api={api}
+            initial={initial}
+            phone={review.account.whatsapp_number}
+            options={options}
+            submitLabel={status === null ? 'إرسال الملف للمراجعة' : 'إعادة إرسال الطلب للمراجعة'}
+            saved={(response) => {
+              setEditing(false)
+              saved(response)
+            }}
+            close={status === 'pending' ? () => setEditing(false) : undefined}
+          />
+        )}
+      </div>
       {approvalCheckFailed && <p role="alert">تعذّر تحديث حالة المراجعة. حاول مرة أخرى.</p>}
       <div className="approval-actions">
         <button type="button" className="soft-button" disabled={checkingApproval} onClick={checkApproval}>

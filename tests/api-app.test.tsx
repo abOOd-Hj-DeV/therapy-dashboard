@@ -173,6 +173,30 @@ describe('live routing boundaries', () => {
     expect(JSON.parse(String(fetch.mock.calls.find(([url]) => isSubmit(url))?.[1]?.body))).toEqual(validProfile)
   })
 
+  it('keeps unsaved profile edits when visiting requested documents', async () => {
+    await api.establish({ ...tokens, user: identity })
+    window.history.replaceState({}, '', '/profile/approval')
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+    const draftTitle = 'مسمى وظيفي غير محفوظ'
+    vi.stubGlobal('fetch', vi.fn<typeof globalThis.fetch>().mockImplementation(async (input) => {
+      if (isProfile(input)) return json({ data: pending })
+      if (String(input).endsWith('/me/documents')) return json({ data: [] })
+      return json({}, 404)
+    }))
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'تعديل الطلب' }))
+    change('المسمى الوظيفي', draftTitle)
+    await userEvent.setup().selectOptions(screen.getByRole('listbox', { name: 'اللغات' }), 'fr')
+
+    fireEvent.click(screen.getByRole('link', { name: 'المستندات المطلوبة' }))
+    expect(await screen.findByText('لا توجد مستندات مطلوبة.')).toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: 'المسمى الوظيفي' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('link', { name: 'طلب مراجعة الملف المهني' }))
+
+    expect(screen.getByRole('textbox', { name: 'المسمى الوظيفي' })).toHaveValue(draftTitle)
+    expect(screen.getByRole('listbox', { name: 'اللغات' })).toHaveValue([...validProfile.languages, 'fr'])
+  })
+
   it('keeps requested documents accessible and uses the existing document upload endpoint', async () => {
     await api.establish({ ...tokens, user: identity })
     window.history.replaceState({}, '', '/dashboard')
