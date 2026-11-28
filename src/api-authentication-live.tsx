@@ -669,6 +669,7 @@ export function LiveAuthentication({
                     aria-label={phase === 'reset' ? 'رمز الاستعادة' : 'رمز التحقق'}
                     type="text"
                     inputMode="numeric"
+                    dir="ltr"
                     autoComplete="one-time-code"
                     pattern="[0-9]{6}"
                     minLength={6}
@@ -693,6 +694,7 @@ export function LiveAuthentication({
                       name="password"
                       aria-label={passwordLabel}
                       type={visible ? 'text' : 'password'}
+                      dir="ltr"
                       autoComplete={phase === 'login' ? 'current-password' : 'new-password'}
                       minLength={phase === 'login' ? undefined : 8}
                       value={password}
@@ -724,6 +726,7 @@ export function LiveAuthentication({
                     name="password_confirmation"
                     aria-label={activating ? 'تأكيد كلمة المرور' : 'تأكيد كلمة المرور'}
                     type="password"
+                    dir="ltr"
                     autoComplete="new-password"
                     minLength={8}
                     value={confirmation}

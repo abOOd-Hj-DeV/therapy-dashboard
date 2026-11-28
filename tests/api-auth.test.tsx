@@ -101,6 +101,18 @@ afterEach(() => {
 })
 
 describe('live authentication public API integration', () => {
+  it('keeps a revealed Latin password left-to-right within the Arabic login form', () => {
+    setup()
+    const password = screen.getByLabelText('كلمة المرور')
+    expect(password.closest('[dir="rtl"]')).not.toBeNull()
+    expect(screen.getByLabelText('رقم واتساب')).toHaveAttribute('dir', 'ltr')
+    fill('كلمة المرور', 'Example1!')
+    fireEvent.click(screen.getByRole('button', { name: 'إظهار كلمة المرور' }))
+    expect(password).toHaveAttribute('type', 'text')
+    expect(password).toHaveAttribute('dir', 'ltr')
+    expect(password).toHaveValue('Example1!')
+  })
+
   it.each(['2025550107', '12025550107', '+12025550107', '0012025550107', '+1 202 555 0107'])(
     'sends the synthetic US test number %s in E.164',
     async (input) => {
@@ -140,6 +152,7 @@ describe('live authentication public API integration', () => {
     expect(screen.getByLabelText('رقم واتساب')).toHaveAttribute('autocomplete', 'tel')
     expect(screen.getByLabelText('رمز التفعيل')).toHaveAttribute('autocomplete', 'one-time-code')
     expect(screen.getByLabelText('كلمة المرور الجديدة')).toHaveAttribute('autocomplete', 'new-password')
+    expect(screen.getByLabelText('تأكيد كلمة المرور')).toHaveAttribute('dir', 'ltr')
     fill('رقم واتساب', '+12025550107')
     fill('رمز التفعيل', 'ABCD1234')
     newPassword('onlyletters')
@@ -383,6 +396,7 @@ describe('live authentication public API integration', () => {
     expect(screen.queryByText(/a reset code has been sent/)).not.toBeInTheDocument()
     expect(screen.queryByText('server content must not be rendered')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /^إعادة الإرسال/ })).toBeDisabled()
+    expect(screen.getByLabelText('رمز الاستعادة')).toHaveAttribute('dir', 'ltr')
     fill('رمز الاستعادة', '001234')
     newPassword('replacement password1')
     fireEvent.click(screen.getByRole('button', { name: 'استعادة كلمة المرور' }))
