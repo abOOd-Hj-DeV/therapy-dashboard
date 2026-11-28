@@ -73,7 +73,7 @@ describe('final wallet-owned closure regressions', () => {
       expect(sections.getByRole('button', { name: 'Earnings' })).not.toHaveAttribute('aria-current')
       expect(container.querySelector('.wallet-layout')).toHaveClass('wallet-withdrawals')
       expect(screen.getByRole('dialog')).toBeInTheDocument()
-      fireEvent.click(screen.getByRole('button', { name: 'Close dialog' }))
+      fireEvent.click(screen.getByRole('button', { name: 'إغلاق الحوار' }))
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
       expect(sections.getByRole('button', { name: 'Withdrawals' })).toHaveAttribute(
         'aria-current',
@@ -86,7 +86,7 @@ describe('final wallet-owned closure regressions', () => {
     const { container } = mount('earnings')
     expect(container.querySelectorAll('.wallet-transactions article')).toHaveLength(5)
     expect(container.querySelector('.phone-wallet-advisory')).toHaveTextContent(
-      'same terms apply as stated above the withdraw button.',
+      'تطبّق الشروط نفسها المذكورة فوق زر السحب.',
     )
     expect(css).toContain('.wallet-demo .wallet-transactions { padding: 14px 0 18px; }')
     expect(css).toContain('.wallet-demo .wallet-transactions article { padding-block: 4px; }')
@@ -127,58 +127,58 @@ describe('final wallet-owned closure regressions', () => {
     expect(phoneCss).not.toMatch(/\.wallet-demo[^}]*\.wallet-advisory[^}]*(?:overflow:\s*hidden|line-clamp|max-height)/)
     mount('earnings')
     expect(document.querySelector('.phone-wallet-advisory')).toHaveTextContent(
-      'Withdrawals are processed within 3-5 business days, with a minimum withdrawal amount of 500 Riyals — same terms apply as stated above the withdraw button.',
+      'تُعالَج السحوبات خلال 3–5 أيام عمل بحد أدنى 500 ريال — تطبّق الشروط نفسها المذكورة فوق زر السحب.',
     )
   })
 
   it('announces the selected method, tracks keyboard focus and leaves browser shortcuts alone', () => {
     mount('withdraw')
-    const combo = screen.getByRole('combobox', { name: 'Payment method' })
+    const combo = screen.getByRole('combobox', { name: 'طريقة الدفع' })
     combo.focus()
-    expect(combo).toHaveAccessibleDescription('Select payment method')
+    expect(combo).toHaveAccessibleDescription('اختر طريقة الدفع')
     fireEvent.keyDown(combo, { key: 'a', ctrlKey: true })
     fireEvent.keyDown(combo, { key: 's', metaKey: true })
     expect(combo).toHaveAttribute('aria-expanded', 'false')
     fireEvent.keyDown(combo, { key: 's' })
-    const shamcash = screen.getByRole('option', { name: 'Shamcash Transfer' })
+    const shamcash = screen.getByRole('option', { name: 'تحويل شام كاش' })
     expect(combo).toHaveAttribute('aria-activedescendant', shamcash.id)
     expect(document.activeElement).toBe(combo)
     fireEvent.keyDown(combo, { key: 'Enter' })
-    expect(combo).toHaveAccessibleDescription('Shamcash Transfer')
+    expect(combo).toHaveAccessibleDescription('تحويل شام كاش')
     expect(combo).toHaveAttribute('aria-expanded', 'false')
     expect(combo).not.toHaveAttribute('aria-activedescendant')
-    expect(screen.getByLabelText('Shamcash Code')).toBeRequired()
+    expect(screen.getByLabelText('رمز شام كاش')).toBeRequired()
     fireEvent.keyDown(combo, { key: 'Home' })
     fireEvent.keyDown(combo, { key: ' ' })
-    expect(combo).toHaveAccessibleDescription('Al-Haram Transfer')
+    expect(combo).toHaveAccessibleDescription('تحويل الحرم')
     expect(document.activeElement).toBe(combo)
-    expect(screen.queryByLabelText('Shamcash Code')).not.toBeInTheDocument()
-    expect(screen.getByLabelText('Select payment method')).toHaveValue('haram')
+    expect(screen.queryByLabelText('رمز شام كاش')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('اختر طريقة الدفع')).toHaveValue('haram')
   })
 
   it('keeps honest Al-Haram fields and an unsent preview after dismissing only the payment popup', () => {
     const { container } = mount('haram')
     const form = container.querySelector('form')!
     expect(form.querySelectorAll('input')).toHaveLength(4)
-    const amount = screen.getByLabelText('Withdrawal amount')
+    const amount = screen.getByLabelText('مبلغ السحب')
     fireEvent.change(amount, { target: { value: '500' } })
     fireEvent.submit(form)
-    expect(screen.getByRole('alert')).toHaveTextContent('Complete the payment details')
-    fireEvent.change(screen.getByLabelText('Full name'), {
+    expect(screen.getByRole('alert')).toHaveTextContent('أكمل بيانات الدفع.')
+    fireEvent.change(screen.getByLabelText('الاسم الكامل'), {
       target: { value: 'Synthetic Recipient' },
     })
-    fireEvent.change(screen.getByLabelText('Phone number'), { target: { value: '0000000000' } })
+    fireEvent.change(screen.getByLabelText('رقم الجوال'), { target: { value: '0000000000' } })
     fireEvent.change(screen.getByLabelText('Location'), { target: { value: 'Demo Location' } })
-    const combo = screen.getByRole('combobox', { name: 'Payment method' })
+    const combo = screen.getByRole('combobox', { name: 'طريقة الدفع' })
     fireEvent.click(combo)
     fireEvent.pointerDown(form)
     fireEvent.click(form)
     expect(combo).toHaveAttribute('aria-expanded', 'false')
     expect(screen.getByRole('dialog')).toBeInTheDocument()
-    expect(screen.getByLabelText('Full name')).toHaveValue('Synthetic Recipient')
+    expect(screen.getByLabelText('الاسم الكامل')).toHaveValue('Synthetic Recipient')
     fireEvent.submit(form)
-    expect(screen.getByRole('status')).toHaveTextContent('500 SP via Al-Haram')
-    expect(screen.getByRole('status')).toHaveTextContent('No withdrawal request was sent')
+    expect(screen.getByRole('status')).toHaveTextContent('500 ل.س عبر الحرم')
+    expect(screen.getByRole('status')).toHaveTextContent('لم يُرسل طلب سحب')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 })

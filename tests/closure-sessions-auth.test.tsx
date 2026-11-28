@@ -16,9 +16,9 @@ describe('closure sessions/auth static state setup contracts (not visual accepta
     expect(styles).toMatch(/@media \(min-width: 601px\)\s*\{\s*\.auth-page\.visual-auth\.signup-page \.auth-form > label\s*\{\s*margin-top:\s*8px;/)
     const { container } = render(<Auth page="signup" navigate={vi.fn()} verificationEmail="" onCreateAccount={vi.fn()} />)
     const labels = container.querySelectorAll('.auth-page.visual-auth.signup-page .auth-form > label')
-    expect(Array.from(labels, (label) => label.textContent)).toEqual(['Work Email', 'Password'])
+    expect(Array.from(labels, (label) => label.textContent)).toEqual(['البريد المهني', 'Password'])
     expect(screen.getByRole('button', { name: 'Create' })).toBeDisabled()
-    expect(screen.getByLabelText('Work Email')).toHaveAttribute('type', 'email')
+    expect(screen.getByLabelText('البريد المهني')).toHaveAttribute('type', 'email')
     expect(screen.getByLabelText('Password', { selector: 'input' })).toHaveAttribute('minlength', '8')
   })
 
@@ -37,12 +37,12 @@ describe('closure sessions/auth static state setup contracts (not visual accepta
       window.history.replaceState({}, '', `/sessions${query}`)
       const { container } = render(<Sessions navigate={vi.fn()} />)
       expect(screen.getByRole('tab', { name: 'All (16)' })).toHaveAttribute('aria-selected', 'true')
-      expect(screen.getByRole('region', { name: 'All Sessions' })).toBeInTheDocument()
+      expect(screen.getByRole('region', { name: 'كل الجلسات' })).toBeInTheDocument()
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
       if (query.includes('collapsed')) expect(container.querySelector('.workspace')).toHaveClass('is-collapsed')
       if (query.includes('expanded')) {
         expect(container.querySelector('.workspace')).toHaveClass('is-expanded')
-        expect(container.querySelector('.sidebar-backdrop')).toHaveAttribute('aria-label', 'Close navigation')
+        expect(container.querySelector('.sidebar-backdrop')).toHaveAttribute('aria-label', 'إغلاق التنقل')
       }
     },
   )
@@ -50,7 +50,7 @@ describe('closure sessions/auth static state setup contracts (not visual accepta
   it('initializes the empty schedule dialog without needing a new business route', () => {
     window.history.replaceState({}, '', '/sessions?state=schedule')
     render(<Sessions navigate={vi.fn()} />)
-    const dialog = screen.getByRole('dialog', { name: 'Schedule a new session' })
+    const dialog = screen.getByRole('dialog', { name: 'جدولة جلسة جديدة' })
     for (const field of ['Patient', 'Time', 'Dated', 'Duration']) {
       expect(within(dialog).getByLabelText(field)).toHaveValue('')
     }
@@ -63,30 +63,30 @@ describe('closure sessions/auth static state setup contracts (not visual accepta
     render(<SessionDetails navigate={vi.fn()} />)
     expect(screen.getByRole('tab', { name: 'Session record' })).toHaveAttribute('aria-selected', 'true')
     expect(screen.queryByRole('button', { name: 'Reschedule' })).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Session actions' }))
-    expect(screen.getByRole('button', { name: 'Session actions' })).toHaveAttribute('aria-expanded', 'true')
+    fireEvent.click(screen.getByRole('button', { name: 'إجراءات الجلسة' }))
+    expect(screen.getByRole('button', { name: 'إجراءات الجلسة' })).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByRole('button', { name: 'Reschedule' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
-    expect(screen.getByRole('textbox', { name: 'New Note' })).toHaveValue('')
+    expect(screen.getByRole('textbox', { name: 'ملاحظة جديدة' })).toHaveValue('')
   })
 
   it('keeps record content editable and locally saved after compacting individual card budgets', () => {
     window.history.replaceState({}, '', '/sessions/upcoming?state=record')
     const { container } = render(<SessionDetails navigate={vi.fn()} />)
     expect(container.querySelector('.session-detail')).toHaveClass('demo-session-detail')
-    const note = screen.getByRole('textbox', { name: 'New Note' })
+    const note = screen.getByRole('textbox', { name: 'ملاحظة جديدة' })
     fireEvent.change(note, { target: { value: 'A longer locally entered clinical note remains readable.' } })
     fireEvent.click(screen.getByRole('button', { name: 'Add Note' }))
     expect(screen.getByText('A longer locally entered clinical note remains readable.')).toBeInTheDocument()
-    expect(screen.getByRole('status')).toHaveTextContent('No clinical record was saved to a server')
+    expect(screen.getByRole('status')).toHaveTextContent('لم يُحفظ سجل إكلينيكي على الخادم')
     expect(note).toHaveValue('')
     fireEvent.change(screen.getByLabelText('Next Step / Continuity Note'), { target: { value: 'Review practical obstacles next time.' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save and Update Next Session' }))
-    expect(screen.getByRole('status')).toHaveTextContent('No backend is connected')
+    expect(screen.getByRole('status')).toHaveTextContent('لا يوجد خادم متصل')
     fireEvent.click(screen.getByRole('button', { name: 'Back to Summary' }))
     expect(screen.getByRole('tab', { name: 'Before session' })).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByText('Review practical obstacles next time.')).toBeInTheDocument()
-    expect(screen.queryByRole('textbox', { name: 'New Note' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: 'ملاحظة جديدة' })).not.toBeInTheDocument()
   })
 
   it('uses source row and typography budgets without fixing card heights or clipping record content', () => {
@@ -104,7 +104,7 @@ describe('closure sessions/auth static state setup contracts (not visual accepta
     const { container } = render(<SessionDetails navigate={vi.fn()} />)
     expect(screen.getByRole('tab', { name: 'Before session' })).toHaveAttribute('aria-selected', 'true')
     expect(container.querySelector('.workspace')).toHaveClass('is-expanded')
-    fireEvent.click(screen.getByRole('button', { name: 'Session actions' }))
+    fireEvent.click(screen.getByRole('button', { name: 'إجراءات الجلسة' }))
     expect(screen.getByRole('button', { name: 'Reschedule' })).toBeInTheDocument()
   })
 
@@ -142,9 +142,9 @@ describe('closure sessions/auth static state setup contracts (not visual accepta
 
   it('reaches the filled visible-password design through ordinary form interaction', () => {
     render(<Auth page="login" navigate={vi.fn()} verificationEmail="" onCreateAccount={vi.fn()} />)
-    fireEvent.change(screen.getByLabelText('Email Address'), { target: { value: 'Saad@gmail.com' } })
+    fireEvent.change(screen.getByLabelText('البريد الإلكتروني'), { target: { value: 'Saad@gmail.com' } })
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: '123456789' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Show password' }))
+    fireEvent.click(screen.getByRole('button', { name: 'إظهار كلمة المرور' }))
     expect(screen.getByLabelText('Password')).toHaveAttribute('type', 'text')
     expect(screen.getByRole('button', { name: 'Login' })).toBeEnabled()
   })
@@ -154,8 +154,8 @@ describe('closure sessions/auth static state setup contracts (not visual accepta
     render(<Auth page="verify" navigate={navigate} verificationEmail="henryford@Sakina.com" onCreateAccount={vi.fn()} />)
     const verify = screen.getByRole('button', { name: 'Verify' })
     expect(verify).toBeDisabled()
-    fireEvent.change(screen.getByLabelText('Code digit 1'), { target: { value: '34512' } })
-    for (const [index, digit] of [...'34512'].entries()) expect(screen.getByLabelText(`Code digit ${index + 1}`)).toHaveValue(digit)
+    fireEvent.change(screen.getByLabelText('الخانة 1 من الرمز'), { target: { value: '34512' } })
+    for (const [index, digit] of [...'34512'].entries()) expect(screen.getByLabelText(`الخانة ${index + 1} من الرمز`)).toHaveValue(digit)
     expect(verify).toBeEnabled()
     fireEvent.click(verify)
     expect(navigate).toHaveBeenCalledExactlyOnceWith('/dashboard')

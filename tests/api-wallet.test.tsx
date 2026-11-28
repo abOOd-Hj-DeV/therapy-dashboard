@@ -110,17 +110,17 @@ async function harness(
   }
 }
 async function ready() {
-  await screen.findByText('Lifetime net earnings')
+  await screen.findByText('إجمالي صافي الأرباح')
 }
 function openAndFill(amount = '25.50', method = 'wise', holder = '') {
-  fireEvent.click(screen.getByRole('button', { name: 'Request withdrawal' }))
-  fireEvent.change(screen.getByLabelText('Select payment method'), { target: { value: method } })
-  fireEvent.change(screen.getByLabelText('Withdrawal amount'), { target: { value: amount } })
-  fireEvent.change(screen.getByLabelText('Payout account'), {
+  fireEvent.click(screen.getByRole('button', { name: 'طلب سحب' }))
+  fireEvent.change(screen.getByLabelText('اختر طريقة الدفع'), { target: { value: method } })
+  fireEvent.change(screen.getByLabelText('مبلغ السحب'), { target: { value: amount } })
+  fireEvent.change(screen.getByLabelText('حساب الدفع'), {
     target: { value: 'destination-1234' },
   })
   if (holder)
-    fireEvent.change(screen.getByLabelText('Account holder name (optional)'), {
+    fireEvent.change(screen.getByLabelText('اسم صاحب الحساب (اختياري)'), {
       target: { value: holder },
     })
 }
@@ -128,7 +128,7 @@ function review() {
   fireEvent.click(screen.getByRole('button', { name: 'Review request' }))
 }
 function confirm() {
-  fireEvent.click(screen.getByRole('button', { name: 'Confirm request for review' }))
+  fireEvent.click(screen.getByRole('button', { name: 'تأكيد الطلب للمراجعة' }))
 }
 function key(init: RequestInit) {
   return new Headers(init.headers).get('Idempotency-Key')
@@ -153,17 +153,17 @@ describe('live wallet summary and history', () => {
     )
     expect(screen.getAllByText('150.00 CUSTOM')).toHaveLength(2)
     expect(screen.getAllByText('88.00 CUSTOM')).toHaveLength(3)
-    const reserved = screen.getByText('Reserved for withdrawal requests').closest('article')!
+    const reserved = screen.getByText('محجوز لطلبات السحب').closest('article')!
     expect(within(reserved).getByText('12.00 CUSTOM')).toBeInTheDocument()
     expect(
-      within(screen.getByText('Pending earnings').closest('article')!).getByText('45.00 CUSTOM'),
+      within(screen.getByText('أرباح معلّقة').closest('article')!).getByText('45.00 CUSTOM'),
     ).toBeInTheDocument()
-    expect(screen.getByText('Completed paid sessions')).toBeInTheDocument()
-    expect(screen.getByText('Earned package sessions')).toBeInTheDocument()
-    expect(screen.queryByRole('img', { name: /Monthly earnings:/ })).not.toBeInTheDocument()
+    expect(screen.getByText('الجلسات المدفوعة المكتملة')).toBeInTheDocument()
+    expect(screen.getByText('جلسات الباقة المكتسبة')).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: /الأرباح الشهرية: كانون الثاني 6,200؛ شباط 7,800؛ آذار 8,500؛ نيسان 9,200؛ أيار 8,400/ })).not.toBeInTheDocument()
     expect(screen.queryByText(/35%/)).not.toBeInTheDocument()
     expect(screen.queryByText(/\$41.5k|8,400 SP|500 Riyals|3-5 business/)).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Request withdrawal' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'طلب سحب' })).toBeDisabled()
   })
   it.each([
     { data: summary() },
@@ -175,7 +175,7 @@ describe('live wallet summary and history', () => {
     async (wallet) => {
       await harness({ wallet })
       await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
-      expect(screen.queryByText('Lifetime net earnings')).not.toBeInTheDocument()
+      expect(screen.queryByText('إجمالي صافي الأرباح')).not.toBeInTheDocument()
       expect(screen.queryByText('$41.5k')).not.toBeInTheDocument()
     },
   )
@@ -210,12 +210,12 @@ describe('live wallet summary and history', () => {
     expect(panel.getByText('Approved')).toBeInTheDocument()
     expect(panel.getByText('Rejected')).toBeInTheDocument()
     expect(panel.getByText('Paid')).toBeInTheDocument()
-    expect(panel.getByText(/Latest 10 at most/)).toBeInTheDocument()
+    expect(panel.getByText(/أحدث 10 طلبات كحد أقصى\. السجل الكامل والترقيم غير متوفرين\./)).toBeInTheDocument()
     expect(panel.getAllByText(/•••• 1234/)).toHaveLength(2)
     expect(screen.queryByText(/destination-1234/)).not.toBeInTheDocument()
     expect(panel.getByText('Review note: <b>Review destination</b>')).toBeInTheDocument()
     expect(document.querySelector('.wallet-transaction-copy b')).toBeNull()
-    expect(screen.queryByText('Sarah Ali')).not.toBeInTheDocument()
+    expect(screen.queryByText('سارة علي')).not.toBeInTheDocument()
   })
   it.each([401, 403, 429, 503])(
     'shows a sanitized GET %i error, never demo data',
@@ -236,9 +236,9 @@ describe('manual withdrawal request', () => {
     expect(screen.queryByRole('option', { name: /Shamcash|Al-Haram/ })).not.toBeInTheDocument()
     review()
     expect(h.posts()).toHaveLength(0)
-    expect(screen.getByText('Confirm manual-review request')).toBeInTheDocument()
+    expect(screen.getByText('تأكيد طلب المراجعة اليدوية')).toBeInTheDocument()
     confirm()
-    await screen.findByText(/Withdrawal request pending review/)
+    await screen.findByText(/طلب السحب قيد المراجعة\. لم يُؤكَّد أي تحويل مالي\. تحقق من الطلبات الأخيرة لحالته الحالية\./)
     expect(h.posts()).toHaveLength(1)
     const [url, init] = h.posts()[0]
     expect(url).toBe('https://wallet.example.test/api/v1/therapists/wallet/withdraw')
@@ -268,7 +268,7 @@ describe('manual withdrawal request', () => {
       openAndFill('20', method)
       review()
       confirm()
-      await screen.findByText(/Withdrawal request pending review/)
+      await screen.findByText(/طلب السحب قيد المراجعة\. لم يُؤكَّد أي تحويل مالي\. تحقق من الطلبات الأخيرة لحالته الحالية\./)
       expect(JSON.parse(String(h.posts()[0][1].body))).toEqual({
         amount: 20,
         payout_details: { method, account: 'destination-1234' },
@@ -283,7 +283,7 @@ describe('manual withdrawal request', () => {
       openAndFill(amount)
       review()
       expect(within(screen.getByRole('dialog')).getByRole('alert')).toHaveTextContent(
-        'at most two decimal places',
+        'بخانتين عشريتين كحد أقصى',
       )
       expect(h.posts()).toHaveLength(0)
     },
@@ -294,10 +294,10 @@ describe('manual withdrawal request', () => {
     openAndFill('25')
     review()
     expect(screen.getByRole('alert')).toHaveTextContent('30.00 EUR')
-    fireEvent.change(screen.getByLabelText('Withdrawal amount'), { target: { value: '30' } })
-    fireEvent.change(screen.getByLabelText('Payout account'), { target: { value: '   ' } })
+    fireEvent.change(screen.getByLabelText('مبلغ السحب'), { target: { value: '30' } })
+    fireEvent.change(screen.getByLabelText('حساب الدفع'), { target: { value: '   ' } })
     review()
-    expect(screen.getByRole('alert')).toHaveTextContent('provide a payout account')
+    expect(screen.getByRole('alert')).toHaveTextContent('أدخل حساب الدفع')
     expect(h.posts()).toHaveLength(0)
   })
   it.each([
@@ -308,7 +308,7 @@ describe('manual withdrawal request', () => {
   ])('disables withdrawal under server restrictions (%j)', async (wallet) => {
     const h = await harness({ wallet })
     await ready()
-    expect(screen.getByRole('button', { name: 'Request withdrawal' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'طلب سحب' })).toBeDisabled()
     expect(h.posts()).toHaveLength(0)
   })
   it('prevents rapid duplicate submission and modal dismissal during an in-flight POST', async () => {
@@ -322,20 +322,20 @@ describe('manual withdrawal request', () => {
     await ready()
     openAndFill()
     review()
-    const button = screen.getByRole('button', { name: 'Confirm request for review' })
+    const button = screen.getByRole('button', { name: 'تأكيد الطلب للمراجعة' })
     fireEvent.click(button)
     fireEvent.click(button)
     expect(h.posts()).toHaveLength(1)
-    expect(screen.getByRole('button', { name: 'Checking request…' })).toBeDisabled()
-    fireEvent.click(screen.getByRole('button', { name: 'Close dialog' }))
+    expect(screen.getByRole('button', { name: 'جارٍ فحص الطلب…' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'إغلاق الحوار' }))
     expect(screen.getByRole('dialog')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Dashboard' }))
+    fireEvent.click(screen.getByRole('button', { name: 'لوحة التحكم' }))
     expect(h.navigate).not.toHaveBeenCalled()
     const unload = new Event('beforeunload', { cancelable: true })
     window.dispatchEvent(unload)
     expect(unload.defaultPrevented).toBe(true)
     await act(async () => resolve(json({ withdrawal: withdrawal() }, 202)))
-    await screen.findByText(/Withdrawal request pending review/)
+    await screen.findByText(/طلب السحب قيد المراجعة\. لم يُؤكَّد أي تحويل مالي\. تحقق من الطلبات الأخيرة لحالته الحالية\./)
     expect(h.posts()).toHaveLength(1)
   })
   it('reconciles unknown network outcome, locks editing and retries the immutable body with the same key', async () => {
@@ -350,10 +350,10 @@ describe('manual withdrawal request', () => {
     openAndFill()
     review()
     confirm()
-    const retry = await screen.findByRole('button', { name: 'Retry unchanged request' })
+    const retry = await screen.findByRole('button', { name: 'إعادة الطلب نفسه' })
     await waitFor(() => expect(retry).toBeEnabled())
     expect(screen.queryByRole('button', { name: 'Edit request' })).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('Withdrawal amount')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('مبلغ السحب')).not.toBeInTheDocument()
     expect(screen.queryByText(/raw account secret/)).not.toBeInTheDocument()
     const first = h.posts()[0][1]
     const firstPostIndex = h.transport.mock.calls.findIndex(([, init]) => init?.method === 'POST')
@@ -363,7 +363,7 @@ describe('manual withdrawal request', () => {
         .some(([url]) => String(url).endsWith('/therapists/wallet')),
     ).toBe(true)
     fireEvent.click(retry)
-    await screen.findByText(/Withdrawal request pending review/)
+    await screen.findByText(/طلب السحب قيد المراجعة\. لم يُؤكَّد أي تحويل مالي\. تحقق من الطلبات الأخيرة لحالته الحالية\./)
     const second = h.posts()[1][1]
     expect(key(second)).toBe(key(first))
     expect(second.body).toBe(first.body)
@@ -382,10 +382,10 @@ describe('manual withdrawal request', () => {
     openAndFill()
     review()
     confirm()
-    await screen.findByText(/Withdrawal request pending review/)
+    await screen.findByText(/طلب السحب قيد المراجعة\. لم يُؤكَّد أي تحويل مالي\. تحقق من الطلبات الأخيرة لحالته الحالية\./)
     expect(h.posts()).toHaveLength(1)
     await ready()
-    expect(screen.getByRole('button', { name: 'Request withdrawal' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'طلب سحب' })).toBeDisabled()
   })
   it('retains an unresolved intent across route unmounts and replays only the original key', async () => {
     let count = 0
@@ -400,20 +400,20 @@ describe('manual withdrawal request', () => {
     review()
     confirm()
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Retry unchanged request' })).toBeEnabled(),
+      expect(screen.getByRole('button', { name: 'إعادة الطلب نفسه' })).toBeEnabled(),
     )
     const original = h.posts()[0][1]
     h.view.unmount()
     render(<Wallet api={h.api} navigate={h.navigate} />)
     await ready()
-    expect(screen.queryByLabelText('Withdrawal amount')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Retry unchanged request' })).toBeDisabled()
+    expect(screen.queryByLabelText('مبلغ السحب')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'إعادة الطلب نفسه' })).toBeDisabled()
     fireEvent.click(screen.getByRole('button', { name: 'Reconcile recent requests' }))
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Retry unchanged request' })).toBeEnabled(),
+      expect(screen.getByRole('button', { name: 'إعادة الطلب نفسه' })).toBeEnabled(),
     )
-    fireEvent.click(screen.getByRole('button', { name: 'Retry unchanged request' }))
-    await screen.findByText(/Withdrawal request pending review/)
+    fireEvent.click(screen.getByRole('button', { name: 'إعادة الطلب نفسه' }))
+    await screen.findByText(/طلب السحب قيد المراجعة\. لم يُؤكَّد أي تحويل مالي\. تحقق من الطلبات الأخيرة لحالته الحالية\./)
     expect(key(h.posts()[1][1])).toBe(key(original))
     expect(h.posts()[1][1].body).toBe(original.body)
   })
@@ -433,7 +433,7 @@ describe('manual withdrawal request', () => {
     expect(screen.queryByText(/Outcome unknown/)).not.toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     openAndFill()
-    expect(screen.getByLabelText('Account holder name (optional)')).toHaveValue('')
+    expect(screen.getByLabelText('اسم صاحب الحساب (اختياري)')).toHaveValue('')
   })
   it('keeps an unmatched in-flight conflict locked and never invents a fresh key', async () => {
     const h = await harness({
@@ -443,7 +443,7 @@ describe('manual withdrawal request', () => {
     openAndFill()
     review()
     confirm()
-    const retry = await screen.findByRole('button', { name: 'Retry unchanged request' })
+    const retry = await screen.findByRole('button', { name: 'إعادة الطلب نفسه' })
     await waitFor(() => expect(retry).toBeEnabled())
     fireEvent.click(retry)
     await waitFor(() => expect(h.posts()).toHaveLength(2))
@@ -463,8 +463,8 @@ describe('manual withdrawal request', () => {
     openAndFill()
     review()
     confirm()
-    await screen.findByText(/Unable to reconcile recent requests/)
-    expect(screen.getByRole('button', { name: 'Retry unchanged request' })).toBeDisabled()
+    await screen.findByText(/تعذّرت تسوية الطلبات الأخيرة\. أبقِ هذه الصفحة مفتوحة ولا تنشئ طلباً آخر\./)
+    expect(screen.getByRole('button', { name: 'إعادة الطلب نفسه' })).toBeDisabled()
     expect(screen.queryByRole('button', { name: 'Edit request' })).not.toBeInTheDocument()
     expect(screen.queryByText('database password')).not.toBeInTheDocument()
     expect(h.posts()).toHaveLength(1)
@@ -487,14 +487,14 @@ describe('manual withdrawal request', () => {
     openAndFill()
     review()
     confirm()
-    await screen.findByLabelText('Withdrawal amount')
-    expect(screen.getByRole('alert')).toHaveTextContent('Please check the submitted information.')
+    await screen.findByLabelText('مبلغ السحب')
+    expect(screen.getByRole('alert')).toHaveTextContent('تحقق من المعلومات المُدخلة.')
     expect(screen.queryByText(/private exception|destination-1234 secret/)).not.toBeInTheDocument()
     await ready()
-    fireEvent.change(screen.getByLabelText('Withdrawal amount'), { target: { value: '30.00' } })
+    fireEvent.change(screen.getByLabelText('مبلغ السحب'), { target: { value: '30.00' } })
     review()
     confirm()
-    await screen.findByText(/Withdrawal request pending review/)
+    await screen.findByText(/طلب السحب قيد المراجعة\. لم يُؤكَّد أي تحويل مالي\. تحقق من الطلبات الأخيرة لحالته الحالية\./)
     expect(key(h.posts()[1][1])).not.toBe(key(h.posts()[0][1]))
     expect(JSON.parse(String(h.posts()[1][1].body)).amount).toBe(30)
   })
@@ -507,15 +507,15 @@ describe('manual withdrawal request', () => {
     openAndFill()
     review()
     await act(async () => confirm())
-    expect(screen.getByRole('alert')).toHaveTextContent('Too many requests')
-    expect(screen.getByRole('button', { name: 'Confirm request for review' })).toBeDisabled()
+    expect(screen.getByRole('alert')).toHaveTextContent('طلبات كثيرة جداً')
+    expect(screen.getByRole('button', { name: 'تأكيد الطلب للمراجعة' })).toBeDisabled()
     expect(h.posts()).toHaveLength(1)
     await act(async () => vi.advanceTimersByTimeAsync(2100))
-    expect(screen.getByRole('button', { name: 'Confirm request for review' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'تأكيد الطلب للمراجعة' })).toBeEnabled()
     await act(async () => confirm())
     expect(h.posts()).toHaveLength(2)
     expect(key(h.posts()[1][1])).toBe(key(h.posts()[0][1]))
-    expect(screen.queryByText(/Withdrawal request pending review/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/طلب السحب قيد المراجعة\. لم يُؤكَّد أي تحويل مالي\. تحقق من الطلبات الأخيرة لحالته الحالية\./)).not.toBeInTheDocument()
   })
   it('does not retry an ambiguous key after the 24-hour window or permit new intent', async () => {
     const h = await harness({
@@ -527,14 +527,14 @@ describe('manual withdrawal request', () => {
     openAndFill()
     review()
     confirm()
-    const retry = await screen.findByRole('button', { name: 'Retry unchanged request' })
+    const retry = await screen.findByRole('button', { name: 'إعادة الطلب نفسه' })
     await waitFor(() => expect(retry).toBeEnabled())
     vi.useFakeTimers()
     vi.setSystemTime(Date.now() + 86400001)
     // Trigger a render without using a new intent.
-    fireEvent.click(screen.getByRole('button', { name: 'Close dialog' }))
-    fireEvent.click(screen.getAllByRole('button', { name: 'Resolve withdrawal request' })[0])
-    expect(screen.getByRole('button', { name: 'Retry unchanged request' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'إغلاق الحوار' }))
+    fireEvent.click(screen.getAllByRole('button', { name: 'بتّ طلب السحب' })[0])
+    expect(screen.getByRole('button', { name: 'إعادة الطلب نفسه' })).toBeDisabled()
     expect(screen.queryByRole('button', { name: 'Edit request' })).not.toBeInTheDocument()
     expect(h.posts()).toHaveLength(1)
   })
@@ -555,7 +555,7 @@ describe('manual withdrawal request', () => {
     openAndFill()
     review()
     confirm()
-    await screen.findByText(/Withdrawal request pending review/)
+    await screen.findByText(/طلب السحب قيد المراجعة\. لم يُؤكَّد أي تحويل مالي\. تحقق من الطلبات الأخيرة لحالته الحالية\./)
     await ready()
     fireEvent.click(screen.getByRole('button', { name: 'Withdrawals' }))
     expect(screen.getByText('Approved')).toBeInTheDocument()
@@ -577,16 +577,16 @@ describe('manual withdrawal request', () => {
     act(() => h.api.clear())
     expect(signal.aborted).toBe(true)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(screen.queryByText('Lifetime net earnings')).not.toBeInTheDocument()
+    expect(screen.queryByText('إجمالي صافي الأرباح')).not.toBeInTheDocument()
     await act(async () => {
       h.setWallet(summary({ currency: 'GBP' }))
       await h.api.establish(session(nextActor))
       resolve(json({ withdrawal: withdrawal() }, 202))
     })
     await ready()
-    expect(screen.queryByText(/Withdrawal request pending review/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/طلب السحب قيد المراجعة\. لم يُؤكَّد أي تحويل مالي\. تحقق من الطلبات الأخيرة لحالته الحالية\./)).not.toBeInTheDocument()
     openAndFill('25')
-    expect(screen.getByLabelText('Account holder name (optional)')).toHaveValue('')
+    expect(screen.getByLabelText('اسم صاحب الحساب (اختياري)')).toHaveValue('')
   })
   it('shows permission and authentication failures without moving money', async () => {
     const h = await harness({
@@ -596,9 +596,9 @@ describe('manual withdrawal request', () => {
     openAndFill()
     review()
     confirm()
-    await screen.findByText('This action is not permitted for your account.')
+    await screen.findByText('هذا الإجراء غير مسموح لحسابك.')
     expect(screen.queryByText('private permission information')).not.toBeInTheDocument()
-    expect(screen.queryByText(/Withdrawal request pending review/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/طلب السحب قيد المراجعة\. لم يُؤكَّد أي تحويل مالي\. تحقق من الطلبات الأخيرة لحالته الحالية\./)).not.toBeInTheDocument()
     expect(h.posts()).toHaveLength(1)
   })
   it('never treats a stale frontend balance as permission to withdraw after server rejection', async () => {
@@ -618,11 +618,11 @@ describe('manual withdrawal request', () => {
     openAndFill()
     review()
     confirm()
-    await screen.findByText('Please check the submitted information.')
+    await screen.findByText('تحقق من المعلومات المُدخلة.')
     await ready()
     expect(screen.getByRole('button', { name: 'Review request' })).toBeDisabled()
     expect(h.posts()).toHaveLength(1)
-    expect(screen.queryByText(/Withdrawal request pending review/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/طلب السحب قيد المراجعة\. لم يُؤكَّد أي تحويل مالي\. تحقق من الطلبات الأخيرة لحالته الحالية\./)).not.toBeInTheDocument()
     expect(screen.queryByText('Internal balance details')).not.toBeInTheDocument()
   })
   it('clears the page rather than reporting success after a POST 401', async () => {
@@ -636,7 +636,7 @@ describe('manual withdrawal request', () => {
     await screen.findByText('Your session has ended. Please sign in again.')
     expect(h.api.getUser()).toBeNull()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(screen.queryByText(/Withdrawal request pending review/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/طلب السحب قيد المراجعة\. لم يُؤكَّد أي تحويل مالي\. تحقق من الطلبات الأخيرة لحالته الحالية\./)).not.toBeInTheDocument()
     expect(screen.queryByText('Raw unauthorized exception')).not.toBeInTheDocument()
   })
   it('keeps a malformed successful response financially uncertain and requires reconciliation', async () => {
@@ -647,10 +647,10 @@ describe('manual withdrawal request', () => {
     openAndFill()
     review()
     confirm()
-    await screen.findByRole('button', { name: 'Retry unchanged request' })
+    await screen.findByRole('button', { name: 'إعادة الطلب نفسه' })
     expect(screen.queryByRole('button', { name: 'Edit request' })).not.toBeInTheDocument()
     expect(screen.queryByText('Funds transferred!')).not.toBeInTheDocument()
-    expect(screen.queryByText(/Withdrawal request pending review/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/طلب السحب قيد المراجعة\. لم يُؤكَّد أي تحويل مالي\. تحقق من الطلبات الأخيرة لحالته الحالية\./)).not.toBeInTheDocument()
     expect(h.posts()).toHaveLength(1)
   })
   it('defers reconciliation and replay until Retry-After elapses on a 503', async () => {
@@ -667,13 +667,13 @@ describe('manual withdrawal request', () => {
       h.transport.mock.calls.filter(([url]) => String(url).endsWith('/therapists/wallet')).length
     expect(walletReads()).toBe(1)
     expect(screen.getByRole('button', { name: 'Reconcile recent requests' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Retry unchanged request' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'إعادة الطلب نفسه' })).toBeDisabled()
     await act(async () => vi.advanceTimersByTimeAsync(5100))
     await act(async () =>
       fireEvent.click(screen.getByRole('button', { name: 'Reconcile recent requests' })),
     )
     expect(walletReads()).toBeGreaterThan(1)
-    expect(screen.getByRole('button', { name: 'Retry unchanged request' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'إعادة الطلب نفسه' })).toBeEnabled()
     expect(h.posts()).toHaveLength(1)
   })
   it('blocks ambiguous replay if the configured wallet currency changes', async () => {
@@ -688,22 +688,22 @@ describe('manual withdrawal request', () => {
     review()
     confirm()
     await screen.findByText(
-      'Wallet currency has changed. Do not retry; finance support must reconcile the previous request.',
+      'تغيّرت عملة المحفظة. لا تعِد المحاولة؛ يجب على الدعم المالي تسوية الطلب السابق.',
     )
     await ready()
-    expect(screen.getByRole('button', { name: 'Retry unchanged request' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'إعادة الطلب نفسه' })).toBeDisabled()
     expect(screen.queryByRole('button', { name: 'Edit request' })).not.toBeInTheDocument()
     expect(h.posts()).toHaveLength(1)
   })
   it('retains the original explicit no-api demo preview flow', () => {
     window.history.replaceState({}, '', '/wallet?state=shamcash')
     render(<Wallet navigate={vi.fn()} />)
-    fireEvent.change(screen.getByLabelText('Withdrawal amount'), { target: { value: '500' } })
-    fireEvent.change(screen.getByLabelText('Shamcash Code'), { target: { value: 'demo' } })
+    fireEvent.change(screen.getByLabelText('مبلغ السحب'), { target: { value: '500' } })
+    fireEvent.change(screen.getByLabelText('رمز شام كاش'), { target: { value: 'demo' } })
     fireEvent.click(screen.getByRole('button', { name: 'Next' }))
-    expect(screen.getByRole('status')).toHaveTextContent('Demo preview only')
+    expect(screen.getByRole('status')).toHaveTextContent('معاينة تجريبية فقط')
     expect(screen.getByRole('status')).toHaveTextContent(
-      'No withdrawal request was sent and no money was moved',
+      'لم يُرسل طلب سحب ولم يُنقل مال',
     )
   })
 })

@@ -18,26 +18,28 @@ import { HomeworkLibrary } from './HomeworkLibrary'
 import { HomeworkWizard } from './HomeworkWizard'
 import { CarePlanInsertion } from './CarePlanInsertion'
 import { RedFlags } from './RedFlags'
-import { therapistLifecycle, therapistProfilePath, type TherapistProfileResponse } from './therapist-profile-review'
+import { hasKnownTherapistLifecycle, therapistLifecycle, therapistProfilePath, type TherapistProfileResponse } from './therapist-profile-review'
 
 export function App() {
   const user = useApiUser(api)
   const demo = import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === 'true'
   const client = demo ? undefined : api
   const [restoring, setRestoring] = useState(() => !!client?.hasStoredSession() && !user)
-  const approval = useApiResource<TherapistProfileResponse>(client, user ? therapistProfilePath : null)
+  const approval = useApiResource<TherapistProfileResponse>(client, user ? therapistProfilePath : null, { validate: hasKnownTherapistLifecycle })
   const [location, setLocation] = useState(window.location.pathname + window.location.search)
   const [draftSession, setDraftSession] = useState<number | null>(null)
   const requestedPath = location.split('?')[0]
   const review = approval.data?.data
   const lifecycle = review && therapistLifecycle(review)
-  const approved = lifecycle === 'approved' || lifecycle === 'update_pending'
-  const finishingDraft = approved && draftSession === client?.getSessionKey()
+  const lastApproved = lifecycle === 'approved' || lifecycle === 'update_pending'
+  const approved = lastApproved && !approval.error
+  const finishingDraft = lastApproved && draftSession === client?.getSessionKey()
   const activatedEntry = !!(client && user && ['/activate', '/signup'].includes(requestedPath))
   const approvedOnboardingPath =
     approved && !finishingDraft && (activatedEntry || requestedPath === '/profile/approval')
   const redirectPath = approvedOnboardingPath ? '/dashboard' : activatedEntry ? '/profile/approval' : null
   const path = redirectPath ?? (client && user && ['/', '/login'].includes(requestedPath) ? '/dashboard' : requestedPath)
+  const keepsProfileDraft = lastApproved && ['/profile', '/profile/settings', '/profile/help'].includes(path)
   const [verificationEmail, setVerificationEmail] = useState('henryford@Sakina.com')
   useEffect(() => {
     const onPopState = () => setLocation(window.location.pathname + window.location.search)
@@ -86,8 +88,8 @@ export function App() {
     '/reset-password',
   ].includes(path)
   if (restoring) return <AuthCardShell arabic title="سكينة"><p role="status">جارٍ استعادة جلستك…</p></AuthCardShell>
-  if (client && user && protectedPage && (!approved || finishingDraft || path === '/profile/documents')) {
-    if (review && lifecycle) {
+  if (client && user && protectedPage && !keepsProfileDraft && (!approved || finishingDraft || path === '/profile/documents')) {
+    if (review && lifecycle && (!approval.error || draftSession === client.getSessionKey() || !lastApproved)) {
       return (
         <TherapistOnboarding
           key={client.getSessionKey()}
@@ -144,12 +146,23 @@ export function App() {
   if (path === '/sessions') return <Sessions navigate={navigate} api={client} />
   if (path === '/profile' || path === '/profile/settings' || path === '/profile/help')
     return (
-      <Profile
-        key="profile"
-        page={path.endsWith('/settings') ? 'settings' : path.endsWith('/help') ? 'help' : 'profile'}
-        navigate={navigate}
-        api={client}
-      />
+      <>
+        {client && !approved && (
+          <AuthCardShell arabic title="الملف المهني">
+            <p role="alert">تعذّر التحقق من حالة الموافقة. حاول مرة أخرى.</p>
+            <button type="button" onClick={approval.reload}>إعادة المحاولة</button>
+          </AuthCardShell>
+        )}
+        <div hidden={!!client && !approved} inert={!!client && !approved}>
+          <Profile
+            key="profile"
+            suspended={!!client && !approved}
+            page={path.endsWith('/settings') ? 'settings' : path.endsWith('/help') ? 'help' : 'profile'}
+            navigate={navigate}
+            api={client}
+          />
+        </div>
+      </>
     )
   if (path === '/wallet') return <Wallet navigate={navigate} api={client} />
   if (path === '/homework') return <HomeworkLibrary navigate={navigate} api={client} />

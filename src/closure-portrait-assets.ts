@@ -45,7 +45,7 @@ const wallet: readonly Portrait[] = [
   {
     image: 'part3-walletAvatar.png',
     artwork: 'photo',
-    target: { row: 1, name: 'Sarah Ali', amount: 300, date: '2024-05-20' },
+    target: { row: 1, name: 'سارة علي', amount: 300, date: '2024-05-20' },
     source: {
       kind: 'existing-asset',
       asset: 'part3-walletAvatar.png',
@@ -56,7 +56,7 @@ const wallet: readonly Portrait[] = [
   {
     image: 'closure-portrait-wallet-ahmed-mohammed.png',
     artwork: 'masked-avatar',
-    target: { row: 2, name: 'Ahmed Mohammed', amount: 200, date: '2024-05-20' },
+    target: { row: 2, name: 'أحمد محمد', amount: 200, date: '2024-05-20' },
     source: {
       kind: 'original-avatar-crop',
       frame: walletFrame,
@@ -67,7 +67,7 @@ const wallet: readonly Portrait[] = [
   {
     image: 'closure-portrait-wallet-sarah-khalid.png',
     artwork: 'masked-avatar',
-    target: { row: 3, name: 'Sarah Khalid', amount: 100, date: '2024-05-17' },
+    target: { row: 3, name: 'سارة خالد', amount: 100, date: '2024-05-17' },
     source: {
       kind: 'original-avatar-crop',
       frame: walletFrame,
@@ -78,7 +78,7 @@ const wallet: readonly Portrait[] = [
   {
     image: 'closure-portrait-wallet-omar-youssef-200.png',
     artwork: 'masked-avatar',
-    target: { row: 4, name: 'Omar Youssef', amount: 200, date: '2024-05-16' },
+    target: { row: 4, name: 'عمر يوسف', amount: 200, date: '2024-05-16' },
     source: {
       kind: 'original-avatar-crop',
       frame: walletFrame,
@@ -89,7 +89,7 @@ const wallet: readonly Portrait[] = [
   {
     image: 'closure-portrait-wallet-omar-youssef-400.png',
     artwork: 'masked-avatar',
-    target: { row: 5, name: 'Omar Youssef', amount: 400, date: '2024-05-16' },
+    target: { row: 5, name: 'عمر يوسف', amount: 400, date: '2024-05-16' },
     source: {
       kind: 'original-avatar-crop',
       frame: walletFrame,
@@ -120,17 +120,17 @@ function sessionPortrait(
 }
 
 const desktopTablet = [
-  sessionPortrait(1, 'Saad Alsheikh Ali', 'dashboard-imgContainer1.png', 'portrait'),
-  sessionPortrait(2, 'Ahmad Swayed', 'dashboard-imgContainer2.png', 'portrait'),
-  sessionPortrait(3, 'Sara Muhammad', 'dashboard-imgContainer3.png'),
-  sessionPortrait(4, 'Khaled Aljabri', 'dashboard-imgContainer4.png', 'khaled'),
-  sessionPortrait(5, 'Jad Matcha', 'dashboard-imgContainer4.png', 'jad'),
-  sessionPortrait(6, 'Marwan Al Salem', 'part2-07-imgContainer5.png'),
-  sessionPortrait(7, 'Fahad Al Ali', 'part2-07-imgContainer6.png'),
-  sessionPortrait(8, 'Lina Haddad', 'part2-07-imgContainer7.png'),
-  sessionPortrait(9, 'Omar Nasser', 'part2-07-imgContainer8.png'),
-  sessionPortrait(10, 'Noor Al-Khatib', 'part2-07-imgContainer9.png'),
-  sessionPortrait(11, 'Noor Al-Khatib', 'part2-07-imgContainer10.png'),
+  sessionPortrait(1, 'سعد الشيخ علي', 'dashboard-imgContainer1.png', 'portrait'),
+  sessionPortrait(2, 'أحمد سويد', 'dashboard-imgContainer2.png', 'portrait'),
+  sessionPortrait(3, 'سارة محمد', 'dashboard-imgContainer3.png'),
+  sessionPortrait(4, 'خالد الجابري', 'dashboard-imgContainer4.png', 'khaled'),
+  sessionPortrait(5, 'جاد ماتشا', 'dashboard-imgContainer4.png', 'jad'),
+  sessionPortrait(6, 'مروان السالم', 'part2-07-imgContainer5.png'),
+  sessionPortrait(7, 'فهد العلي', 'part2-07-imgContainer6.png'),
+  sessionPortrait(8, 'لينا حداد', 'part2-07-imgContainer7.png'),
+  sessionPortrait(9, 'عمر ناصر', 'part2-07-imgContainer8.png'),
+  sessionPortrait(10, 'نور الخطيب', 'part2-07-imgContainer9.png'),
+  sessionPortrait(11, 'نور الخطيب', 'part2-07-imgContainer10.png'),
 ]
 
 const phone = desktopTablet.slice(0, 7).map((portrait, index): Portrait => {
@@ -159,7 +159,7 @@ export const closurePortraitAssets = {
     // ATM rows share these five identities on tablet/phone; desktop stays Sarah Ali.
     responsiveWithdrawals: wallet.map((portrait) => ({
       ...portrait,
-      target: { ...portrait.target, name: 'ATM Withdrawal' },
+      target: { ...portrait.target, name: 'سحب من صراف آلي' },
     })),
     cropRendering: {
       width: 42,

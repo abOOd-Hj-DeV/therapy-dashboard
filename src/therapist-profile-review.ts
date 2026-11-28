@@ -22,7 +22,7 @@ type SubmittedProfile = Record<Exclude<ProfileField, 'languages' | 'years_of_exp
 }
 export type ReviewedProfile = { [K in keyof SubmittedProfile]: SubmittedProfile[K] | null }
 type Kind = 'initial' | 'update'
-type TherapistLifecycle = 'invited' | 'awaiting_profile' | 'pending_review' | 'needs_changes' | 'approved' | 'update_pending' | 'suspended'
+export type TherapistLifecycle = 'invited' | 'awaiting_profile' | 'pending_review' | 'needs_changes' | 'approved' | 'update_pending' | 'suspended'
 export type ProfileRevision = {
   id: string
   kind: Kind
@@ -32,7 +32,7 @@ export type ProfileRevision = {
 }
 export type TherapistProfileReview = {
   approval_status: null | 'pending' | 'approved' | 'rejected' | 'suspended'
-  lifecycle_state?: TherapistLifecycle
+  lifecycle_state: TherapistLifecycle
   application_ref: string | null
   account: { whatsapp_number: string; email: string | null }
   published: ReviewedProfile
@@ -48,17 +48,29 @@ export type TherapistProfileReview = {
 }
 export type TherapistProfileResponse = { data: TherapistProfileReview }
 
-export function therapistLifecycle(profile: TherapistProfileReview): TherapistLifecycle {
+export function therapistLifecycle(profile: TherapistProfileReview): TherapistLifecycle | null {
   const { lifecycle_state: lifecycle, approval_status: approval, pending_revision: pending } = profile
-  if (approval === 'suspended' || lifecycle === 'suspended') return 'suspended'
-  if (lifecycle === 'invited' || lifecycle === 'awaiting_profile' ||
-    lifecycle === 'pending_review' || lifecycle === 'needs_changes') return lifecycle
-  if (approval === 'approved')
-    return lifecycle === 'update_pending' || pending?.kind === 'update' ? 'update_pending' : 'approved'
-  if (approval === 'pending') return 'pending_review'
-  if (approval === 'rejected') return 'needs_changes'
-  if (approval === null) return 'awaiting_profile'
-  return 'suspended'
+  switch (lifecycle) {
+    case 'invited':
+    case 'suspended':
+      return lifecycle
+    case 'awaiting_profile':
+      return approval === null && pending === null ? lifecycle : null
+    case 'pending_review':
+      return approval === 'pending' && (pending === null || pending?.kind === 'initial') ? lifecycle : null
+    case 'needs_changes':
+      return approval === 'rejected' && pending === null ? lifecycle : null
+    case 'approved':
+      return approval === 'approved' && pending === null ? lifecycle : null
+    case 'update_pending':
+      return approval === 'approved' && pending?.kind === 'update' ? lifecycle : null
+    default:
+      return null
+  }
+}
+
+export function hasKnownTherapistLifecycle(response: TherapistProfileResponse): boolean {
+  return !!response?.data && therapistLifecycle(response.data) !== null
 }
 
 export function profileReviewError(error: unknown): string {

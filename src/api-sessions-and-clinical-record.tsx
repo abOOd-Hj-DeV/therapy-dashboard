@@ -105,7 +105,7 @@ export function LiveCareRecord({ api, navigate }: Props) {
     owned
   return (
     <Workspace
-      title={sessionId ? 'Sessions / Session record' : 'Patients / Clinical record'}
+      title={sessionId ? 'الجلسات / سجل الجلسة' : 'المرضى / السجل الإكلينيكي'}
       active={sessionId ? 'Sessions' : 'Clients'}
       api={api}
       navigate={navigate}
@@ -117,7 +117,7 @@ export function LiveCareRecord({ api, navigate }: Props) {
       )}
       <ResourceStatus resource={sessions} label="session" />
       <ResourceStatus resource={clients} label="clients" />
-      {!owned && <p role="alert">This session is not owned by the signed-in therapist.</p>}
+      {!owned && <p role="alert">هذه الجلسة لا تخص المعالج المسجّل دخوله.</p>}
       {validRoute && owned && patientId && (
         <div
           className={`session-detail care-session-detail ${tab === 'record' ? 'show-record' : ''}`}
@@ -131,7 +131,7 @@ export function LiveCareRecord({ api, navigate }: Props) {
                 className={tab === value ? 'selected' : ''}
                 onClick={() => setTab(value)}
               >
-                {value === 'before' ? 'Before session' : 'Session record'}
+                {value === 'before' ? 'قبل الجلسة' : 'سجل الجلسة'}
               </button>
             ))}
           </div>
@@ -139,9 +139,9 @@ export function LiveCareRecord({ api, navigate }: Props) {
             <div className="detail-client">
               <CareAvatar name={client?.full_name || 'Client'} detail />
               <div>
-                <h2>{client?.full_name || 'Client identity unavailable'}</h2>
+                <h2>{client?.full_name || 'هوية العميل غير متاحة'}</h2>
                 <p>
-                  {session ? careDate(session, timezone) : 'Clinical record · No session selected'}
+                  {session ? careDate(session, timezone) : 'السجل الإكلينيكي · لم تُختر جلسة'}
                 </p>
                 {session && (
                   <>
@@ -185,18 +185,18 @@ export function LiveCareRecord({ api, navigate }: Props) {
           ) : (
             ready && (
               <section className="detail-card care-clinical-unavailable">
-                <h3>Clinical record unavailable</h3>
+                <h3>السجل الإكلينيكي غير متاح</h3>
                 <p>
                   {client?.status === 'past'
-                    ? 'This is a former client. Current assessments and homework are not loaded; historical session records remain available. New clinical writes require a current assignment.'
-                    : 'No current assigned client was found. Current clinical data and writes are unavailable.'}
+                    ? 'هذا عميل سابق. لا تُحمَّل التقييمات والواجبات الحالية؛ تبقى سجلات الجلسات السابقة متاحة. الإضافات الإكلينيكية الجديدة تتطلب إسناداً حالياً.'
+                    : 'لم يُعثر على عميل مسند حالياً. البيانات والإضافات الإكلينيكية الحالية غير متاحة.'}
                 </p>
               </section>
             )
           )}
           {sessions.data?.status_log.length ? (
             <section className="detail-card clinical-pathway care-session-history">
-              <h3>Session status history</h3>
+              <h3>سجل حالات الجلسة</h3>
               {sessions.data.status_log.map((entry) => (
                 <div key={entry.id}>
                   <span>
@@ -256,20 +256,20 @@ function SessionEditor({
   const timezone = api.getUser()?.timezone || 'UTC'
   const reschedule = session.reschedule
   const decisionCopy: Record<NonNullable<Decision>, string> = {
-    cancel: 'Cancel this session immediately? The record is retained. This cannot be undone here.',
+    cancel: 'إلغاء هذه الجلسة فوراً؟ يبقى السجل محفوظاً. لا يمكن التراجع عن هذا هنا.',
     'approve-cancel':
-      'Approve the patient cancellation? This cancels the session and releases applicable quota.',
+      'الموافقة على إلغاء المريض؟ يُلغي هذا الجلسة ويحرّر الرصيد المطبَّق.',
     'forfeit-cancel':
-      'Reject the cancellation with forfeiture? This ALSO CANCELS the session and consumes applicable trial/package quota. It does not keep the appointment.',
+      'رفض الإلغاء مع الحسم؟ هذا يُلغي الجلسة أيضاً ويستهلك رصيد التجربة/الباقة المطبَّق. لا يبقي الموعد.',
     'approve-reschedule':
-      'Approve the requested reschedule? The server rechecks availability and resets attendance for the new schedule.',
-    'reject-reschedule': 'Reject the requested reschedule? The original appointment is kept.',
+      'الموافقة على إعادة الجدولة المطلوبة؟ يعيد الخادم فحص التوفر ويصفّر الحضور للموعد الجديد.',
+    'reject-reschedule': 'رفض إعادة الجدولة المطلوبة؟ يبقى الموعد الأصلي.',
     complete:
-      'Complete this session? The report is patient-visible. Completion requires server-confirmed attendance for the current schedule.',
+      'إنهاء هذه الجلسة؟ التقرير مرئي للمريض. الإنهاء يتطلب حضوراً مؤكداً من الخادم للموعد الحالي.',
     report:
       session.status === 'confirmed'
-        ? 'Submit this patient-visible report and COMPLETE the session? This is not a draft save.'
-        : 'Replace the patient-visible report with a new audited revision?',
+        ? 'إرسال هذا التقرير المرئي للمريض وإنهاء الجلسة؟ هذا ليس حفظ مسودة.'
+        : 'استبدال التقرير المرئي للمريض بمراجعة موثّقة جديدة؟',
   }
   async function decide() {
     if (!decision || !canEdit) return
@@ -290,7 +290,7 @@ function SessionEditor({
     }
     await mutation.run(path + endpoint, body, {
       onSuccess: () => setDecision(null),
-      success: 'Session updated on the server.',
+      success: 'حُدّثت الجلسة على الخادم.',
     })
   }
   async function saveLink(event: FormEvent) {
@@ -299,12 +299,12 @@ function SessionEditor({
     await mutation.run(
       `/sessions/${apiId(session.id)}/link`,
       { link: link.trim() },
-      { success: 'Meeting link saved on the server.' },
+      { success: 'حُفظ رابط الاجتماع على الخادم.' },
     )
   }
   return (
     <section className="detail-card outcome-card care-session-actions">
-      <h3>Session actions</h3>
+      <h3>إجراءات الجلسة</h3>
       <div className="detail-actions">
         {session.status === 'pending' && (
           <button
@@ -312,7 +312,7 @@ function SessionEditor({
             disabled={!canEdit || session.payment_status === 'pending'}
             onClick={() =>
               void mutation.run(`/sessions/${apiId(session.id)}/confirm`, undefined, {
-                success: 'Session confirmed on the server.',
+                success: 'أُكّدت الجلسة على الخادم.',
               })
             }
           >
@@ -342,13 +342,13 @@ function SessionEditor({
         <button
           className="soft-button"
           disabled
-          title="Therapists can decide existing patient requests, not propose new dates."
+          title="يستطيع المعالجون البت في طلبات المرضى الحالية، لا اقتراح مواعيد جديدة."
         >
           Propose reschedule unavailable
         </button>
       </div>
       {session.payment_status === 'pending' && session.status === 'pending' && (
-        <p>Confirmation requires server-approved payment or a free session.</p>
+        <p>التأكيد يتطلب دفعاً معتمداً من الخادم أو جلسة مجانية.</p>
       )}
       {open && (
         <form className="part2-form" onSubmit={(event) => void saveLink(event)}>
@@ -377,7 +377,7 @@ function SessionEditor({
       )}
       {session.cancellation?.pending && (
         <div className="clinical-flag">
-          <h4>Patient cancellation request</h4>
+          <h4>طلب إلغاء المريض</h4>
           <p>
             Both decisions cancel this appointment. Rejection forfeits applicable trial/package
             quota.
@@ -400,7 +400,7 @@ function SessionEditor({
       )}
       {reschedule && open && (
         <div className="clinical-flag">
-          <h4>Patient reschedule request</h4>
+          <h4>طلب إعادة جدولة المريض</h4>
           <p>
             {careDate(
               {
@@ -454,8 +454,8 @@ function SessionEditor({
             <>
               <p>
                 {session.attendance_confirmed_at
-                  ? 'Attendance confirmed by the server.'
-                  : 'Awaiting patient/staff attendance confirmation. Therapists cannot mark attendance.'}
+                  ? 'أكّد الخادم الحضور.'
+                  : 'بانتظار تأكيد الحضور من المريض/الطاقم. لا يستطيع المعالج تسجيل الحضور.'}
               </p>
               <button
                 className="soft-button"
@@ -486,8 +486,8 @@ function SessionEditor({
             onClick={() => setDecision('report')}
           >
             {session.status === 'completed'
-              ? 'Update patient-visible report'
-              : 'Submit report and complete'}
+              ? 'تحديث التقرير المرئي للمريض'
+              : 'إرسال التقرير وإنهاء الجلسة'}
           </button>
         </div>
       )}
@@ -497,7 +497,7 @@ function SessionEditor({
       )}
       {decision && (
         <Modal
-          title="Confirm session change"
+          title="تأكيد تغيير الجلسة"
           className="part2-modal"
           onClose={() => {
             if (!mutation.busy) setDecision(null)
@@ -505,7 +505,7 @@ function SessionEditor({
         >
           <p>{decisionCopy[decision]}</p>
           {(decision === 'report' || decision === 'complete') && (
-            <p>{report.trim() || 'No report text will be included.'}</p>
+            <p>{report.trim() || 'لن يُضمَّن نص تقرير.'}</p>
           )}
           <MutationStatus mutation={mutation} refreshed={ready} />
           <footer className="form-footer">
@@ -566,14 +566,14 @@ function RecommendationEditor({
       },
       {
         method: 'PUT',
-        success: 'Patient-visible recommendation saved.',
+        success: 'حُفظت التوصية المرئية للمريض.',
         onSuccess: () => setEditing(false),
       },
     )
   }
   return (
     <div className="outcome-card">
-      <h3>Completed-session recommendation</h3>
+      <h3>توصية الجلسة المكتملة</h3>
       <p>
         Patient-visible continuity note (not a supervisor alert). Saving replaces the
         recommendation. Existing package/program selections are preserved unless explicitly cleared;
@@ -586,13 +586,13 @@ function RecommendationEditor({
             <div className="previous-note">
               <span>
                 <strong>Revision {current.revision}</strong>
-                <p>{current.note || 'No note.'}</p>
+                <p>{current.note || 'لا توجد ملاحظة.'}</p>
                 {current.package && <p>Package: {current.package.name}</p>}
                 {current.program && <p>Program: {current.program.name}</p>}
               </span>
             </div>
           ) : (
-            <p>No recommendation saved.</p>
+            <p>لا توجد توصية محفوظة.</p>
           )}
           <button
             className="soft-button"
@@ -626,7 +626,7 @@ function RecommendationEditor({
             />
             Preserve existing package and program
           </label>
-          {!preserve && <p>Saving will remove the existing package and program selections.</p>}
+          {!preserve && <p>الحفظ سيزيل اختيارات الباقة والبرنامج الحالية.</p>}
           <button
             className="teal-button"
             disabled={!ready || !loaded || mutation.disabled || !note.trim()}
@@ -696,16 +696,16 @@ function ClinicalEditor({
       : { body: note.trim() }
     await mutation.run(`${base}/notes`, body, {
       onSuccess: () => setNote(''),
-      success: 'Private therapist note added on the server.',
+      success: 'أُضيفت ملاحظة المعالج الخاصة على الخادم.',
     })
   }
   return (
     <div className="detail-grid">
       <aside className="detail-overview">
         <section className="detail-card overview-card">
-          <h3>Client Overview</h3>
+          <h3>نظرة عامة على العميل</h3>
           <ResourceStatus resource={record} label="clinical record" />
-          {!identityMatches && <p role="alert">The clinical record does not match this patient.</p>}
+          {!identityMatches && <p role="alert">السجل الإكلينيكي لا يطابق هذا المريض.</p>}
           {record.data && identityMatches && (
             <>
               <dl>
@@ -722,17 +722,17 @@ function ClinicalEditor({
                   <dd>{record.data.client.gender}</dd>
                 </div>
                 <div>
-                  <dt>Completed sessions</dt>
+                  <dt>الجلسات المكتملة</dt>
                   <dd>{client.completed_sessions_count}</dd>
                 </div>
                 <div>
-                  <dt>Assessment score</dt>
+                  <dt>درجة التقييم</dt>
                   <dd>{record.data.clinical.assessment_score}</dd>
                 </div>
                 <div>
-                  <dt>Safety flag</dt>
+                  <dt>علامة السلامة</dt>
                   <dd>
-                    {record.data.clinical.safety_flag ? 'Flagged' : 'Not flagged'} (read-only)
+                    {record.data.clinical.safety_flag ? 'Flagged' : 'بدون علامة'} (read-only)
                   </dd>
                 </div>
                 <div>
@@ -744,14 +744,14 @@ function ClinicalEditor({
                 <p>
                   Latest assessment: {record.data.clinical.latest_assessment.type} · Score{' '}
                   {record.data.clinical.latest_assessment.score} ·{' '}
-                  {formatTimestamp(record.data.clinical.latest_assessment.completed_at, timezone) || 'Date unavailable'}
+                  {formatTimestamp(record.data.clinical.latest_assessment.completed_at, timezone) || 'التاريخ غير متاح'}
                 </p>
               )}
             </>
           )}
         </section>
         <section className="detail-card checklist-card">
-          <h3>Unavailable workflows</h3>
+          <h3>مسارات غير متاحة</h3>
           <p>
             AI suggested focus, supervisor alerts, review tracking, and automatic next-session
             updates are not provided by this API.
@@ -763,7 +763,7 @@ function ClinicalEditor({
       </aside>
       <div className="detail-content">
         <section className="detail-card notes-card">
-          <h3>{tab === 'before' ? 'Previous Notes' : 'New Note'}</h3>
+          <h3>{tab === 'before' ? 'الملاحظات السابقة' : 'ملاحظة جديدة'}</h3>
           <p className="section-caption">
             Private therapist notes are separate from patient-visible session reports. Notes cannot
             be edited or deleted through this API.
@@ -794,21 +794,21 @@ function ClinicalEditor({
             <div key={item.id} className="previous-note">
               <span>
                 <small>
-                  {formatTimestamp(item.created_at, timezone) || 'Date unavailable'}
-                  {item.session_id ? ' · Session note' : ' · Client note'}
+                  {formatTimestamp(item.created_at, timezone) || 'التاريخ غير متاح'}
+                  {item.session_id ? ' · ملاحظة جلسة' : ' · ملاحظة عميل'}
                 </small>
                 <p>{item.body}</p>
               </span>
             </div>
           ))}
-          {notesReady && !notes.data?.notes.length && <p>No previous notes.</p>}
+          {notesReady && !notes.data?.notes.length && <p>لا توجد ملاحظات سابقة.</p>}
           {!!notes.data?.session_reports.length && (
             <>
-              <h4>Patient-visible session reports</h4>
+              <h4>تقارير الجلسات المرئية للمريض</h4>
               {notes.data.session_reports.map((item) => (
                 <div key={item.session_id} className="previous-note">
                   <span>
-                    <small>{formatCalendarDate(item.session_date) || 'Date unavailable'}</small>
+                    <small>{formatCalendarDate(item.session_date) || 'التاريخ غير متاح'}</small>
                     <p>{item.summary}</p>
                   </span>
                 </div>
@@ -817,7 +817,7 @@ function ClinicalEditor({
           )}
         </section>
         <section className="detail-card homework-card">
-          <h3>Homework and Exercises</h3>
+          <h3>الواجبات والتمارين</h3>
           <p className="section-caption">
             Program completion and homework submission are patient-only. Therapist visibility
             controls do not assign or complete modules.
@@ -844,20 +844,20 @@ function ClinicalEditor({
                       {module.is_hidden
                         ? 'Hidden'
                         : module.locked
-                          ? `Locked: ${module.lock_reason || 'Unavailable'}`
+                          ? `مقفل: ${module.lock_reason || 'غير متاح'}`
                           : 'Available'}
                     </small>
                     {module.homework_prompt && <p>{module.homework_prompt}</p>}
                     {module.homework && (
                       <div>
-                        <strong>Submitted homework</strong>
+                        <strong>الواجبات المسلَّمة</strong>
                         {Object.entries(module.homework).map(([key, value]) => (
                           <p key={key}>
-                            {key}: {value || 'No response'}
+                            {key}: {value || 'لا يوجد رد'}
                           </p>
                         ))}
                         <small>
-                          {formatTimestamp(module.homework_submitted_at, timezone) || 'Submission date unavailable'}
+                          {formatTimestamp(module.homework_submitted_at, timezone) || 'تاريخ التسليم غير متاح'}
                         </small>
                       </div>
                     )}
@@ -873,26 +873,26 @@ function ClinicalEditor({
                         void mutation.run(`${base}/modules/${apiId(module.id)}/hide`, undefined, {
                           method: module.is_hidden ? 'DELETE' : 'POST',
                           success: module.is_hidden
-                            ? 'Module visibility restored.'
-                            : 'Module hidden on the server.',
+                            ? 'استُعيدت رؤية الوحدة.'
+                            : 'أُخفيت الوحدة على الخادم.',
                         })
                       }
                     >
-                      {module.is_hidden ? 'Unhide module' : 'Hide module'}
+                      {module.is_hidden ? 'إظهار الوحدة' : 'إخفاء الوحدة'}
                     </button>
                   </article>
                 ))}
               </div>
             ))}
-          {modulesReady && !modules.data?.programs.length && <p>No program modules available.</p>}
+          {modulesReady && !modules.data?.programs.length && <p>لا توجد وحدات برنامج متاحة.</p>}
         </section>
         <section className="detail-card homework-card">
-          <h3>Assigned reusable content</h3>
+          <h3>المحتوى المعاد استخدامه المسند</h3>
           <p>
             Content is assigned to this client across sessions. Due dates, uploads, custom-content
             grading, Audio and Interactive types are not supported.
           </p>
-          <ResourceStatus resource={assigned} label="assigned content" />
+          <ResourceStatus resource={assigned} label="محتوى مسند" />
           {assigned.data?.map((item) => (
             <article className="assigned-homework" key={item.id}>
               <ContentText item={item} />
@@ -905,7 +905,7 @@ function ClinicalEditor({
                     undefined,
                     {
                       method: 'DELETE',
-                      success: 'Client assignment removed; the library item was not deleted.',
+                      success: 'أُزيل إسناد العميل؛ لم يُحذف عنصر المكتبة.',
                     },
                   )
                 }
@@ -914,7 +914,7 @@ function ClinicalEditor({
               </button>
             </article>
           ))}
-          {assignedReady && !assigned.data?.length && <p>No assigned content.</p>}
+          {assignedReady && !assigned.data?.length && <p>لا يوجد محتوى مسند.</p>}
           <button
             className="teal-button"
             disabled={!canWrite || !assignedReady}
@@ -925,7 +925,7 @@ function ClinicalEditor({
         </section>
         {record.data && identityMatches && (
           <section className="detail-card clinical-pathway">
-            <h3>Recent session history</h3>
+            <h3>سجل الجلسات الأخير</h3>
             <p>
               These counts cover only the latest {record.data.stats.total_sessions} sessions
               (maximum 20), not lifetime totals.
@@ -983,7 +983,7 @@ function ContentText({ item }: { item: CareContent }) {
           Open content link
         </a>
       ) : (
-        item.url && <p>Unsafe or unsupported external link is unavailable.</p>
+        item.url && <p>الرابط الخارجي غير الآمن أو غير المدعوم غير متاح.</p>
       )}
     </>
   )
@@ -1036,7 +1036,7 @@ function ContentDialog({
       },
       {
         idempotent: true,
-        success: 'Content created and assigned on the server.',
+        success: 'أُنشئ المحتوى وأُسند على الخادم.',
         onSuccess: () => {
           setTitle('')
           setBody('')
@@ -1054,7 +1054,7 @@ function ContentDialog({
     ) ?? []
   return (
     <Modal
-      title={`Assign homework to ${name}`}
+      title={`إسناد واجب إلى ${name}`}
       className={`part2-modal homework-modal ${tab === 'create' ? 'is-create' : 'is-library'}`}
       onClose={() => {
         if (!mutation.busy) onClose()
@@ -1073,11 +1073,11 @@ function ContentDialog({
             className={tab === value ? 'selected' : ''}
             onClick={() => setTab(value)}
           >
-            {value === 'library' ? 'From the library' : 'Create New'}
+            {value === 'library' ? 'من المكتبة' : 'إنشاء جديد'}
           </button>
         ))}
       </div>
-      <ResourceStatus resource={library} label="content library" />
+      <ResourceStatus resource={library} label="مكتبة المحتوى" />
       {tab === 'create' ? (
         <form className="part2-form" onSubmit={(event) => void create(event)}>
           <label>
@@ -1095,11 +1095,11 @@ function ContentDialog({
               value={type}
               onChange={(event) => setType(event.target.value as CareContent['content_type'])}
             >
-              <option value="text">Text / Article</option>
+              <option value="text">نص / مقال</option>
               <option value="video">Video</option>
-              <option value="link">External link</option>
-              <option disabled>Audio unavailable</option>
-              <option disabled>Interactive unavailable</option>
+              <option value="link">رابط خارجي</option>
+              <option disabled>الصوت غير متاح</option>
+              <option disabled>التفاعلي غير متاح</option>
             </select>
           </label>
           {type === 'text' ? (
@@ -1137,10 +1137,10 @@ function ContentDialog({
         <>
           <input
             className="library-search"
-            aria-label="Search homework library"
+            aria-label="ابحث في مكتبة الواجبات"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search…"
+            placeholder="ابحث…"
           />
           <div className="library-filters" role="group" aria-label="Content type filters">
             {['All', 'text', 'video', 'link'].map((value) => (
@@ -1165,19 +1165,19 @@ function ContentDialog({
                   <button
                     className={added ? 'added' : ''}
                     disabled={!canWrite || added}
-                    aria-label={`${added ? 'Added' : 'Add'} ${item.title}`}
+                    aria-label={`${added ? 'أُضيف' : 'إضافة'} ${item.title}`}
                     onClick={() =>
                       void mutation.run(
                         `/therapists/content/${apiId(item.id)}/assign`,
                         { patient_ids: [apiId(patientId)] },
                         {
                           idempotent: true,
-                          success: 'Existing library content assigned on the server.',
+                          success: 'أُسند محتوى المكتبة الحالي على الخادم.',
                         },
                       )
                     }
                   >
-                    {added ? 'Added' : '+ Add'}
+                    {added ? 'Added' : '+ إضافة'}
                   </button>
                 </article>
               )

@@ -30,33 +30,33 @@ beforeEach(() => {
 describe('r5 homework navigation wiring', () => {
   it('keeps the Figma order with Additional Content between Messages and Wallet', () => {
     expect(menu.map((item) => item.label)).toEqual([
-      'Dashboard',
-      'Patients',
-      'Sessions',
-      'Messages',
-      'Additional Content',
-      'Wallet',
+      'لوحة التحكم',
+      'المرضى',
+      'الجلسات',
+      'الرسائل',
+      'المحتوى الإضافي',
+      'المحفظة',
       'حالات الخطر',
     ])
     renderShell()
-    const sidebar = screen.getByRole('complementary', { name: 'Main navigation' })
+    const sidebar = screen.getByRole('complementary', { name: 'التنقل الرئيسي' })
     const labels = Array.from(sidebar.querySelectorAll('.nav-item')).map((item) =>
       item.getAttribute('aria-label'),
     )
     expect(labels).toEqual([
-      'Dashboard',
-      'Patients',
-      'Sessions',
-      'Messages',
-      'Additional Content',
-      'Wallet',
+      'لوحة التحكم',
+      'المرضى',
+      'الجلسات',
+      'الرسائل',
+      'المحتوى الإضافي',
+      'المحفظة',
       'حالات الخطر',
     ])
   })
 
   it('uses the supplied stars icon for the Additional Content entry', () => {
     renderShell()
-    const item = screen.getByRole('button', { name: 'Additional Content' })
+    const item = screen.getByRole('button', { name: 'المحتوى الإضافي' })
     expect(item.querySelector('img')).toHaveAttribute(
       'src',
       expect.stringContaining('part2-03-imgStars.svg'),
@@ -67,7 +67,7 @@ describe('r5 homework navigation wiring', () => {
 
   it('navigates to /homework from the sidebar entry and marks it current', async () => {
     const { navigate } = renderShell('Sessions')
-    const item = screen.getByRole('button', { name: 'Additional Content' })
+    const item = screen.getByRole('button', { name: 'المحتوى الإضافي' })
     expect(item).not.toHaveAttribute('aria-current')
     await userEvent.click(item)
     expect(navigate).toHaveBeenCalledWith('/homework')
@@ -75,7 +75,7 @@ describe('r5 homework navigation wiring', () => {
 
   it('marks Additional Content as the current page on the homework shell', () => {
     renderShell('Additional Content')
-    const item = screen.getByRole('button', { name: 'Additional Content' })
+    const item = screen.getByRole('button', { name: 'المحتوى الإضافي' })
     expect(item).toHaveClass('active')
     expect(item).toHaveAttribute('aria-current', 'page')
   })
@@ -83,20 +83,20 @@ describe('r5 homework navigation wiring', () => {
   it('reaches /homework from the phone popup drawer and closes it', async () => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 })
     const { navigate, container } = renderShell('Additional Content')
-    await userEvent.click(screen.getByRole('button', { name: 'Open navigation' }))
+    await userEvent.click(screen.getByRole('button', { name: 'فتح التنقل' }))
     expect(container.querySelector('.workspace')).toHaveClass('is-expanded')
-    const sidebar = screen.getByRole('complementary', { name: 'Main navigation' })
-    await userEvent.click(within(sidebar).getByRole('button', { name: 'Additional Content' }))
+    const sidebar = screen.getByRole('complementary', { name: 'التنقل الرئيسي' })
+    await userEvent.click(within(sidebar).getByRole('button', { name: 'المحتوى الإضافي' }))
     expect(navigate).toHaveBeenCalledWith('/homework')
     expect(container.querySelector('.workspace')).not.toHaveClass('is-expanded')
   })
 
   it('keeps Additional Content in the mobile bottom bar with the stars glyph', async () => {
     const { navigate } = renderShell('Messages')
-    const bottom = screen.getByRole('navigation', { name: 'Mobile navigation' })
+    const bottom = screen.getByRole('navigation', { name: 'تنقل الجوال' })
     const buttons = within(bottom).getAllByRole('button')
     expect(buttons).toHaveLength(menu.length + 1)
-    const item = within(bottom).getByRole('button', { name: 'Additional Content' })
+    const item = within(bottom).getByRole('button', { name: 'المحتوى الإضافي' })
     expect(item.querySelector('img')).toHaveAttribute(
       'src',
       expect.stringContaining('part2-06-imgStars.svg'),
@@ -106,26 +106,26 @@ describe('r5 homework navigation wiring', () => {
   })
 
   it.each([
-    ['/homework', 'Homework Library', '.r5-homework'],
-    ['/homework/create', 'Add new content', '.homework-wizard'],
-    ['/homework/insert', 'Assign Homework', '.care-plan-insertion'],
+    ['/homework', 'مكتبة الواجبات', '.r5-homework'],
+    ['/homework/create', 'إضافة محتوى جديد', '.homework-wizard'],
+    ['/homework/insert', 'إسناد الواجب', '.care-plan-insertion'],
   ])('resolves %s through App routes', (route, title, marker) => {
     window.history.replaceState({}, '', route)
     render(<App />)
-    expect(screen.getByRole('complementary', { name: 'Main navigation' })).toBeInTheDocument()
+    expect(screen.getByRole('complementary', { name: 'التنقل الرئيسي' })).toBeInTheDocument()
     expect(screen.getAllByRole('heading', { name: title }).length).toBeGreaterThan(0)
-    expect(screen.getByRole('button', { name: 'Additional Content' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: 'المحتوى الإضافي' })).toHaveAttribute(
       'aria-current',
       'page',
     )
     expect(document.querySelector(marker)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Login' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'تسجيل الدخول' })).not.toBeInTheDocument()
   })
 
   it('does not resolve unknown homework subpaths', () => {
     window.history.replaceState({}, '', '/homework/details')
     render(<App />)
-    expect(screen.queryByRole('complementary', { name: 'Main navigation' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('complementary', { name: 'التنقل الرئيسي' })).not.toBeInTheDocument()
   })
 
   it('keeps reserved shell state params working on homework routes', () => {
@@ -144,7 +144,7 @@ describe('r5 homework navigation wiring', () => {
   it('shows the offline state on homework routes without touching the toggle', () => {
     window.history.replaceState({}, '', '/homework?state=offline')
     render(<App />)
-    expect(screen.getByText(/You.re offline\. Some data may not be up to date\./)).toBeInTheDocument()
+    expect(screen.getByText(/أنت غير متصل\. قد لا تكون بعض البيانات محدّثة\./)).toBeInTheDocument()
   })
 
   it('protects /homework from fixture fallback in live mode', () => {
@@ -153,7 +153,7 @@ describe('r5 homework navigation wiring', () => {
     render(<App />)
     expect(document.querySelector('input[name="password"]')).toBeInTheDocument()
     expect(
-      screen.queryByRole('complementary', { name: 'Main navigation' }),
+      screen.queryByRole('complementary', { name: 'التنقل الرئيسي' }),
     ).not.toBeInTheDocument()
   })
 
@@ -161,8 +161,8 @@ describe('r5 homework navigation wiring', () => {
     const navigate = vi.fn()
     window.history.replaceState({}, '', '/dashboard')
     render(<Dashboard navigate={navigate} />)
-    const sidebar = screen.getByRole('complementary', { name: 'Main navigation' })
-    await userEvent.click(within(sidebar).getByRole('button', { name: 'Additional Content' }))
+    const sidebar = screen.getByRole('complementary', { name: 'التنقل الرئيسي' })
+    await userEvent.click(within(sidebar).getByRole('button', { name: 'المحتوى الإضافي' }))
     expect(navigate).toHaveBeenCalledWith('/homework')
     expect(
       screen.queryByText(/not in the first Figma file/),

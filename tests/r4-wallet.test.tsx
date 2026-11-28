@@ -46,11 +46,11 @@ describe('r4 wallet icon parity', () => {
   it('every icon/image in the withdrawal dialog and payment menu exists in public/assets', () => {
     const { container } = mount('withdrawals')
     fireEvent.click(container.querySelector('.wallet-withdraw-button')!)
-    fireEvent.click(screen.getByRole('combobox', { name: 'Payment method' }))
+    fireEvent.click(screen.getByRole('combobox', { name: 'طريقة الدفع' }))
     const dialog = screen.getByRole('dialog')
     expect(dialog.querySelectorAll('[role="option"] img')).toHaveLength(2)
     expectAssetsExist(renderedSources(document.body))
-    fireEvent.click(screen.getByRole('option', { name: /Shamcash/ }))
+    fireEvent.click(screen.getByRole('option', { name: /شام كاش/ }))
     expectAssetsExist(renderedSources(document.body))
   })
 

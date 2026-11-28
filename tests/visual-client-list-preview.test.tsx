@@ -5,69 +5,69 @@ import { DemoClients } from '../src/DemoClients'
 
 const fixtures = [
   [
-    'Saad Ali',
-    'Anxiety · 32 yrs',
-    'Progressing well',
+    'سعد علي',
+    'قلق · 32 سنة',
+    'يتقدّم جيداً',
     '40%',
     '139px',
     '7 sessions',
-    '3 more than last month',
-    'Friday, 9:30 AM',
+    '3 أكثر من الشهر الماضي',
+    'الجمعة، 9:30 ص',
   ],
   [
-    'Jamal Thompson',
-    'Fatigue · 29 yrs',
-    'Requires review',
+    'جمال طومسون',
+    'إرهاق · 29 سنة',
+    'يحتاج مراجعة',
     '80%',
     '285px',
     '4 sessions',
-    '1 less than last month',
-    'Monday, 2:00 PM',
+    '1 أقل من الشهر الماضي',
+    'الاثنين، 2:00 م',
   ],
   [
-    'Yaser Ramirez',
-    'Mood · 27 yrs',
-    'On schedule',
+    'ياسر راميريز',
+    'مزاج · 27 سنة',
+    'على الموعد',
     '60%',
     '204px',
     '6 sessions',
-    'Same as last month',
-    'Wednesday, 10:00 AM',
+    'مثل الشهر الماضي',
+    'الأربعاء، 10:00 ص',
   ],
   [
-    'Ethan Clarke',
-    'Stress · 30 yrs',
-    'Missed previous session',
+    'إيثان كلارك',
+    'ضغط · 30 سنة',
+    'فاتته الجلسة السابقة',
     '13%',
     '31px',
     '5 sessions',
-    '2 fewer than last month',
-    'Thursday, 3:30 PM',
+    '2 أقل من الشهر الماضي',
+    'الخميس، 3:30 م',
   ],
   [
-    'Maya Patel',
-    'Anxiety · 24 yrs',
-    'On track',
+    'مايا باتيل',
+    'قلق · 24 سنة',
+    'على المسار',
     '60%',
     '204px',
     '8 sessions',
-    'Up by 1 from last month',
-    'Tuesday, 8:00 AM',
+    'أعلى بـ1 عن الشهر الماضي',
+    'الثلاثاء، 8:00 ص',
   ],
   [
-    'Noah Bennett',
-    'Mood · 28 yrs',
-    'On track',
+    'نوح بينيت',
+    'مزاج · 28 سنة',
+    'على المسار',
     '60%',
     '204px',
     '5 sessions',
-    '2 more than last month',
-    'Saturday, 1:00 PM',
+    '2 أكثر من الشهر الماضي',
+    'السبت، 1:00 م',
   ],
 ] as const
 
 function cards() {
-  return within(screen.getByRole('region', { name: 'Demo clients' })).getAllByRole('button')
+  return within(screen.getByRole('region', { name: 'عملاء العرض' })).getAllByRole('button')
 }
 
 beforeEach(() => {
@@ -83,12 +83,12 @@ describe('development-only client-list reference interactions (not visual valida
   })
   it('renders the six exact reference fixtures and source strip lengths independently of printed percentages', () => {
     render(<DemoClients navigate={vi.fn()} />)
-    expect(screen.getByRole('heading', { name: 'Manage Clients' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'إدارة العملاء' })).toBeInTheDocument()
     expect(cards()).toHaveLength(6)
     fixtures.forEach(
       ([name, detail, status, percentage, stripWidth, sessions, change, date], index) => {
         const card = cards()[index]
-        expect(card).toHaveAccessibleName(`Open ${name} demo reference profile`)
+        expect(card).toHaveAccessibleName(`فتح ملف ${name} التجريبي`)
         for (const text of [name, detail, status, percentage, sessions, change, date]) {
           expect(within(card).getByText(text)).toBeInTheDocument()
         }
@@ -99,21 +99,21 @@ describe('development-only client-list reference interactions (not visual valida
       },
     )
     expect(
-      screen.getByRole('button', { name: 'Filter by Compliance' }),
+      screen.getByRole('button', { name: 'تصفية حسب الالتزام' }),
     ).toHaveAttribute('aria-expanded', 'false')
     expect(
-      screen.getByText(/Every card opens the separate Ahmed Mohamed reference profile/),
+      screen.getByText(/عناصر تصميم تطويرية فقط\. البحث ومرشّحات الحالة تعمل محلياً؛ لا يوجد خادم connected\. Every card opens the separate Ahmed Mohamed reference profile, not a live record\./),
     ).toBeInTheDocument()
   })
 
   it('exposes the supplied compliance menu without inventing clinical filtering semantics', async () => {
     const user = userEvent.setup()
     render(<DemoClients navigate={vi.fn()} />)
-    const toggle = screen.getByRole('button', { name: 'Filter by Compliance' })
+    const toggle = screen.getByRole('button', { name: 'تصفية حسب الالتزام' })
     await user.click(toggle)
     const options = within(screen.getByRole('region', { name: 'Compliance design options' }))
-    expect(options.getByRole('button', { name: 'High Compliance (80%+)' })).toBeDisabled()
-    expect(options.getByRole('button', { name: 'Low Compliance (Below 80%)' })).toBeDisabled()
+    expect(options.getByRole('button', { name: 'التزام عالٍ (80%+)' })).toBeDisabled()
+    expect(options.getByRole('button', { name: 'التزام منخفض (أقل من 80%)' })).toBeDisabled()
     await user.keyboard('{Escape}')
     expect(toggle).toHaveAttribute('aria-expanded', 'false')
     expect(toggle).toHaveFocus()
@@ -136,11 +136,11 @@ describe('development-only client-list reference interactions (not visual valida
     expect(active).toHaveAttribute('aria-pressed', 'true')
     expect(all).toHaveAttribute('aria-pressed', 'false')
     expect(cards()).toHaveLength(5)
-    expect(screen.queryByText('Ethan Clarke')).not.toBeInTheDocument()
+    expect(screen.queryByText('إيثان كلارك')).not.toBeInTheDocument()
     fireEvent.click(inactive)
     expect(inactive).toHaveAttribute('aria-pressed', 'true')
     expect(cards()).toHaveLength(1)
-    expect(within(cards()[0]).getByText('Ethan Clarke')).toBeInTheDocument()
+    expect(within(cards()[0]).getByText('إيثان كلارك')).toBeInTheDocument()
     fireEvent.click(all)
     expect(cards()).toHaveLength(6)
     expect(fetchSpy).not.toHaveBeenCalled()
@@ -151,15 +151,15 @@ describe('development-only client-list reference interactions (not visual valida
       .spyOn(globalThis, 'fetch')
       .mockRejectedValue(new Error('Unexpected demo request'))
     render(<DemoClients navigate={vi.fn()} />)
-    const search = screen.getByRole('textbox', { name: 'Search patients' })
+    const search = screen.getByRole('textbox', { name: 'ابحث في المرضى' })
     fireEvent.change(search, { target: { value: '  tHoMpSoN  ' } })
     expect(cards()).toHaveLength(1)
-    expect(within(cards()[0]).getByText('Jamal Thompson')).toBeInTheDocument()
+    expect(within(cards()[0]).getByText('جمال طومسون')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Inactive (1)' }))
     expect(screen.getByRole('status')).toHaveTextContent('No demo clients found.')
     fireEvent.change(search, { target: { value: 'ETHAN' } })
     expect(cards()).toHaveLength(1)
-    expect(within(cards()[0]).getByText('Ethan Clarke')).toBeInTheDocument()
+    expect(within(cards()[0]).getByText('إيثان كلارك')).toBeInTheDocument()
     fireEvent.change(search, { target: { value: '' } })
     expect(cards()).toHaveLength(1)
     fireEvent.click(screen.getByRole('button', { name: 'All (6)' }))

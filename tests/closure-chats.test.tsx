@@ -30,7 +30,7 @@ vi.mock('../src/Workspace', () => ({
   DesignIcon: ({ name }: { name: string }) => <img alt="" data-design-icon={name} />,
 }))
 
-const shortSla = 'Committed to responding within 8 hours'
+const shortSla = 'ملتزمون بالرد خلال 8 ساعات'
 
 function connectivity(online: boolean) {
   act(() => {
@@ -80,13 +80,13 @@ describe('closure round one: demo offline no-selection SLA', () => {
     expect(screen.getByText(shortSla)).toBeInTheDocument()
     connectivity(false)
     expect(screen.queryByText(shortSla)).not.toBeInTheDocument()
-    const search = screen.getByRole('textbox', { name: 'Search conversations' }).closest('label')!
+    const search = screen.getByRole('textbox', { name: 'ابحث في المحادثات' }).closest('label')!
     const spacingRule = stylesheetRules().find((rule) =>
       (rule as CSSStyleRule).selectorText === '.demo-chat-layout.is-offline.no-conversation .chat-search',
     ) as CSSStyleRule
     expect(search.matches(spacingRule.selectorText)).toBe(true)
     expect(spacingRule.style.getPropertyValue('margin-bottom')).toBe('10px')
-    expect(screen.getByRole('region', { name: 'Select a conversation' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'اختر محادثة' })).toBeInTheDocument()
     expect(screen.getAllByRole('button')).toHaveLength(4)
     connectivity(true)
     expect(screen.getByText(shortSla)).toBeInTheDocument()
@@ -97,12 +97,12 @@ describe('closure round one: demo offline no-selection SLA', () => {
     const { container } = render(<Chats navigate={vi.fn()} />)
     expect(screen.getByText(shortSla)).toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: 'Message' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Attach a file' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Send message' })).toBeDisabled()
-    fireEvent.click(screen.getByRole('button', { name: 'Back to conversations' }))
+    expect(screen.getByRole('button', { name: 'إرفاق ملف' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'إرسال الرسالة' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'عودة إلى المحادثات' }))
     expect(screen.queryByText(shortSla)).not.toBeInTheDocument()
     expect(container.querySelector('main')).toHaveAttribute('data-offline', 'true')
-    fireEvent.click(screen.getByRole('button', { name: /^Sara Khaled/ }))
+    fireEvent.click(screen.getByRole('button', { name: /^سارة خالد/ }))
     expect(screen.getByText(shortSla)).toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: 'Message' })).toBeDisabled()
   })
@@ -120,7 +120,7 @@ describe('closure round one: demo offline no-selection SLA', () => {
     expect(thread.matches(threadRule.selectorText)).toBe(true)
     expect(threadRule.style.display).toBe('flex')
     expect(thread.parentElement).toHaveClass('message-history')
-    expect(thread.textContent).toContain('8 business hours (Sat–Thu, 9 AM–5 PM)')
+    expect(thread.textContent).toContain('8 ساعات عمل (السبت–الخميس، 9ص–5م)')
     expect(tabletRule('.demo-chat-layout.is-offline .chat-search').style.getPropertyValue('margin-bottom')).toBe('10px')
     expect(screen.getByRole('textbox', { name: 'Message' })).toBeDisabled()
   })
@@ -168,7 +168,7 @@ describe('closure round one: demo offline no-selection SLA', () => {
     expect(composer.matches(composerRule.selectorText)).toBe(true)
     expect(composerRule.style.height).toBe('41.2px')
     expect(composer).toBeDisabled()
-    fireEvent.click(screen.getByRole('button', { name: 'Back to conversations' }))
+    fireEvent.click(screen.getByRole('button', { name: 'عودة إلى المحادثات' }))
     expect(container.querySelector('.chat-list')!.matches(list.selectorText)).toBe(true)
     expect(screen.queryByText(shortSla)).not.toBeInTheDocument()
   })

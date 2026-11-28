@@ -26,12 +26,12 @@ describe('round 4 clinical icon parity (not browser visual acceptance)', () => {
   it('uses Figma vectors instead of text glyphs for actions, add note and note chevron', () => {
     window.history.replaceState({}, '', '/sessions/upcoming?state=record')
     render(<SessionDetails navigate={vi.fn()} />)
-    const actions = screen.getByRole('button', { name: 'Session actions' })
+    const actions = screen.getByRole('button', { name: 'إجراءات الجلسة' })
     expect(actions.textContent).toBe('')
     expect(actions.querySelector('img')).toHaveAttribute('src', '/assets/r4-clinical-more.svg')
     const addNote = screen.getByRole('button', { name: 'Add Note' })
     expect(addNote.querySelector('img')).toHaveAttribute('src', '/assets/preview-client-profile-plus.svg')
-    const previous = screen.getByRole('button', { name: /Therapy: One-on-One Session/ })
+    const previous = screen.getByRole('button', { name: /العلاج: جلسة فردية/ })
     expect(previous.textContent).not.toContain('›')
     expect(previous.querySelector('img')).toHaveAttribute(
       'src',

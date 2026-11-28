@@ -6,7 +6,7 @@ import { AuthCardShell } from './AuthCardShell'
 import { documentFileError, documentFileTypes, documentError } from './therapist-approval'
 import { useTherapistOptions } from './therapist-options'
 import { TherapistProfileForm, TherapistProfileSummary } from './TherapistProfileForm'
-import type { therapistLifecycle, TherapistProfileResponse, TherapistProfileReview } from './therapist-profile-review'
+import type { TherapistLifecycle, TherapistProfileResponse, TherapistProfileReview } from './therapist-profile-review'
 
 type Document = {
   id: string
@@ -46,7 +46,7 @@ export function TherapistOnboarding({
   api: ApiClient
   path: string
   review: TherapistProfileReview
-  lifecycle: ReturnType<typeof therapistLifecycle>
+  lifecycle: TherapistLifecycle
   finishingDraft: boolean
   onDraftChange: (dirty: boolean) => void
   navigate: (path: string) => void
@@ -87,10 +87,11 @@ export function TherapistOnboarding({
     <AuthCardShell
       arabic
       focusHeading
-      title={showDocuments ? 'المستندات المطلوبة' : title}
-      description={showDocuments ? 'راجع المستندات التي طلبتها منك الإدارة.' : description}
+      title={approvalCheckFailed ? 'الملف المهني' : showDocuments ? 'المستندات المطلوبة' : title}
+      description={approvalCheckFailed ? undefined : showDocuments ? 'راجع المستندات التي طلبتها منك الإدارة.' : description}
       footer={<p className="auth-switch"><button type="button" onClick={logout}>تسجيل الخروج</button></p>}
     >
+      <div inert={approvalCheckFailed} hidden={approvalCheckFailed}>
       {showDocuments && (
         <>
           <RequestedDocuments api={api} documents={documents} />
@@ -139,6 +140,7 @@ export function TherapistOnboarding({
           <a href="/profile/documents" onClick={(event) => link(event, '/profile/documents')}>المستندات المطلوبة</a>
         </p>
       )}
+      </div>
       {approvalCheckFailed && (
         <p className="live-auth-feedback" role="alert">
           تعذّر تحديث حالة المراجعة. <button type="button" className="remaining-cancel" onClick={checkApproval}>إعادة المحاولة</button>

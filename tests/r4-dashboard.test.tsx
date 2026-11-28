@@ -44,7 +44,7 @@ describe('r4 dashboard icon parity', () => {
 
   it('renders the notification close glyph at the Figma 15px scale', () => {
     renderState('notifications')
-    const svg = document.querySelector('[aria-label="Close notifications"] svg')
+    const svg = document.querySelector('[aria-label="إغلاق الإشعارات"] svg')
     expect(svg).toHaveAttribute('width', '30')
     expect(svg).toHaveAttribute('viewBox', '0 0 20 20')
   })

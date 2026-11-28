@@ -19,12 +19,12 @@ describe('final Help phone shell', () => {
       <Workspace title="Profile" active="Profile" navigate={navigate}>Help content</Workspace>,
     )
     expect(container.querySelector('.workspace')).toHaveClass('profile-help-workspace')
-    expect(screen.getByPlaceholderText('Search...')).toBeDisabled()
-    expect(screen.getByPlaceholderText('Search...')).toHaveAccessibleName('Search unavailable')
-    const navigation = screen.getByRole('navigation', { name: 'Mobile navigation' })
+    expect(screen.getByPlaceholderText('ابحث...')).toBeDisabled()
+    expect(screen.getByPlaceholderText('ابحث...')).toHaveAccessibleName('البحث غير متاح')
+    const navigation = screen.getByRole('navigation', { name: 'تنقل الجوال' })
     expect(within(navigation).getAllByRole('button')).toHaveLength(8)
-    expect(within(navigation).getByRole('button', { name: 'Profile' })).toHaveAttribute('aria-current', 'page')
-    await userEvent.click(within(navigation).getByRole('button', { name: 'Wallet' }))
+    expect(within(navigation).getByRole('button', { name: 'الملف الشخصي' })).toHaveAttribute('aria-current', 'page')
+    await userEvent.click(within(navigation).getByRole('button', { name: 'المحفظة' }))
     expect(navigate).toHaveBeenCalledExactlyOnceWith('/wallet')
   })
 
@@ -42,8 +42,8 @@ describe('final Help phone shell', () => {
         Live help
       </Workspace>,
     )
-    expect(screen.getByRole('textbox', { name: 'Search unavailable' })).toBeDisabled()
-    expect(screen.getByRole('navigation', { name: 'Mobile navigation' })).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'البحث غير متاح' })).toBeDisabled()
+    expect(screen.getByRole('navigation', { name: 'تنقل الجوال' })).toBeInTheDocument()
   })
 
   it.each(['/profile', '/profile/settings', '/profile/helpful'])('leaves %s shell behavior unchanged', (path) => {
@@ -52,8 +52,8 @@ describe('final Help phone shell', () => {
       <Workspace title="Profile" active="Profile" navigate={vi.fn()}>Content</Workspace>,
     )
     expect(container.querySelector('.workspace')).not.toHaveClass('profile-help-workspace')
-    expect(screen.queryByRole('navigation', { name: 'Mobile navigation' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Open navigation' })).toBeInTheDocument()
+    expect(screen.queryByRole('navigation', { name: 'تنقل الجوال' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'فتح التنقل' })).toBeInTheDocument()
   })
 
   it('preserves other routes and working search callbacks', async () => {
@@ -63,9 +63,9 @@ describe('final Help phone shell', () => {
       <Workspace title="Sessions" active="Sessions" navigate={vi.fn()} onSearch={onSearch}>Sessions</Workspace>,
     )
     expect(container.querySelector('.workspace')).not.toHaveClass('profile-help-workspace')
-    await userEvent.type(screen.getByRole('textbox', { name: 'Search patients' }), 'Ali')
+    await userEvent.type(screen.getByRole('textbox', { name: 'ابحث في المرضى' }), 'Ali')
     expect(onSearch).toHaveBeenLastCalledWith('Ali')
-    expect(screen.getByRole('button', { name: 'Open navigation' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'فتح التنقل' })).toBeInTheDocument()
   })
 })
 
@@ -92,15 +92,15 @@ describe('final wallet phone drawer', () => {
     )
     const root = container.querySelector('.workspace')!
     expect(root).toHaveClass('wallet-workspace', 'is-expanded')
-    const drawer = screen.getByRole('complementary', { name: 'Main navigation' })
+    const drawer = screen.getByRole('complementary', { name: 'التنقل الرئيسي' })
     const reminder = drawer.querySelector<HTMLElement>('.client-reminder')!
-    expect(within(reminder).getByRole('button', { name: 'Client review' })).toBeInTheDocument()
-    expect(within(drawer).getByRole('button', { name: 'Open profile' })).toBeInTheDocument()
-    expect(within(drawer).getByRole('button', { name: 'Wallet' })).toHaveAttribute('aria-current', 'page')
+    expect(within(reminder).getByRole('button', { name: 'مراجعة العميل' })).toBeInTheDocument()
+    expect(within(drawer).getByRole('button', { name: 'فتح الملف الشخصي' })).toBeInTheDocument()
+    expect(within(drawer).getByRole('button', { name: 'المحفظة' })).toHaveAttribute('aria-current', 'page')
     expect(drawer.querySelector('.wallet-drawer-collapse')).toHaveAttribute('aria-hidden', 'true')
     await userEvent.keyboard('{Escape}')
     expect(root).not.toHaveClass('is-expanded')
-    await userEvent.click(within(drawer).getByRole('button', { name: 'Sessions' }))
+    await userEvent.click(within(drawer).getByRole('button', { name: 'الجلسات' }))
     expect(navigate).toHaveBeenCalledExactlyOnceWith('/sessions')
   })
 
@@ -124,7 +124,7 @@ describe('final offline shell spacing', () => {
       <Workspace title="Dashboard" active="Wallet" navigate={vi.fn()}>Wallet overview</Workspace>,
     )
     expect(container.querySelector('.workspace')).toHaveClass('wallet-workspace', 'demo-workspace', 'secondary-offline')
-    expect(screen.getByRole('status')).toHaveTextContent("You're offline. Some data may not be up to date.")
+    expect(screen.getByRole('status')).toHaveTextContent('أنت غير متصل. قد لا تكون بعض البيانات محدّثة.')
     expect(screen.getByText('Wallet overview')).toBeInTheDocument()
   })
 })

@@ -35,7 +35,7 @@ describe('workspace offline presentation and connectivity', () => {
   it('uses an accessible text status and decorative 18px wifi-slash, not a warning glyph', () => {
     render(<Workspace title="Chats" active="Messages" offline navigate={vi.fn()}>Content</Workspace>)
     const banner = screen.getByRole('status')
-    expect(banner).toHaveTextContent("You're offline. Some data may not be up to date.")
+    expect(banner).toHaveTextContent('أنت غير متصل. قد لا تكون بعض البيانات محدّثة.')
     expect(banner).not.toHaveTextContent('⚠')
     expect(banner.querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
     expect(banner.querySelector('svg')).toHaveAttribute('width', '18')

@@ -72,10 +72,10 @@
     padding-top: 12px;
     gap: 2px;
   }
-  .wallet-workspace.is-expanded .nav-item[aria-label='Sessions'] .design-icon {
+  .wallet-workspace.is-expanded .nav-item[aria-label='الجلسات'] .design-icon {
     content: url('/assets/dashboard-imgCalendarAlt.svg');
   }
-  .wallet-workspace.is-expanded .nav-item[aria-label='Wallet'] .design-icon {
+  .wallet-workspace.is-expanded .nav-item[aria-label='المحفظة'] .design-icon {
     filter: brightness(0);
   }
   .wallet-workspace.is-expanded .sidebar-footer {

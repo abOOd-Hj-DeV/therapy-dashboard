@@ -55,7 +55,7 @@ describe('DemoNetworkToggle', () => {
     window.addEventListener('popstate', onPopState)
     window.history.replaceState({}, '', '/wallet?tab=x#top')
     render(<DemoNetworkToggle />)
-    const toggle = screen.getByRole('button', { name: 'Simulate offline' })
+    const toggle = screen.getByRole('button', { name: 'محاكاة عدم الاتصال' })
     expect(toggle).toHaveAttribute('aria-pressed', 'false')
     expect(toggle).toHaveAccessibleDescription(/Network requests are not changed/)
     const length = window.history.length
@@ -65,8 +65,8 @@ describe('DemoNetworkToggle', () => {
     )
     expect(window.history.length).toBe(length + 1)
     expect(onPopState).toHaveBeenCalledTimes(1)
-    expect(screen.getByRole('button', { name: 'Back online' })).toHaveAttribute('aria-pressed', 'true')
-    await user.click(screen.getByRole('button', { name: 'Back online' }))
+    expect(screen.getByRole('button', { name: 'عاد الاتصال' })).toHaveAttribute('aria-pressed', 'true')
+    await user.click(screen.getByRole('button', { name: 'عاد الاتصال' }))
     expect(window.location.search).toBe('?tab=x')
     window.removeEventListener('popstate', onPopState)
   })
@@ -76,10 +76,10 @@ describe('DemoNetworkToggle', () => {
     window.history.replaceState({}, '', '/sessions?state=collapsed')
     render(<DemoNetworkToggle />)
     await user.tab()
-    expect(screen.getByRole('button', { name: 'Simulate offline' })).toHaveFocus()
+    expect(screen.getByRole('button', { name: 'محاكاة عدم الاتصال' })).toHaveFocus()
     await user.keyboard('{Enter}')
     expect(window.location.search).toBe('?state=offline')
-    expect(screen.getByRole('button', { name: 'Back online' })).toHaveFocus()
+    expect(screen.getByRole('button', { name: 'عاد الاتصال' })).toHaveFocus()
     await user.keyboard(' ')
     expect(window.location.search).toBe('?state=collapsed')
   })
@@ -87,12 +87,12 @@ describe('DemoNetworkToggle', () => {
   it('follows browser back/forward navigation', async () => {
     const user = userEvent.setup()
     render(<DemoNetworkToggle />)
-    await user.click(screen.getByRole('button', { name: 'Simulate offline' }))
+    await user.click(screen.getByRole('button', { name: 'محاكاة عدم الاتصال' }))
     act(() => {
       window.history.replaceState({}, '', '/dashboard')
       window.dispatchEvent(new PopStateEvent('popstate'))
     })
-    expect(screen.getByRole('button', { name: 'Simulate offline' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: 'محاكاة عدم الاتصال' })).toHaveAttribute('aria-pressed', 'false')
   })
 
   it('never claims to restore a real offline browser connection', () => {
@@ -104,7 +104,7 @@ describe('DemoNetworkToggle', () => {
       setOnline(true)
       window.dispatchEvent(new Event('online'))
     })
-    expect(screen.getByRole('button', { name: 'Simulate offline' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'محاكاة عدم الاتصال' })).toBeInTheDocument()
   })
 
   it.each(['/dashboard', '/chats', '/clients', '/profile', '/wallet'])(
@@ -114,12 +114,14 @@ describe('DemoNetworkToggle', () => {
       window.history.replaceState({}, '', route)
       // The shells (DemoDashboard and Workspace) render the toggle themselves.
       render(<App />)
-      const offlineText = /You.re offline\. Some data may not be up to date\./
+      const offlineText = route === '/dashboard'
+        ? 'You’re offline. Some data may not be up to date.'
+        : 'أنت غير متصل. قد لا تكون بعض البيانات محدّثة.'
       expect(screen.queryByText(offlineText)).not.toBeInTheDocument()
-      await user.click(screen.getByRole('button', { name: 'Simulate offline' }))
+      await user.click(screen.getByRole('button', { name: 'محاكاة عدم الاتصال' }))
       await waitFor(() => expect(screen.getAllByText(offlineText).length).toBeGreaterThan(0))
       expect(window.location.pathname).toBe(route)
-      await user.click(screen.getByRole('button', { name: 'Back online' }))
+      await user.click(screen.getByRole('button', { name: 'عاد الاتصال' }))
       await waitFor(() => expect(screen.queryByText(offlineText)).not.toBeInTheDocument())
     },
   )

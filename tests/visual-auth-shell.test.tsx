@@ -28,7 +28,7 @@ function shell(active: 'Clients' | 'Messages' | 'Profile', live = true) {
 }
 
 function sidebar() {
-  return within(screen.getByRole('complementary', { name: 'Main navigation' }))
+  return within(screen.getByRole('complementary', { name: 'التنقل الرئيسي' }))
 }
 
 function liveAuth(page: AuthPage = 'login') {
@@ -50,12 +50,13 @@ describe('live auth responsive styling contracts (not a rendered pixel compariso
       expect(getComputedStyle(subtitle).whiteSpace).toBe('normal')
       expect(getComputedStyle(subtitle).overflowWrap).toBe('anywhere')
       expect(getComputedStyle(container.querySelector('.auth-switch')!).flexWrap).toBe('wrap')
-      const phoneHelp = page === 'activate' ? /اختر بلدك للرقم المحلي/ : /For a local number, select your country/
+      const phoneHelp = page === 'activate' ? /اختر بلدك للرقم المحلي/ : /لرقم محلي، اختر دولتك/
       expect(getComputedStyle(screen.getByText(phoneHelp)).fontSize).toBe('12px')
-      expect(screen.queryByRole('button', { name: 'Continue with Google' })).not.toBeInTheDocument()
-      expect(screen.getByText(page === 'activate' ? /رمز الوصول في الذاكرة/ : /The access token stays in memory/)).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /Google/ })).not.toBeInTheDocument()
+      expect(screen.getByText(/رمز الوصول في الذاكرة/)).toBeInTheDocument()
+      expect(root).toHaveAttribute('lang', 'ar')
+      expect(root).toHaveAttribute('dir', 'rtl')
       if (page === 'activate') {
-        expect(root).toHaveAttribute('dir', 'rtl')
         expect(screen.getByLabelText('رقم واتساب')).toHaveAttribute('placeholder', '09XXXXXXXX')
       }
     },
@@ -69,23 +70,23 @@ describe('live auth responsive styling contracts (not a rendered pixel compariso
       challenge_expires_at: new Date(Date.now() + 300000).toISOString(),
       request_reference: 'a1b2c3d4',
     }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
-    fireEvent.change(screen.getByLabelText('WhatsApp number'), { target: { value: '+4915123456789' } })
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'untrimmed password ' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Login' }))
-    const code = await screen.findByLabelText('Verification code')
+    fireEvent.change(screen.getByLabelText('رقم واتساب'), { target: { value: '+4915123456789' } })
+    fireEvent.change(screen.getByLabelText('كلمة المرور'), { target: { value: 'untrimmed password ' } })
+    fireEvent.click(screen.getByRole('button', { name: 'تسجيل الدخول' }))
+    const code = await screen.findByLabelText('رمز التحقق')
     expect(code).toHaveAttribute('maxLength', '6')
     expect(code).toHaveAttribute('pattern', '[0-9]{6}')
     const request = container.querySelector('.live-auth-request')!
-    expect(request).toHaveTextContent('Request reference: a1b2c3d4')
-    expect(request).toHaveTextContent('Resending does not extend this expiry.')
+    expect(request).toHaveTextContent('مرجع الطلب: a1b2c3d4')
+    expect(request).toHaveTextContent('إعادة الإرسال لا تمدد هذه الصلاحية.')
     expect(getComputedStyle(request).overflowWrap).toBe('anywhere')
-    expect(screen.getByRole('button', { name: 'Verify' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'تحقّق' })).toBeDisabled()
   })
 
   it('keeps direct verification unavailable without a server challenge', () => {
     liveAuth('verify')
-    expect(screen.getByRole('status')).toHaveTextContent('No sign-in challenge is available.')
-    expect(screen.queryByLabelText('Verification code')).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('لا يوجد تحدي تسجيل دخول متاح.')
+    expect(screen.queryByLabelText('رمز التحقق')).not.toBeInTheDocument()
   })
 })
 
@@ -140,7 +141,7 @@ describe('cached R1 auth and R2 shell declarations (not pixel verification)', ()
 describe('visual auth-shell route semantics', () => {
   it('keeps Patients as the label and selects it for the supported live Clients route', () => {
     const { navigate } = shell('Clients')
-    const patients = sidebar().getByRole('button', { name: 'Patients' })
+    const patients = sidebar().getByRole('button', { name: 'المرضى' })
     expect(patients).toHaveClass('active')
     expect(patients).toHaveAttribute('aria-current', 'page')
     fireEvent.click(patients)
@@ -150,35 +151,35 @@ describe('visual auth-shell route semantics', () => {
 
   it('selects Messages consistently in the sidebar and mobile navigation, never Patients', () => {
     const { navigate } = shell('Messages')
-    expect(sidebar().getByRole('button', { name: 'Patients' })).not.toHaveClass('active')
-    expect(sidebar().getByRole('button', { name: 'Messages' })).toHaveClass('active')
-    const mobile = within(screen.getByRole('navigation', { name: 'Mobile navigation' }))
-    expect(mobile.getByRole('button', { name: 'Messages' })).toHaveAttribute('aria-current', 'page')
-    fireEvent.click(mobile.getByRole('button', { name: 'Patients' }))
+    expect(sidebar().getByRole('button', { name: 'المرضى' })).not.toHaveClass('active')
+    expect(sidebar().getByRole('button', { name: 'الرسائل' })).toHaveClass('active')
+    const mobile = within(screen.getByRole('navigation', { name: 'تنقل الجوال' }))
+    expect(mobile.getByRole('button', { name: 'الرسائل' })).toHaveAttribute('aria-current', 'page')
+    fireEvent.click(mobile.getByRole('button', { name: 'المرضى' }))
     expect(navigate).toHaveBeenCalledExactlyOnceWith('/clients')
   })
 
   it('selects the actual Profile control without falsely selecting Patients', () => {
     shell('Profile')
-    expect(sidebar().getByRole('button', { name: 'Patients' })).not.toHaveClass('active')
-    expect(sidebar().getByRole('button', { name: 'Patients' })).not.toHaveAttribute('aria-current')
-    expect(sidebar().getByRole('button', { name: 'Open profile' })).toHaveClass('active')
-    expect(sidebar().getByRole('button', { name: 'Open profile' })).toHaveAttribute('aria-current', 'page')
+    expect(sidebar().getByRole('button', { name: 'المرضى' })).not.toHaveClass('active')
+    expect(sidebar().getByRole('button', { name: 'المرضى' })).not.toHaveAttribute('aria-current')
+    expect(sidebar().getByRole('button', { name: 'فتح الملف الشخصي' })).toHaveClass('active')
+    expect(sidebar().getByRole('button', { name: 'فتح الملف الشخصي' })).toHaveAttribute('aria-current', 'page')
   })
 
   it('does not invent a demo patient list or fake live search', () => {
     const { navigate } = shell('Profile', false)
-    expect(screen.getByRole('textbox', { name: 'Search unavailable' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Open search' })).toBeDisabled()
-    fireEvent.click(sidebar().getByRole('button', { name: 'Patients' }))
+    expect(screen.getByRole('textbox', { name: 'البحث غير متاح' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'فتح البحث' })).toBeDisabled()
+    fireEvent.click(sidebar().getByRole('button', { name: 'المرضى' }))
     expect(navigate).not.toHaveBeenCalled()
-    expect(screen.getByRole('dialog')).toHaveTextContent('No backend is connected.')
+    expect(screen.getByRole('dialog')).toHaveTextContent('لا يوجد خادم متصل.')
   })
 
   it('keeps supported search callbacks operational', () => {
     const onSearch = vi.fn()
     render(<Workspace active="Messages" title="Chats" navigate={vi.fn()} onSearch={onSearch}><p>Chats</p></Workspace>)
-    const search = screen.getByRole('textbox', { name: 'Search patients' })
+    const search = screen.getByRole('textbox', { name: 'ابحث في المرضى' })
     expect(search).toBeEnabled()
     fireEvent.change(search, { target: { value: 'assigned client' } })
     expect(onSearch).toHaveBeenCalledExactlyOnceWith('assigned client')

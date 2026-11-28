@@ -12,11 +12,11 @@ const identity = (portrait: { image: string; crop?: string }) =>
 describe('final closure portrait artwork and integration manifest (not UI acceptance)', () => {
   it('keeps the five earnings identities distinct, including both Omar rows', () => {
     expect(wallet.earnings.map(({ target }) => [target.row, target.name, target.amount])).toEqual([
-      [1, 'Sarah Ali', 300],
-      [2, 'Ahmed Mohammed', 200],
-      [3, 'Sarah Khalid', 100],
-      [4, 'Omar Youssef', 200],
-      [5, 'Omar Youssef', 400],
+      [1, 'سارة علي', 300],
+      [2, 'أحمد محمد', 200],
+      [3, 'سارة خالد', 100],
+      [4, 'عمر يوسف', 200],
+      [5, 'عمر يوسف', 400],
     ])
     expect(new Set(wallet.earnings.map(identity)).size).toBe(5)
     expect(wallet.earnings[0].source.kind).toBe('existing-asset')
@@ -28,7 +28,7 @@ describe('final closure portrait artwork and integration manifest (not UI accept
   it('maps responsive ATM rows to the same five photos without changing the dates or amounts', () => {
     expect(wallet.responsiveWithdrawals.map(identity)).toEqual(wallet.earnings.map(identity))
     expect(wallet.responsiveWithdrawals.map(({ target }) => target.name)).toEqual(
-      Array(5).fill('ATM Withdrawal'),
+      Array(5).fill('سحب من صراف آلي'),
     )
     expect(wallet.responsiveWithdrawals.map(({ target }) => [target.date, target.amount])).toEqual(
       wallet.earnings.map(({ target }) => [target.date, target.amount]),
@@ -98,8 +98,8 @@ describe('final closure portrait artwork and integration manifest (not UI accept
       Array.from({ length: 11 }, (_, index) => `session-${index}`),
     )
     expect(sessions.desktopTablet.slice(9).map(({ target }) => target.name)).toEqual([
-      'Noor Al-Khatib',
-      'Noor Al-Khatib',
+      'نور الخطيب',
+      'نور الخطيب',
     ])
   })
 

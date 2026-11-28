@@ -75,7 +75,7 @@ describe('sessions and clinical visual markup contracts', () => {
   it('shows a date-only status history entry on its stated day in a zone west of UTC', async () => {
     const { api } = await careApi('America/Los_Angeles')
     render(<SessionDetails api={api} navigate={vi.fn()} />)
-    const history = await screen.findByRole('heading', { name: 'Session status history' })
+    const history = await screen.findByRole('heading', { name: 'سجل حالات الجلسة' })
     expect(within(history.parentElement!).getByText('1 Jan 2025')).toBeInTheDocument()
   })
 
@@ -83,8 +83,8 @@ describe('sessions and clinical visual markup contracts', () => {
     const { api } = await careApi()
     window.history.replaceState({}, '', '/sessions')
     const { container } = render(<Sessions api={api} navigate={vi.fn()} />)
-    const region = await screen.findByRole('region', { name: 'All Sessions' })
-    const header = within(region).getByRole('heading', { name: 'All Sessions' }).parentElement!
+    const region = await screen.findByRole('region', { name: 'كل الجلسات' })
+    const header = within(region).getByRole('heading', { name: 'كل الجلسات' }).parentElement!
     expect(header.parentElement).toBe(region)
     expect(header.nextElementSibling).toHaveClass('sessions-list-scroll')
     const avatar = container.querySelector('.patient-cell .care-avatar')!
@@ -100,13 +100,13 @@ describe('sessions and clinical visual markup contracts', () => {
     const { api } = await careApi()
     window.history.replaceState({}, '', `/sessions/upcoming?client=${patientId}`)
     const page = render(<SessionDetails api={api} navigate={vi.fn()} />)
-    expect(screen.getByText('Patients / Clinical record')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Patients' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByText('المرضى / السجل الإكلينيكي')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'المرضى' })).toHaveAttribute('aria-current', 'page')
     page.unmount()
     window.history.replaceState({}, '', `/sessions/upcoming?id=${sessionId}`)
     render(<SessionDetails api={api} navigate={vi.fn()} />)
-    expect(screen.getByText('Sessions / Session record')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Sessions' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByText('الجلسات / سجل الجلسة')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'الجلسات' })).toHaveAttribute('aria-current', 'page')
   })
 
   it('uses the detail avatar size without borrowing a fixture patient photo', async () => {
@@ -120,7 +120,7 @@ describe('sessions and clinical visual markup contracts', () => {
   it('orders live actions after tabs, then clinical grid and history without hiding them', async () => {
     const { api } = await careApi()
     const { container } = render(<SessionDetails api={api} navigate={vi.fn()} />)
-      const history = await screen.findByRole('heading', { name: 'Session status history' })
+      const history = await screen.findByRole('heading', { name: 'سجل حالات الجلسة' })
       const root = container.querySelector('.care-session-detail')!
       const actions = root.querySelector('.care-session-actions')!
       const grid = root.querySelector('.detail-grid')!
@@ -148,7 +148,7 @@ describe('sessions and clinical visual markup contracts', () => {
     expect(text).toHaveClass('selected')
     expect(text).toHaveAttribute('aria-pressed', 'true')
     expect(all).not.toHaveClass('selected')
-    const added = await within(dialog).findByRole('button', { name: 'Added Test assigned article' })
+    const added = await within(dialog).findByRole('button', { name: 'أُضيف Test assigned article' })
     expect(added).toHaveClass('added')
     expect(added).toBeDisabled()
     fireEvent.click(added)
@@ -185,7 +185,7 @@ describe('sessions and clinical visual markup contracts', () => {
   it('scopes the table panel and segmented tabs to the demo sessions list', () => {
     window.history.replaceState({}, '', '/sessions')
     const { container } = render(<Sessions navigate={vi.fn()} />)
-    expect(screen.getByRole('region', { name: 'All Sessions' })).toHaveClass('demo-all-sessions')
+    expect(screen.getByRole('region', { name: 'كل الجلسات' })).toHaveClass('demo-all-sessions')
     expect(container.querySelector('.demo-sessions-toolbar .session-tabs')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Schedule New' }).querySelector('img')).toBeTruthy()
     expect(careStyles).toMatch(/\.demo-all-sessions\s*\{[^}]*background:\s*#fff/)

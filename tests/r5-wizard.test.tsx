@@ -23,18 +23,18 @@ beforeEach(() => {
 describe('r5 add-new-content wizard', () => {
   it('renders the type picker, form fields, actions and the live patient preview', () => {
     renderWizard()
-    expect(screen.getByRole('heading', { name: 'Add new content' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Patient Preview' })).toBeInTheDocument()
-    expect(screen.getByText('Live Preview')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'إضافة محتوى جديد' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'معاينة المريض' })).toBeInTheDocument()
+    expect(screen.getByText('معاينة مباشرة')).toBeInTheDocument()
     const cards = document.querySelectorAll('.hw-type-card')
     expect(cards).toHaveLength(7)
-    expect(screen.getByRole('button', { name: 'Article / Lesson' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: 'مقال / درس' })).toHaveAttribute(
       'aria-pressed',
       'true',
     )
     expect(screen.getByLabelText('Title')).toBeInTheDocument()
-    expect(screen.getByLabelText('Instructions / Description')).toBeInTheDocument()
-    expect(screen.getByText('Additional Fields by Content Type')).toBeInTheDocument()
+    expect(screen.getByLabelText('التعليمات / الوصف')).toBeInTheDocument()
+    expect(screen.getByText('حقول إضافية حسب نوع المحتوى')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Reset' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Publish' })).toBeInTheDocument()
   })
@@ -43,11 +43,11 @@ describe('r5 add-new-content wizard', () => {
     renderWizard()
     fireEvent.click(screen.getByRole('button', { name: 'Audio' }))
     expect(screen.getByRole('button', { name: 'Audio' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByText('Audio File (Trial)')).toBeInTheDocument()
-    expect(screen.getByText('Audio thumbnail')).toBeInTheDocument()
+    expect(screen.getByText('ملف الصوت (تجريبي)')).toBeInTheDocument()
+    expect(screen.getByText('صورة الصوت المصغّرة')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Goal' }))
-    expect(screen.getByText('Goal target')).toBeInTheDocument()
-    expect(screen.queryByText('Audio File (Trial)')).toBeNull()
+    expect(screen.getByText('الهدف')).toBeInTheDocument()
+    expect(screen.queryByText('ملف الصوت (تجريبي)')).toBeNull()
   })
 
   it('updates the phone preview title live from the Title field', () => {
@@ -59,7 +59,7 @@ describe('r5 add-new-content wizard', () => {
   it('blocks publish with a validation error when the title is empty', () => {
     renderWizard()
     fireEvent.click(screen.getByRole('button', { name: 'Publish' }))
-    expect(screen.getByRole('alert')).toHaveTextContent('title is required')
+    expect(screen.getByRole('alert')).toHaveTextContent('العنوان مطلوب للنشر')
     expect(screen.getByLabelText('Title')).toHaveAttribute('aria-invalid', 'true')
     expect(navigate).not.toHaveBeenCalled()
   })
@@ -73,7 +73,7 @@ describe('r5 add-new-content wizard', () => {
 
   it('prefills the filled fixture state and shows the draft banner only under ?state=draft', () => {
     const { unmount } = renderWizard('/homework/create?state=filled')
-    expect(screen.getByLabelText('Title')).toHaveValue('Daily Small Activity')
+    expect(screen.getByLabelText('Title')).toHaveValue('نشاط يومي صغير')
     expect(screen.getByRole('button', { name: 'Audio' })).toHaveAttribute('aria-pressed', 'true')
     unmount()
     renderWizard('/homework/create?state=draft')
@@ -85,7 +85,7 @@ describe('r5 add-new-content wizard', () => {
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Real content' } })
     fireEvent.click(screen.getByRole('button', { name: 'Publish' }))
     expect(navigate).not.toHaveBeenCalled()
-    expect(screen.getByRole('dialog')).toHaveTextContent('not available in the therapist API')
+    expect(screen.getByRole('dialog')).toHaveTextContent('غير متاح في API المعالج')
   })
 
   it('renders nothing without the demo fixture flags', () => {

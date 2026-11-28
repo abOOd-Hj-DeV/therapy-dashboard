@@ -22,7 +22,7 @@ describe('r5 dialogs-remove: crossed-out assign-homework modal', () => {
     render(<SessionDetails navigate={navigate} />)
     expect(navigate).toHaveBeenCalledWith(state === 'library' ? '/homework' : '/homework/create')
     expect(
-      screen.queryByRole('dialog', { name: /Assign homework to/ }),
+      screen.queryByRole('dialog', { name: /إسناد واجب إلى/ }),
     ).not.toBeInTheDocument()
   })
 
@@ -32,7 +32,7 @@ describe('r5 dialogs-remove: crossed-out assign-homework modal', () => {
     fireEvent.click(screen.getByRole('button', { name: '+ Add New Homework' }))
     expect(navigate).toHaveBeenCalledWith('/homework/create')
     expect(
-      screen.queryByRole('dialog', { name: /Assign homework to/ }),
+      screen.queryByRole('dialog', { name: /إسناد واجب إلى/ }),
     ).not.toBeInTheDocument()
   })
 
@@ -40,8 +40,8 @@ describe('r5 dialogs-remove: crossed-out assign-homework modal', () => {
     render(<SessionDetails navigate={vi.fn()} />)
     expect(screen.getByText("Review previous session's homework")).toBeInTheDocument()
     expect(screen.getByText('New assignment after this session')).toBeInTheDocument()
-    expect(screen.getByText('Cognitive Restructuring')).toBeInTheDocument()
-    expect(screen.getByText('Avoid news and social media')).toBeInTheDocument()
+    expect(screen.getByText('إعادة البناء المعرفي')).toBeInTheDocument()
+    expect(screen.getByText('تجنّب الأخبار ووسائل التواصل')).toBeInTheDocument()
   })
 })
 
@@ -57,10 +57,10 @@ describe('r5 dialogs-remove: DeleteTemplateDialog (refs r5-113..115)', () => {
         onDelete={onDelete}
       />,
     )
-    const dialog = screen.getByRole('dialog', { name: 'Delete Template?' })
+    const dialog = screen.getByRole('dialog', { name: 'حذف القالب؟' })
     expect(
       within(dialog).getByText(
-        'Are you sure you want to delete “Daily Breathing Exercise”? This action cannot be undone. This template is currently assigned to 14 patients.',
+        'Are you sure you want to delete “Daily Breathing Exercise”? This action cannot be undone. هذا القالب مسند حالياً إلى 14 مريضاً.',
       ),
     ).toBeInTheDocument()
     fireEvent.click(within(dialog).getByRole('button', { name: 'cancel' }))
@@ -73,12 +73,12 @@ describe('r5 dialogs-remove: DeleteTemplateDialog (refs r5-113..115)', () => {
   it('opens through the session demo fixture ?state=delete-template and stays demo-honest', () => {
     window.history.replaceState({}, '', '/sessions/upcoming?state=delete-template')
     render(<SessionDetails navigate={vi.fn()} />)
-    const dialog = screen.getByRole('dialog', { name: 'Delete Template?' })
+    const dialog = screen.getByRole('dialog', { name: 'حذف القالب؟' })
     expect(dialog).toHaveClass('r5-delete-template-modal')
     fireEvent.click(within(dialog).getByRole('button', { name: 'Delete template' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(
-      screen.getByText('Demo only: no template was deleted. No backend is connected.'),
+      screen.getByText('عرض تجريبي فقط: لم يُحذف أي قالب. لا يوجد خادم متصل.'),
     ).toBeInTheDocument()
   })
 })
@@ -87,14 +87,14 @@ describe('r5 dialogs-remove: holiday-row delete control (refs r5-116..118)', () 
   it('removes a vacation row locally via the bare X delete button', async () => {
     window.history.replaceState({}, '', '/profile/settings?state=holidays')
     render(<Profile page="settings" navigate={vi.fn()} />)
-    const dialog = screen.getByRole('dialog', { name: 'Work Hours Management' })
-    const remove = within(dialog).getByRole('button', { name: 'Remove Annual Leave' })
+    const dialog = screen.getByRole('dialog', { name: 'إدارة ساعات العمل' })
+    const remove = within(dialog).getByRole('button', { name: 'إزالة إجازة سنوية' })
     expect(remove.querySelector('img')?.getAttribute('src')).toContain(
       'r4-profile-settings-holiday-remove',
     )
     fireEvent.click(remove)
     expect(
-      within(dialog).queryByRole('button', { name: 'Remove Annual Leave' }),
+      within(dialog).queryByRole('button', { name: 'إزالة إجازة سنوية' }),
     ).not.toBeInTheDocument()
     expect(within(dialog).getByText(/no calendar service is connected/i)).toBeInTheDocument()
   })

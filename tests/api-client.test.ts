@@ -67,7 +67,7 @@ describe('API transport security', () => {
     const transport = vi.fn<typeof fetch>()
     const api = new ApiClient(base, transport)
     await api.establish(session())
-    await expect(api.get(path)).rejects.toThrow(/API-relative/)
+    await expect(api.get(path)).rejects.toThrow(/تُقبل فقط المسارات النسبية للـAPI\./)
     expect(transport).not.toHaveBeenCalled()
   })
   it('requires a session on protected routes and sends no credentials on public routes', async () => {
@@ -211,8 +211,20 @@ describe('API transport security', () => {
     await api.establish(session())
     await expect(api.mutate('/therapists/wallet/withdraw', { amount: 25 })).rejects.toMatchObject({
       status: 422,
-      fields: { amount: ['Please check this field.'] },
-      message: 'Please check the submitted information.',
+      fields: { amount: ['تحقق من هذا الحقل.'] },
+      message: 'تحقق من المعلومات المُدخلة.',
+    })
+  })
+
+  it('recognizes the legacy approval response without rendering its English message', async () => {
+    const transport = vi.fn<typeof fetch>().mockResolvedValue(
+      json({ message: 'Your therapist profile has not been approved yet.' }, 403),
+    )
+    const api = new ApiClient(base, transport)
+    await api.establish(session())
+    await expect(api.get('/notifications')).rejects.toMatchObject({
+      code: 'therapist_pending_approval',
+      message: 'هذا الإجراء غير مسموح لحسابك.',
     })
   })
   it('honors numeric and HTTP-date Retry-After without exposing the response', async () => {

@@ -16,11 +16,11 @@ describe('final clinical repair contracts (not browser visual acceptance)', () =
     render(<SessionDetails navigate={vi.fn()} />)
     expect(screen.getByRole('tab', { name: 'Before session' })).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByRole('tab', { name: 'Session record' })).toHaveAttribute('aria-selected', 'false')
-    expect(screen.getByRole('button', { name: 'Session actions' })).toHaveAttribute('aria-expanded', 'true')
-    for (const name of ['Client Overview', 'Before You Begin', 'Quick Clinical Summary', 'Suggested Focus for This Session', 'Clinical Pathway']) {
+    expect(screen.getByRole('button', { name: 'إجراءات الجلسة' })).toHaveAttribute('aria-expanded', 'true')
+    for (const name of ['نظرة عامة على العميل', 'قبل أن تبدأ', 'ملخص إكلينيكي سريع', 'التركيز المقترح لهذه الجلسة', 'المسار الإكلينيكي']) {
       expect(screen.getByRole('heading', { name })).toBeInTheDocument()
     }
-    const latestResponse = screen.getByRole('checkbox', { name: "The client's latest response has not been reviewed yet" })
+    const latestResponse = screen.getByRole('checkbox', { name: 'لم تُراجَع أحدث إجابة من العميل بعد' })
     fireEvent.click(latestResponse)
     expect(latestResponse).toBeChecked()
   })
@@ -49,8 +49,8 @@ describe('final clinical repair contracts (not browser visual acceptance)', () =
     fireEvent.click(flag)
     fireEvent.click(screen.getByRole('button', { name: 'Save and Update Next Session' }))
     expect(flag).toBeChecked()
-    expect(screen.getByRole('status')).toHaveTextContent('clinical flag selected, but no supervisor was notified')
-    expect(screen.getByRole('status')).toHaveTextContent('No backend is connected')
+    expect(screen.getByRole('status')).toHaveTextContent('اختيرت علامة إكلينيكية لكن لم يُبلَّغ أي مشرف')
+    expect(screen.getByRole('status')).toHaveTextContent('لا يوجد خادم متصل')
   })
 
   it('keeps the record, full warning text and both footer actions in normal DOM flow', () => {
@@ -58,14 +58,14 @@ describe('final clinical repair contracts (not browser visual acceptance)', () =
     render(<SessionDetails navigate={vi.fn()} />)
     expect(screen.getByRole('tab', { name: 'Session record' })).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByRole('tab', { name: 'Before session' })).toHaveAttribute('aria-selected', 'false')
-    expect(screen.getByText('Noticed clear progress in managing anxiety.')).toBeVisible()
+    expect(screen.getByText('لُوحظ تقدّم واضح في إدارة القلق.')).toBeVisible()
     expect(screen.getByText('When activated, the clinical supervisor is alerted to review this case — used only when additional supervision is needed.')).toBeVisible()
     expect(screen.getByText('What you write in “Next Step” will automatically appear in the preparation for the next session.')).toBeVisible()
     expect(screen.getByRole('button', { name: 'Back to Summary' })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Save and Update Next Session' })).toBeVisible()
     fireEvent.click(screen.getByRole('tab', { name: 'Before session' }))
     expect(screen.getByRole('tab', { name: 'Before session' })).toHaveAttribute('aria-selected', 'true')
-    expect(screen.getByRole('heading', { name: 'Clinical Pathway' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'المسار الإكلينيكي' })).toBeInTheDocument()
   })
 
   it('uses responsive record typography and spacing without clipping the warnings or footer', () => {
@@ -82,7 +82,7 @@ describe('final clinical repair contracts (not browser visual acceptance)', () =
     window.history.replaceState({}, '', '/sessions/upcoming?state=record')
     const user = userEvent.setup()
     render(<SessionDetails navigate={vi.fn()} />)
-    await user.type(screen.getByLabelText('New Note'), 'Practiced grounding exercises')
+    await user.type(screen.getByLabelText('ملاحظة جديدة'), 'Practiced grounding exercises')
     await user.click(screen.getByRole('button', { name: 'Add Note' }))
     expect(screen.getByText('Practiced grounding exercises')).toBeInTheDocument()
     await user.type(screen.getByLabelText('Next Step / Continuity Note'), 'Discuss sleep next time')
@@ -92,7 +92,7 @@ describe('final clinical repair contracts (not browser visual acceptance)', () =
     expect(flag).toBeChecked()
     expect(flag).toHaveFocus()
     await user.click(screen.getByRole('button', { name: 'Save and Update Next Session' }))
-    expect(screen.getByRole('status')).toHaveTextContent('no supervisor was notified')
+    expect(screen.getByRole('status')).toHaveTextContent('لم يُبلَّغ أي مشرف')
     await user.click(screen.getByRole('button', { name: 'Back to Summary' }))
     expect(screen.getByText('Discuss sleep next time')).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Before session' })).toHaveAttribute('aria-selected', 'true')

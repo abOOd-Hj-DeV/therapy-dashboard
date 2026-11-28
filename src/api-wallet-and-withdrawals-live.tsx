@@ -8,10 +8,10 @@ import { Modal } from './ui'
 
 const walletPath = '/therapists/wallet'
 const payoutMethods = {
-  bank_transfer: 'Bank transfer',
+  bank_transfer: 'تحويل بنكي',
   paypal: 'PayPal',
   wise: 'Wise',
-  other: 'Other (manual review)',
+  other: 'أخرى (مراجعة يدوية)',
 } as const
 type PayoutMethod = keyof typeof payoutMethods
 type Withdrawal = {
@@ -119,7 +119,7 @@ function maskAccount(value: unknown): string {
 function methodLabel(value: unknown): string {
   return typeof value === 'string' && Object.hasOwn(payoutMethods, value)
     ? payoutMethods[value as PayoutMethod]
-    : 'Legacy payout details'
+    : 'تفاصيل الدفع السابقة'
 }
 
 function payoutField(item: Withdrawal, field: string): unknown {
@@ -207,32 +207,32 @@ function LiveWallet({ api, navigate }: LiveProps) {
     ? [
         {
           icon: 'withdrawn',
-          title: 'Withdrawn (approved and paid)',
+          title: 'المسحوب (معتمد ومدفوع)',
           value: money(wallet.withdrawn, wallet.currency),
         },
         {
           icon: 'available',
-          title: 'Available now',
+          title: 'المتاح الآن',
           value: money(wallet.available, wallet.currency),
         },
         {
           icon: 'pending',
-          title: 'Pending earnings',
+          title: 'أرباح معلّقة',
           value: money(wallet.pending_earnings, wallet.currency),
         },
         {
           icon: 'pending',
-          title: 'Reserved for withdrawal requests',
+          title: 'محجوز لطلبات السحب',
           value: money(wallet.reserved, wallet.currency),
         },
         {
           icon: 'sessions',
-          title: 'Completed paid sessions',
+          title: 'الجلسات المدفوعة المكتملة',
           value: wallet.completed_paid_sessions.toLocaleString(),
         },
         {
           icon: 'sessions',
-          title: 'Earned package sessions',
+          title: 'جلسات الباقة المكتسبة',
           value: wallet.earned_package_sessions.toLocaleString(),
         },
       ]
@@ -249,10 +249,10 @@ function LiveWallet({ api, navigate }: LiveProps) {
     >
       <div className={`wallet-layout wallet-live wallet-${tab}`}>
         <p className="wallet-phone-heading">Therapist Overview</p>
-        {resource.loading && <p role="status">Loading wallet…</p>}
+        {resource.loading && <p role="status">جارٍ تحميل المحفظة…</p>}
         {!!error && (
           <p className="remaining-error" role="alert">
-            {apiErrorMessage(error)} <button onClick={resource.reload}>Retry loading wallet</button>
+            {apiErrorMessage(error)} <button onClick={resource.reload}>إعادة تحميل المحفظة</button>
           </p>
         )}
         {wallet && (
@@ -262,19 +262,19 @@ function LiveWallet({ api, navigate }: LiveProps) {
                 <div>
                   <header>
                     <span>Overview</span>
-                    <h2>Lifetime net earnings</h2>
+                    <h2>إجمالي صافي الأرباح</h2>
                   </header>
                   <div className="wallet-total-numbers">
                     <div>
-                      <span>Net earned</span>
+                      <span>صافي المكتسب</span>
                       <strong>{money(wallet.earned, wallet.currency)}</strong>
                     </div>
                     <div>
-                      <span>Minimum withdrawal</span>
+                      <span>الحد الأدنى للسحب</span>
                       <strong>{money(wallet.min_withdrawal, wallet.currency)}</strong>
                     </div>
                     <div>
-                      <span>Net available</span>
+                      <span>صافي المتاح</span>
                       <strong>{money(wallet.available, wallet.currency)}</strong>
                     </div>
                   </div>
@@ -282,17 +282,17 @@ function LiveWallet({ api, navigate }: LiveProps) {
               </article>
               <article className="wallet-phone-total">
                 <button onClick={() => setTab('withdrawals')}>
-                  <span>Net Available Balance</span>
+                  <span>صافي الرصيد المتاح</span>
                   <strong className="remaining-badge">
                     {money(wallet.available, wallet.currency)}
                   </strong>
                 </button>
                 <p>
-                  <span>Net earned</span>
+                  <span>صافي المكتسب</span>
                   <span>{money(wallet.earned, wallet.currency)}</span>
                 </p>
                 <p>
-                  <span>Minimum withdrawal</span>
+                  <span>الحد الأدنى للسحب</span>
                   <span>{money(wallet.min_withdrawal, wallet.currency)}</span>
                 </p>
               </article>
@@ -326,25 +326,25 @@ function LiveWallet({ api, navigate }: LiveProps) {
                   disabled={flow.busy || (!flow.intent && restricted)}
                   onClick={() => flow.setOpen(true)}
                 >
-                  {flow.uncertain ? 'Resolve withdrawal request' : 'Request withdrawal'}
+                  {flow.uncertain ? 'بتّ طلب السحب' : 'طلب سحب'}
                 </button>
               </nav>
               {tab === 'withdrawals' ? (
                 <div className="wallet-transactions">
                   <div className="wallet-mobile-list-heading">
-                    <button onClick={() => setTab('overview')}>← Overview</button>
-                    <h2>Recent withdrawal requests</h2>
+                    <button onClick={() => setTab('overview')}>← نظرة عامة</button>
+                    <h2>طلبات السحب الأخيرة</h2>
                     <button
                       className="remaining-primary"
                       disabled={flow.busy || (!flow.intent && restricted)}
                       onClick={() => flow.setOpen(true)}
                     >
-                      {flow.uncertain ? 'Resolve request' : 'Request withdrawal'}
+                      {flow.uncertain ? 'بتّ الطلب' : 'طلب سحب'}
                     </button>
                   </div>
-                  <h2>Recent withdrawal requests</h2>
-                  <p>Latest 10 at most. Complete history and pagination are not provided.</p>
-                  {!wallet.recent_withdrawals.length && <p>No recent withdrawal requests.</p>}
+                  <h2>طلبات السحب الأخيرة</h2>
+                  <p>أحدث 10 طلبات كحد أقصى. السجل الكامل والترقيم غير متوفرين.</p>
+                  {!wallet.recent_withdrawals.length && <p>لا توجد طلبات سحب حديثة.</p>}
                   {wallet.recent_withdrawals.map((item) => (
                     <article key={item.id}>
                       <span className="wallet-withdrawal-icon">
@@ -354,7 +354,7 @@ function LiveWallet({ api, navigate }: LiveProps) {
                         <strong>{methodLabel(payoutField(item, 'method'))}</strong>
                         <small>
                           {maskAccount(payoutField(item, 'account'))} ·{' '}
-                          {formatTimestamp(item.created_at, api.getUser()?.timezone || 'UTC') || 'Date unavailable'}
+                          {formatTimestamp(item.created_at, api.getUser()?.timezone || 'UTC') || 'التاريخ غير متاح'}
                         </small>
                         {item.status === 'rejected' && item.note && (
                           <small>Review note: {item.note}</small>
@@ -372,7 +372,7 @@ function LiveWallet({ api, navigate }: LiveProps) {
               ) : (
                 <div className="wallet-summary">
                   <header>
-                    <h2>{tab === 'earnings' ? 'Net earnings summary' : 'Wallet overview'}</h2>
+                    <h2>{tab === 'earnings' ? 'ملخص صافي الأرباح' : 'نظرة المحفظة'}</h2>
                   </header>
                   <p>
                     Monthly earnings, growth charts, session rates and patient-level transactions
@@ -383,7 +383,7 @@ function LiveWallet({ api, navigate }: LiveProps) {
                     commission. Pending earnings are not withdrawable. Reserved amounts are already
                     excluded from available balance.
                   </p>
-                  <p>Session counts are separately defined; they are not an all-sessions total.</p>
+                  <p>أعداد الجلسات معرّفة بشكل منفصل؛ ليست إجمالاً لكل الجلسات.</p>
                 </div>
               )}
               <div className="wallet-advisory">
@@ -410,13 +410,13 @@ function LiveWallet({ api, navigate }: LiveProps) {
         )}
         {flow.uncertain && !flow.open && (
           <p className="remaining-error" role="alert">
-            A previous request has an unknown outcome. Do not create a new request.{' '}
-            <button onClick={() => flow.setOpen(true)}>Resolve withdrawal request</button>
+            نتيجة طلب سابق مجهولة. لا تنشئ طلباً جديداً.{' '}
+            <button onClick={() => flow.setOpen(true)}>بتّ طلب السحب</button>
           </p>
         )}
         {flow.open && (
           <Modal
-            title="Withdrawal Request"
+            title="طلب سحب"
             className="remaining-modal withdrawal-modal"
             closeIcon={<RemainingIcon name="close" />}
             onClose={() => {
@@ -426,8 +426,8 @@ function LiveWallet({ api, navigate }: LiveProps) {
             <form className="withdrawal-form" noValidate onSubmit={flow.review}>
               <p className="withdrawal-balance">
                 {wallet
-                  ? `Available Balance: ${money(wallet.available, wallet.currency)}`
-                  : 'Current balance is unavailable.'}
+                  ? `الرصيد المتاح: ${money(wallet.available, wallet.currency)}`
+                  : 'الرصيد الحالي غير متاح.'}
               </p>
               <p>
                 This submits a request for manual finance review. No automatic transfer, guaranteed
@@ -437,12 +437,12 @@ function LiveWallet({ api, navigate }: LiveProps) {
                 <>
                   <label className="withdrawal-method">
                     <select
-                      aria-label="Select payment method"
+                      aria-label="اختر طريقة الدفع"
                       value={flow.method}
                       disabled={flow.busy}
                       onChange={(event) => flow.setMethod(event.target.value as PayoutMethod | '')}
                     >
-                      <option value="">Select payment method</option>
+                      <option value="">اختر طريقة الدفع</option>
                       {Object.entries(payoutMethods).map(([value, label]) => (
                         <option key={value} value={value}>
                           {label}
@@ -451,16 +451,16 @@ function LiveWallet({ api, navigate }: LiveProps) {
                     </select>
                   </label>
                   <input
-                    aria-label="Withdrawal amount"
+                    aria-label="مبلغ السحب"
                     inputMode="decimal"
-                    placeholder="Enter amount (up to two decimal places)"
+                    placeholder="أدخل المبلغ (حتى خانتين عشريتين)"
                     value={flow.amount}
                     disabled={flow.busy}
                     onChange={(event) => flow.setAmount(event.target.value)}
                   />
                   <input
-                    aria-label="Payout account"
-                    placeholder="Account / payout destination"
+                    aria-label="حساب الدفع"
+                    placeholder="الحساب / وجهة الدفع"
                     maxLength={255}
                     autoComplete="off"
                     value={flow.account}
@@ -468,8 +468,8 @@ function LiveWallet({ api, navigate }: LiveProps) {
                     onChange={(event) => flow.setAccount(event.target.value)}
                   />
                   <input
-                    aria-label="Account holder name (optional)"
-                    placeholder="Account holder name (optional)"
+                    aria-label="اسم صاحب الحساب (اختياري)"
+                    placeholder="اسم صاحب الحساب (اختياري)"
                     maxLength={255}
                     autoComplete="off"
                     value={flow.holder}
@@ -495,7 +495,7 @@ function LiveWallet({ api, navigate }: LiveProps) {
                 </>
               ) : (
                 <>
-                  <h3>Confirm manual-review request</h3>
+                  <h3>تأكيد طلب المراجعة اليدوية</h3>
                   <p>
                     {money(flow.intent.body.amount, flow.intent.currency)} ·{' '}
                     {payoutMethods[flow.intent.body.payout_details.method]} ·{' '}
@@ -535,10 +535,10 @@ function LiveWallet({ api, navigate }: LiveProps) {
                     onClick={() => void flow.send()}
                   >
                     {flow.busy
-                      ? 'Checking request…'
+                      ? 'جارٍ فحص الطلب…'
                       : flow.uncertain
-                        ? 'Retry unchanged request'
-                        : 'Confirm request for review'}
+                        ? 'إعادة الطلب نفسه'
+                        : 'تأكيد الطلب للمراجعة'}
                   </button>
                   {!flow.uncertain && (
                     <button
@@ -635,8 +635,8 @@ function useWithdrawalFlow(api: ApiClient, wallet: WalletSummary | null, reload:
     memory.retryAt = 0
     setNotice(
       item.status === 'pending'
-        ? 'Withdrawal request pending review. No money transfer is confirmed. Check recent requests for its current status.'
-        : 'Withdrawal request recorded. Refreshing its current review status; this does not confirm an automatic money transfer.',
+        ? 'طلب السحب قيد المراجعة. لم يُؤكَّد أي تحويل مالي. تحقق من الطلبات الأخيرة لحالته الحالية.'
+        : 'سُجّل طلب السحب. جارٍ تحديث حالة مراجعته؛ هذا لا يؤكّد تحويلاً مالياً تلقائياً.',
     )
     setIntent(null)
     intentRef.current = null
@@ -657,7 +657,7 @@ function useWithdrawalFlow(api: ApiClient, wallet: WalletSummary | null, reload:
     setError('')
     if (!wallet || isRestricted(wallet)) {
       setError(
-        'A pending request or insufficient funds may prevent a new request. Wait for the wallet to update.',
+        'قد يمنع طلبٌ معلّق أو رصيدٌ غير كافٍ طلباً جديداً. انتظر تحديث المحفظة.',
       )
       return
     }
@@ -671,7 +671,7 @@ function useWithdrawalFlow(api: ApiClient, wallet: WalletSummary | null, reload:
       value > wallet.available
     ) {
       setError(
-        `Enter an amount with at most two decimal places, at least ${money(Math.max(1, wallet.min_withdrawal), wallet.currency)} and no more than the available balance or 100,000.`,
+        `أدخل مبلغاً بخانتين عشريتين كحد أقصى، لا يقل عن ${money(Math.max(1, wallet.min_withdrawal), wallet.currency)} ولا يزيد عن الرصيد المتاح أو 100,000.`,
       )
       return
     }
@@ -683,7 +683,7 @@ function useWithdrawalFlow(api: ApiClient, wallet: WalletSummary | null, reload:
       holder.trim().length > 255
     ) {
       setError(
-        'Select a supported method and provide a payout account. Account and optional holder name must be at most 255 characters.',
+        'اختر طريقة مدعومة وأدخل حساب الدفع. يجب ألّا يتجاوز الحساب واسم صاحبه الاختياري 255 حرفاً.',
       )
       return
     }
@@ -711,7 +711,7 @@ function useWithdrawalFlow(api: ApiClient, wallet: WalletSummary | null, reload:
   function canLeave() {
     if (lock.current || uncertainRef.current) {
       setError(
-        'Keep this page open until the previous withdrawal outcome is reconciled. Do not create another request.',
+        'أبقِ هذه الصفحة مفتوحة حتى تتّضح نتيجة السحب السابق. لا تنشئ طلباً آخر.',
       )
       setOpen(true)
       return false
@@ -746,8 +746,8 @@ function useWithdrawalFlow(api: ApiClient, wallet: WalletSummary | null, reload:
     setReconciled(true)
     setError(
       fresh.currency !== original.currency
-        ? 'Wallet currency has changed. Do not retry; finance support must reconcile the previous request.'
-        : 'The previous outcome is still unknown. A recent-history refresh does not prove it failed. Retry only the unchanged request with its original key; do not start a new request. Contact finance support if unresolved.',
+        ? 'تغيّرت عملة المحفظة. لا تعِد المحاولة؛ يجب على الدعم المالي تسوية الطلب السابق.'
+        : 'نتيجة الطلب السابق ما زالت مجهولة. تحديث السجل الأخير لا يثبت فشلها. أعد فقط الطلب نفسه بمفتاحه الأصلي؛ لا تبدأ طلباً جديداً. تواصل مع الدعم المالي إن لم تُحل.',
     )
     reload()
   }
@@ -764,7 +764,7 @@ function useWithdrawalFlow(api: ApiClient, wallet: WalletSummary | null, reload:
         if (failure instanceof ApiError && failure.retryAfter)
           setRetryAt(Date.now() + failure.retryAfter * 1000)
         setError(
-          `${apiErrorMessage(failure)} The previous outcome remains unknown. Do not create another request.`,
+          `${apiErrorMessage(failure)} نتيجة الطلب السابق ما زالت مجهولة. لا تنشئ طلباً آخر.`,
         )
       }
     } finally {
@@ -814,7 +814,7 @@ function useWithdrawalFlow(api: ApiClient, wallet: WalletSummary | null, reload:
         setReconciled(false)
         if (failure instanceof ApiError && failure.retryAfter > 0) {
           setError(
-            `${apiErrorMessage(failure)} Wait before reconciling. The previous outcome is unknown; do not create another request.`,
+            `${apiErrorMessage(failure)} انتظر قبل التسوية. نتيجة الطلب السابق مجهولة؛ لا تنشئ طلباً آخر.`,
           )
           return
         }
@@ -827,7 +827,7 @@ function useWithdrawalFlow(api: ApiClient, wallet: WalletSummary | null, reload:
               setRetryAt(memory.retryAt)
             }
             setError(
-              `${apiErrorMessage(failure)} Unable to reconcile recent requests. Keep this page open and do not create another request.`,
+              `${apiErrorMessage(failure)} تعذّرت تسوية الطلبات الأخيرة. أبقِ هذه الصفحة مفتوحة ولا تنشئ طلباً آخر.`,
             )
           }
         }

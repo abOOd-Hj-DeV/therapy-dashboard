@@ -40,7 +40,7 @@ describe('final Help responsive contracts (not browser visual acceptance)', () =
     expect(Array.from(grid.children).map((section) => section.className)).toEqual([
       'help-live', 'help-links',
     ])
-    expect(grid.querySelector('.help-live')?.lastElementChild).toHaveTextContent('App version v1.0.0')
+    expect(grid.querySelector('.help-live')?.lastElementChild).toHaveTextContent('إصدار التطبيق v1.0.0')
     expect(css).toMatch(/@media \(max-width: 1100px\)\s*\{\s*\.profile-help \.profile-help-grid\s*\{\s*grid-template-columns: minmax\(0, 1fr\);\s*gap: 28px;\s*padding-top: 38px;/)
     expect(css).toMatch(/\.profile-help \.help-links\s*\{\s*padding-bottom: 0;/)
     expect(css).not.toMatch(/(?:^|[;\s])(?:max-|min-)?height:\s*\d+px;[\s\S]*?overflow:\s*hidden/)
@@ -72,13 +72,13 @@ describe('final Help responsive contracts (not browser visual acceptance)', () =
     const { container } = render(<Profile page="help" navigate={vi.fn()} />)
     const help = container.querySelector('.help-live')! as HTMLElement
     fireEvent.click(within(help).getByRole('button'))
-    expect(screen.getByRole('status')).toHaveTextContent('Demo only: live chat and phone support are not connected.')
+    expect(screen.getByRole('status')).toHaveTextContent('عرض تجريبي فقط: الدردشة المباشرة والدعم الهاتفي غير متصلين.')
     expect(fetch).not.toHaveBeenCalled()
   })
 
   it.each([
-    ['FAQs', 'Frequently Asked Questions'],
-    ['Email us', 'Contact support'],
+    ['FAQs', 'الأسئلة الشائعة'],
+    ['راسلنا عبر البريد', 'التواصل مع الدعم'],
   ])('keeps %s keyboard reachable and opens its existing accessible dialog', async (label, title) => {
     const user = userEvent.setup()
     render(<Profile page="help" navigate={vi.fn()} />)
@@ -89,12 +89,12 @@ describe('final Help responsive contracts (not browser visual acceptance)', () =
     const dialog = screen.getByRole('dialog', { name: title })
     expect(dialog).toBeInTheDocument()
     if (label === 'FAQs') {
-      expect(within(dialog).getByText('How do I add a new client?').closest('details')).toHaveAttribute('open')
+      expect(within(dialog).getByText('كيف أضيف عميلاً جديداً؟').closest('details')).toHaveAttribute('open')
     } else {
       expect(within(dialog).getByLabelText('Subject')).toBeEnabled()
       expect(within(dialog).getByLabelText('Message')).toBeEnabled()
     }
-    within(dialog).getByRole('button', { name: 'Close dialog' }).focus()
+    within(dialog).getByRole('button', { name: 'إغلاق الحوار' }).focus()
     await user.keyboard('{Enter}')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(button).toHaveFocus()
@@ -104,7 +104,7 @@ describe('final Help responsive contracts (not browser visual acceptance)', () =
     window.history.replaceState({}, '', `/profile/help?state=${state}`)
     const { container } = render(<Profile page="help" navigate={vi.fn()} />)
     expect(screen.getByRole('dialog')).toBeInTheDocument()
-    expect(container.querySelector('.profile-help .help-live')).toHaveTextContent('Need help so fast?')
-    expect(container.querySelector('.profile-help .help-links')).toHaveTextContent('Support & Help')
+    expect(container.querySelector('.profile-help .help-live')).toHaveTextContent('تحتاج مساعدة سريعة؟')
+    expect(container.querySelector('.profile-help .help-links')).toHaveTextContent('الدعم والمساعدة')
   })
 })

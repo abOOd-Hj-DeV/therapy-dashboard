@@ -17,7 +17,7 @@ function mount(state: string) {
 describe('bounded demo wallet closure', () => {
   it('offers branded options, keyboard selection, native form compatibility and demo-only preview', () => {
     const { container } = mount('withdraw')
-    const combo = screen.getByRole('combobox', { name: 'Payment method' })
+    const combo = screen.getByRole('combobox', { name: 'طريقة الدفع' })
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
     fireEvent.keyDown(combo, { key: 'ArrowDown' })
     expect(combo).toHaveAttribute('aria-expanded', 'true')
@@ -26,25 +26,25 @@ describe('bounded demo wallet closure', () => {
     options.forEach((option) => expect(option.querySelector('img')).not.toBeNull())
     fireEvent.keyDown(combo, { key: 'End' })
     fireEvent.keyDown(combo, { key: 'Enter' })
-    expect(screen.getByLabelText('Shamcash Code')).toBeRequired()
-    expect(screen.getByLabelText('Select payment method')).toHaveValue('shamcash')
+    expect(screen.getByLabelText('رمز شام كاش')).toBeRequired()
+    expect(screen.getByLabelText('اختر طريقة الدفع')).toHaveValue('shamcash')
     const form = container.querySelector('form')!
     expect(new FormData(form).get('method')).toBe('shamcash')
-    fireEvent.change(screen.getByLabelText('Withdrawal amount'), { target: { value: '499' } })
+    fireEvent.change(screen.getByLabelText('مبلغ السحب'), { target: { value: '499' } })
     fireEvent.submit(form)
-    expect(screen.getByRole('alert')).toHaveTextContent('between 500 and 12,500')
-    fireEvent.change(screen.getByLabelText('Withdrawal amount'), { target: { value: '500' } })
+    expect(screen.getByRole('alert')).toHaveTextContent('بين 500 و12,500')
+    fireEvent.change(screen.getByLabelText('مبلغ السحب'), { target: { value: '500' } })
     fireEvent.submit(form)
-    expect(screen.getByRole('alert')).toHaveTextContent('Complete the payment details')
-    fireEvent.change(screen.getByLabelText('Shamcash Code'), { target: { value: 'demo-code' } })
+    expect(screen.getByRole('alert')).toHaveTextContent('أكمل بيانات الدفع')
+    fireEvent.change(screen.getByLabelText('رمز شام كاش'), { target: { value: 'demo-code' } })
     fireEvent.submit(form)
     expect(screen.getByRole('status')).toHaveTextContent(
-      'No withdrawal request was sent and no money was moved',
+      'لم يُرسل طلب سحب ولم يُنقل مال',
     )
   })
   it('dismisses only the popup with Escape, Tab or outside pointer; switches method validation', () => {
     mount('withdraw')
-    const combo = screen.getByRole('combobox', { name: 'Payment method' })
+    const combo = screen.getByRole('combobox', { name: 'طريقة الدفع' })
     fireEvent.click(combo)
     fireEvent.keyDown(combo, { key: 'Escape' })
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
@@ -56,15 +56,15 @@ describe('bounded demo wallet closure', () => {
     fireEvent.pointerDown(screen.getByText('Available Balance: 12,500 SP'))
     expect(combo).toHaveAttribute('aria-expanded', 'false')
     fireEvent.click(combo)
-    fireEvent.click(screen.getByRole('option', { name: 'Al-Haram transfer' }))
-    expect(screen.getByLabelText('Full name')).toBeRequired()
-    expect(screen.getByLabelText('Phone number')).toBeRequired()
-    expect(screen.queryByLabelText('Shamcash Code')).not.toBeInTheDocument()
-    fireEvent.change(screen.getByLabelText('Select payment method'), {
+    fireEvent.click(screen.getByRole('option', { name: 'تحويل الحرم' }))
+    expect(screen.getByLabelText('الاسم الكامل')).toBeRequired()
+    expect(screen.getByLabelText('رقم الجوال')).toBeRequired()
+    expect(screen.queryByLabelText('رمز شام كاش')).not.toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('اختر طريقة الدفع'), {
       target: { value: 'shamcash' },
     })
-    expect(screen.queryByLabelText('Full name')).not.toBeInTheDocument()
-    expect(screen.getByLabelText('Shamcash Code')).toBeRequired()
+    expect(screen.queryByLabelText('الاسم الكامل')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('رمز شام كاش')).toBeRequired()
   })
   it('keeps desktop chart order but supplies chronological abbreviated tablet bars and bounded tablet layouts', () => {
     const { container } = mount('overview')
@@ -94,7 +94,7 @@ describe('bounded demo wallet closure', () => {
     const { container } = mount('earnings')
     const rows = container.querySelectorAll('.wallet-transactions article')
     expect(rows).toHaveLength(5)
-    expect(rows[3]).toHaveTextContent('Omar Youssef')
+    expect(rows[3]).toHaveTextContent('عمر يوسف')
     expect(rows[3]).toHaveTextContent('+200 SP')
     expect(rows[4]).toHaveTextContent('+400 SP')
     const portraits = Array.from(rows, (row) => row.querySelector('img')!.getAttribute('src'))
@@ -144,9 +144,9 @@ describe('bounded demo wallet closure', () => {
     expect(container.querySelector('.wallet-tablet-hero-heading')).toHaveTextContent(
       'All time Overview',
     )
-    expect(container.querySelector('.phone-wallet-advisory')).toHaveTextContent('same terms apply')
+    expect(container.querySelector('.phone-wallet-advisory')).toHaveTextContent('تطبّق الشروط نفسها')
     fireEvent.click(within(tabs).getByRole('button', { name: 'Overview' }))
-    expect(container.querySelector('.phone-wallet-advisory')).toHaveTextContent('Min 500 Riyals.')
+    expect(container.querySelector('.phone-wallet-advisory')).toHaveTextContent('الحد الأدنى 500 ريال.')
     fireEvent.click(within(tabs).getByRole('button', { name: 'Withdrawals' }))
     expect(container.querySelectorAll('.wallet-withdrawal-row')).toHaveLength(6)
     fireEvent.click(within(tabs).getByRole('button', { name: 'Earnings' }))
@@ -177,6 +177,6 @@ describe('bounded demo wallet closure', () => {
     expect(css).toContain('.wallet-demo .wallet-desktop-only { display: none; }')
     expect(css).toContain('.wallet-demo .wallet-phone-withdraw { width: 100%; }')
     fireEvent.click(container.querySelector('.wallet-phone-withdraw')!)
-    expect(screen.getByRole('dialog')).toHaveTextContent('Withdrawal Request')
+    expect(screen.getByRole('dialog')).toHaveTextContent('طلب سحب')
   })
 })

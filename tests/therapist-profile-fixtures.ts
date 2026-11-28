@@ -15,6 +15,7 @@ export const validProfile = {
 export function profileReview(overrides: Partial<TherapistProfileReview> = {}): TherapistProfileReview {
   return {
     approval_status: 'approved',
+    lifecycle_state: 'approved',
     application_ref: 'TEST-1',
     account: { whatsapp_number: '+12025550107', email: validProfile.email },
     published: validProfile,
