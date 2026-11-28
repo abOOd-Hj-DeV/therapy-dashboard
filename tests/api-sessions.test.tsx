@@ -307,15 +307,15 @@ describe('live therapist sessions and clinical records', () => {
     const state = await harness({ pagination: true })
     const navigate = vi.fn()
     render(<Sessions api={state.api} navigate={navigate} />)
-    expect(await screen.findByRole('heading', { name: 'All Sessions' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'كل الجلسات' })).toBeInTheDocument()
     expect(
       state.calls.some((call) => call.path === '/therapists/me/sessions?per_page=50&page=2'),
     ).toBe(true)
     expect(screen.getAllByText('Actual client')).toHaveLength(2)
     expect(screen.getByRole('button', { name: 'Schedule New' })).toBeDisabled()
-    expect(screen.queryByText('Ahmed Mohamed')).not.toBeInTheDocument()
+    expect(screen.queryByText('أحمد محمد')).not.toBeInTheDocument()
     await userEvent.click(
-      screen.getAllByRole('button', { name: 'Open session for Actual client' })[0],
+      screen.getAllByRole('button', { name: 'فتح جلسة Actual client' })[0],
     )
     expect(navigate).toHaveBeenCalledWith(`/sessions/upcoming?id=${sessionId}`)
     expectNoPatientActions(state.calls)
@@ -327,9 +327,9 @@ describe('live therapist sessions and clinical records', () => {
     expect(await screen.findByRole('heading', { name: 'Real therapist' })).toBeInTheDocument()
     expect(screen.getByText('You have 4 pending or confirmed sessions today.')).toBeInTheDocument()
     expect(
-      screen.getByRole('heading', { name: 'Completed sessions' }).parentElement,
+      screen.getByRole('heading', { name: 'جلسات مكتملة' }).parentElement,
     ).toHaveTextContent('7')
-    expect(screen.queryByText(/Attendance Rate/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/نسبة الحضور: 95%/)).not.toBeInTheDocument()
     expect(screen.queryByText(/raw rows must/)).not.toBeInTheDocument()
     expectNoPatientActions(state.calls)
   })
@@ -362,7 +362,7 @@ describe('live therapist sessions and clinical records', () => {
     const state = await harness()
     render(<SessionDetails api={state.api} navigate={vi.fn()} />)
     await screen.findByRole('heading', { name: 'Actual client' })
-    await userEvent.click(screen.getByRole('tab', { name: 'Session record' }))
+    await userEvent.click(screen.getByRole('tab', { name: 'سجل الجلسة' }))
     await userEvent.type(screen.getByLabelText('New Note'), 'Session-bound private note')
     await waitFor(() => expect(screen.getByRole('button', { name: 'Add Note' })).toBeEnabled())
     await userEvent.click(screen.getByRole('button', { name: 'Add Note' }))
@@ -377,7 +377,7 @@ describe('live therapist sessions and clinical records', () => {
   it('keeps former-client current assessments/homework private and disables new clinical writes', async () => {
     const state = await harness({ past: true })
     render(<SessionDetails api={state.api} navigate={vi.fn()} />)
-    expect(await screen.findByText(/This is a former client/)).toBeInTheDocument()
+    expect(await screen.findByText(/هذا عميل سابق\. لا تُحمَّل التقييمات والواجبات الحالية؛ تبقى سجلات الجلسات السابقة متاحة\. الإضافات الإكلينيكية الجديدة تتطلب إسناداً حالياً\./)).toBeInTheDocument()
     expect(
       state.calls.some(
         (call) =>
@@ -395,7 +395,7 @@ describe('live therapist sessions and clinical records', () => {
       session: { status: 'completed', summary: 'Historical shared report' },
     })
     render(<SessionDetails api={state.api} navigate={vi.fn()} />)
-    await screen.findByText('Clinical record unavailable')
+    await screen.findByText('السجل الإكلينيكي غير متاح')
     expect(screen.getByText('Historical shared report', { selector: 'p' })).toBeVisible()
     expect(screen.queryByRole('button', { name: 'Edit recommendation' })).not.toBeInTheDocument()
     expect(state.calls.some((call) => call.path.endsWith('/recommendation'))).toBe(false)
@@ -413,7 +413,7 @@ describe('live therapist sessions and clinical records', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Complete session' })).toBeDisabled(),
     )
-    expect(screen.getByText(/Therapists cannot mark attendance/)).toBeInTheDocument()
+    expect(screen.getByText(/بانتظار تأكيد الحضور من المريض\/الطاقم\. لا يستطيع المعالج تسجيل الحضور\./)).toBeInTheDocument()
     expectNoPatientActions(state.calls)
   })
 
@@ -429,8 +429,8 @@ describe('live therapist sessions and clinical records', () => {
     )
     await userEvent.click(screen.getByRole('button', { name: 'Cancel with forfeiture' }))
     const dialog = screen.getByRole('dialog')
-    expect(dialog).toHaveTextContent('ALSO CANCELS')
-    expect(dialog).toHaveTextContent('does not keep the appointment')
+    expect(dialog).toHaveTextContent('يُلغي الجلسة أيضاً')
+    expect(dialog).toHaveTextContent('لا يبقي الموعد')
     expect(state.writes()).toHaveLength(0)
     await userEvent.click(within(dialog).getByRole('button', { name: 'Confirm change' }))
     await waitFor(() =>
@@ -473,10 +473,10 @@ describe('live therapist sessions and clinical records', () => {
       'A patient-visible clinical report',
     )
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Submit report and complete' })).toBeEnabled(),
+      expect(screen.getByRole('button', { name: 'إرسال التقرير وإنهاء الجلسة' })).toBeEnabled(),
     )
-    await userEvent.click(screen.getByRole('button', { name: 'Submit report and complete' }))
-    expect(screen.getByRole('dialog')).toHaveTextContent('COMPLETE the session')
+    await userEvent.click(screen.getByRole('button', { name: 'إرسال التقرير وإنهاء الجلسة' }))
+    expect(screen.getByRole('dialog')).toHaveTextContent('وإنهاء الجلسة')
     await userEvent.click(
       within(screen.getByRole('dialog')).getByRole('button', { name: 'Confirm change' }),
     )
@@ -526,12 +526,12 @@ describe('live therapist sessions and clinical records', () => {
     const dialog = screen.getByRole('dialog')
     expect(await within(dialog).findByText('<script>not executable</script>')).toBeInTheDocument()
     expect(dialog.querySelector('script')).toBeNull()
-    await userEvent.click(within(dialog).getByRole('tab', { name: 'Create New' }))
+    await userEvent.click(within(dialog).getByRole('tab', { name: 'إنشاء جديد' }))
     await userEvent.type(within(dialog).getByLabelText('Homework title'), 'Real text homework')
     await userEvent.type(within(dialog).getByLabelText('Content body'), 'Read this text')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Create and assign content' }))
     await waitFor(() =>
-      expect(within(dialog).getByRole('alert')).toHaveTextContent('The server could not complete'),
+      expect(within(dialog).getByRole('alert')).toHaveTextContent('تعذّر على الخادم إكمال الطلب'),
     )
     expect(screen.queryByText(/SECRET raw exception/)).not.toBeInTheDocument()
     await waitFor(() =>
@@ -565,7 +565,7 @@ describe('live therapist sessions and clinical records', () => {
           : undefined,
     })
     render(<SessionDetails api={state.api} navigate={vi.fn()} />)
-    await userEvent.click(await screen.findByRole('tab', { name: 'Session record' }))
+    await userEvent.click(await screen.findByRole('tab', { name: 'سجل الجلسة' }))
     await userEvent.type(await screen.findByLabelText('New Note'), 'Keep this failed draft')
     await waitFor(() => expect(screen.getByRole('button', { name: 'Add Note' })).toBeEnabled())
     const button = screen.getByRole('button', { name: 'Add Note' })
@@ -577,7 +577,7 @@ describe('live therapist sessions and clinical records', () => {
         json({ message: 'raw-secret', errors: { body: ['sensitive server field'] } }, 422),
       ),
     )
-    await screen.findByText('Please check the submitted information. Check: body.')
+    await screen.findByText('تحقق من المعلومات المُدخلة. Check: body.')
     expect(screen.getByLabelText('New Note')).toHaveValue('Keep this failed draft')
     expect(
       screen.queryByText(/raw-secret|sensitive server field|Private therapist note added/),
@@ -592,7 +592,7 @@ describe('live therapist sessions and clinical records', () => {
           : undefined,
     })
     render(<SessionDetails api={state.api} navigate={vi.fn()} />)
-    await userEvent.click(await screen.findByRole('tab', { name: 'Session record' }))
+    await userEvent.click(await screen.findByRole('tab', { name: 'سجل الجلسة' }))
     await userEvent.type(await screen.findByLabelText('New Note'), 'Sensitive unsaved draft')
     await waitFor(() => expect(screen.getByRole('button', { name: 'Add Note' })).toBeEnabled())
     await userEvent.click(screen.getByRole('button', { name: 'Add Note' }))
@@ -601,7 +601,7 @@ describe('live therapist sessions and clinical records', () => {
     expect(screen.queryByLabelText('New Note')).not.toBeInTheDocument()
     expect(screen.queryByText('Actual client')).not.toBeInTheDocument()
     expect(pending.signal?.aborted).toBe(true)
-    expect(screen.getByRole('alert')).toHaveTextContent('Sign in')
+    expect(screen.getByRole('alert')).toHaveTextContent('سجّل الدخول')
   })
 
   it('shows sanitized permission errors rather than a demo fallback', async () => {
@@ -612,8 +612,8 @@ describe('live therapist sessions and clinical records', () => {
           : undefined,
     })
     render(<Sessions api={state.api} navigate={vi.fn()} />)
-    expect(await screen.findByRole('alert')).toHaveTextContent('This action is not permitted')
-    expect(screen.queryByText('Ahmed Mohamed')).not.toBeInTheDocument()
+    expect(await screen.findByRole('alert')).toHaveTextContent('هذا الإجراء غير مسموح لحسابك')
+    expect(screen.queryByText('أحمد محمد')).not.toBeInTheDocument()
     expect(screen.queryByText('private server exception')).not.toBeInTheDocument()
     expectNoPatientActions(state.calls)
   })
@@ -641,7 +641,7 @@ describe('live therapist sessions and clinical records', () => {
       expect(screen.getByRole('button', { name: 'Cancel session' })).toBeEnabled(),
     )
     await userEvent.click(screen.getByRole('button', { name: 'Cancel session' }))
-    expect(screen.getByRole('dialog')).toHaveTextContent('record is retained')
+    expect(screen.getByRole('dialog')).toHaveTextContent('يبقى السجل محفوظاً')
     await userEvent.click(
       within(screen.getByRole('dialog')).getByRole('button', { name: 'Confirm change' }),
     )
@@ -662,7 +662,7 @@ describe('live therapist sessions and clinical records', () => {
       expect(screen.getByRole('button', { name: 'Complete session' })).toBeEnabled(),
     )
     await userEvent.click(screen.getByRole('button', { name: 'Complete session' }))
-    expect(screen.getByRole('dialog')).toHaveTextContent('patient-visible')
+    expect(screen.getByRole('dialog')).toHaveTextContent('التقرير مرئي للمريض')
     await userEvent.click(
       within(screen.getByRole('dialog')).getByRole('button', { name: 'Confirm change' }),
     )
@@ -683,12 +683,12 @@ describe('live therapist sessions and clinical records', () => {
     )
     await userEvent.click(screen.getByRole('button', { name: 'Add New Homework' }))
     const add = await within(screen.getByRole('dialog')).findByRole('button', {
-      name: 'Add Real library exercise',
+      name: 'إضافة Real library exercise',
     })
     await waitFor(() => expect(add).toBeEnabled())
     await userEvent.click(add)
     await within(screen.getByRole('dialog')).findByRole('button', {
-      name: 'Added Real library exercise',
+      name: 'أُضيف Real library exercise',
     })
     expect(state.writes()[0]).toMatchObject({
       path: `/therapists/content/${contentId}/assign`,
@@ -715,14 +715,14 @@ describe('live therapist sessions and clinical records', () => {
   it('changes only module visibility; completion and submitted homework stay patient-owned', async () => {
     const state = await harness()
     render(<SessionDetails api={state.api} navigate={vi.fn()} />)
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Hide module' })).toBeEnabled())
-    await userEvent.click(screen.getByRole('button', { name: 'Hide module' }))
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Unhide module' })).toBeEnabled())
+    await waitFor(() => expect(screen.getByRole('button', { name: 'إخفاء الوحدة' })).toBeEnabled())
+    await userEvent.click(screen.getByRole('button', { name: 'إخفاء الوحدة' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'إظهار الوحدة' })).toBeEnabled())
     expect(state.writes()[0]).toMatchObject({
       path: `/therapists/clients/${patientId}/modules/${moduleId}/hide`,
       method: 'POST',
     })
-    await userEvent.click(screen.getByRole('button', { name: 'Unhide module' }))
+    await userEvent.click(screen.getByRole('button', { name: 'إظهار الوحدة' }))
     await waitFor(() =>
       expect(state.writes()[1]).toMatchObject({
         path: `/therapists/clients/${patientId}/modules/${moduleId}/hide`,
@@ -741,7 +741,7 @@ describe('live therapist sessions and clinical records', () => {
           : undefined,
     })
     render(<SessionDetails api={state.api} navigate={vi.fn()} />)
-    await userEvent.click(await screen.findByRole('tab', { name: 'Session record' }))
+    await userEvent.click(await screen.findByRole('tab', { name: 'سجل الجلسة' }))
     await userEvent.type(await screen.findByLabelText('New Note'), 'Retain this uncertain note')
     await waitFor(() => expect(screen.getByRole('button', { name: 'Add Note' })).toBeEnabled())
     await userEvent.click(screen.getByRole('button', { name: 'Add Note' }))
@@ -767,7 +767,7 @@ describe('live therapist sessions and clinical records', () => {
     render(<SessionDetails api={state.api} navigate={vi.fn()} />)
     expect(screen.getByRole('alert')).toHaveTextContent('valid UUID')
     expect(state.calls).toHaveLength(0)
-    expect(screen.queryByText('Ahmed Mohamed')).not.toBeInTheDocument()
+    expect(screen.queryByText('أحمد محمد')).not.toBeInTheDocument()
   })
 })
 
@@ -791,7 +791,7 @@ describe('canonical timing and safe meeting controls', () => {
       local: { date: '2026-01-02', time: '00:15:00', timezone: 'Asia/Riyadh' },
     }
     expect(careDate(value, 'America/Los_Angeles')).toBe('2 Jan 2026, 00:15 · Asia/Riyadh')
-    expect(careDate({ ...value, local: null, session_date: null }, 'America/Los_Angeles')).toBe('Schedule unavailable')
+    expect(careDate({ ...value, local: null, session_date: null }, 'America/Los_Angeles')).toBe('الموعد غير متاح')
   })
   it('accepts only confirmed HTTPS links with the correct medium host and no URL credentials', () => {
     expect(careMeetingUrl(canonical)).toBe('https://meet.google.com/abc-defg-hij')

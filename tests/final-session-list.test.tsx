@@ -41,12 +41,12 @@ describe('final session list source contracts (not UI acceptance)', () => {
     render(<Sessions navigate={vi.fn()} />)
     fireEvent.click(screen.getByRole('tab', { name: 'Previous (6)' }))
     const rows = within(screen.getByRole('table')).getAllByRole('row').slice(1)
-    expect(rows[0]).toHaveTextContent('Sara Muhammad')
+    expect(rows[0]).toHaveTextContent('سارة محمد')
     expect(rows[0].querySelector('.avatar img')).toHaveAttribute(
       'src',
       '/assets/dashboard-imgContainer3.png',
     )
-    expect(rows[2]).toHaveTextContent('Jad Matcha')
+    expect(rows[2]).toHaveTextContent('جاد ماتشا')
     expect(rows[2].querySelector('.avatar')).toHaveClass('jad')
     expect(rows[2].querySelector('.avatar img')).toHaveAttribute(
       'src',
@@ -59,16 +59,16 @@ describe('final session list source contracts (not UI acceptance)', () => {
     const rows = within(screen.getByRole('table')).getAllByRole('row').slice(1)
     expect(rows).toHaveLength(16)
     expect(rows.slice(0, 11).map((row) => row.querySelector('small')?.textContent)).toEqual([
-      ...Array<string>(7).fill('Private Session'),
-      'Follow-up Session',
-      'Initial Consultation',
-      'Group Session',
-      'Group Session',
+      ...Array<string>(7).fill('جلسة خاصة'),
+      'جلسة متابعة',
+      'استشارة أولية',
+      'جلسة جماعية',
+      'جلسة جماعية',
     ])
-    expect(within(rows[9]).getByText('Noor Al-Khatib')).toBeInTheDocument()
-    expect(within(rows[10]).getByText('Noor Al-Khatib')).toBeInTheDocument()
+    expect(within(rows[9]).getByText('نور الخطيب')).toBeInTheDocument()
+    expect(within(rows[10]).getByText('نور الخطيب')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('tab', { name: 'Upcoming (8)' }))
-    expect(screen.getAllByText('Group Session')).toHaveLength(2)
+    expect(screen.getAllByText('جلسة جماعية')).toHaveLength(2)
     expect(screen.getByRole('tab', { name: 'Upcoming (8)' })).toHaveAttribute(
       'aria-selected',
       'true',
@@ -77,7 +77,7 @@ describe('final session list source contracts (not UI acceptance)', () => {
 
   it('repairs panel bounds without changing the existing desktop/tablet row pitch', () => {
     const { container } = render(<Sessions navigate={vi.fn()} />)
-    expect(screen.getByRole('region', { name: 'All Sessions' })).toHaveClass('final-session-list')
+    expect(screen.getByRole('region', { name: 'كل الجلسات' })).toHaveClass('final-session-list')
     expect(container.querySelector('.final-session-list .sessions-list-scroll table')).toBeTruthy()
     expect(styles).toMatch(/\.demo-all-sessions\.final-session-list\s*\{[^}]*padding:\s*16px;/)
     expect(styles).toMatch(
@@ -97,7 +97,7 @@ describe('final session list source contracts (not UI acceptance)', () => {
       /\.final-session-list \.all-sessions-table \.patient-cell\s*\{[^}]*gap:\s*4px;[^}]*padding-block:\s*0;/,
     )
     expect(phone).toMatch(/\.final-session-list \.patient-name\s*\{[^}]*overflow-wrap:\s*anywhere;/)
-    expect(screen.getByText('Fahad Al Ali')).toBeInTheDocument()
+    expect(screen.getByText('فهد العلي')).toBeInTheDocument()
     expect(screen.getByRole('table').querySelectorAll('tbody tr')).toHaveLength(16)
     // Only alternate decorative photos switch at 600px; no patient content may be hidden.
     const contentStyles = styles.replace(
@@ -110,7 +110,7 @@ describe('final session list source contracts (not UI acceptance)', () => {
   it('reuses the teal calendar only in compact navigation and leaves active semantics intact', () => {
     window.history.replaceState({}, '', '/sessions?state=collapsed')
     render(<Sessions navigate={vi.fn()} />)
-    expect(screen.getByRole('button', { name: 'Sessions' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('button', { name: 'الجلسات' })).toHaveAttribute('aria-current', 'page')
     const icon = 'preview-client-list-calendar.svg'
     expect(existsSync(`public/assets/${icon}`)).toBe(true)
     expect(readFileSync(`public/assets/${icon}`, 'utf8')).toContain('stroke="#1D919E"')

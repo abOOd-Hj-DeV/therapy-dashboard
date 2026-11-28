@@ -16,22 +16,22 @@ type ListedSession = Session & {
 }
 const extraSessions: Session[] = [
   {
-    name: 'Lina Haddad',
-    date: '21 Apr 2026',
+    name: 'لينا حداد',
+    date: '21 نيسان 2026',
     time: '10:30',
     status: 'ready',
     image: 'part2-07-imgContainer8.png',
   },
   {
-    name: 'Omar Nasser',
-    date: '22 Apr 2026',
+    name: 'عمر ناصر',
+    date: '22 نيسان 2026',
     time: '15:15',
     status: 'canceled',
     image: 'part2-07-imgContainer9.png',
   },
   {
-    name: 'Noor Al-Khatib',
-    date: '23 Apr 2026',
+    name: 'نور الخطيب',
+    date: '23 نيسان 2026',
     time: '12:00',
     status: 'unsure',
     image: 'part2-07-imgContainer10.png',
@@ -41,7 +41,7 @@ const initialSessions: ListedSession[] = [
   ...sessions,
   ...extraSessions,
   { ...extraSessions[2] },
-  ...sessions.slice(0, 5).map((item, index) => ({ ...item, date: `${24 + index} Apr 2026` })),
+  ...sessions.slice(0, 5).map((item, index) => ({ ...item, date: `${24 + index} نيسان 2026` })),
 ].map((item, index) => {
   const id = `session-${index}`
   const portrait = closurePortraitAssets.sessions.desktopTablet.find(
@@ -55,12 +55,12 @@ const initialSessions: ListedSession[] = [
     category: index < 2 ? 'Today' : index < 8 ? 'Previous' : 'Upcoming',
     type:
       index === 7
-        ? 'Follow-up Session'
+        ? 'جلسة متابعة'
         : index === 8
-          ? 'Initial Consultation'
+          ? 'استشارة أولية'
           : index === 9 || index === 10
-            ? 'Group Session'
-            : 'Private Session',
+            ? 'جلسة جماعية'
+            : 'جلسة خاصة',
   }
 })
 
@@ -99,7 +99,7 @@ export function ScheduleDialog({
     if (patient && date && time && duration) onSchedule({ name: patient, date, time, duration })
   }
   return (
-    <Modal title="Schedule a new session" className="part2-modal schedule-modal" onClose={onClose}>
+    <Modal title="جدولة جلسة جديدة" className="part2-modal schedule-modal" onClose={onClose}>
       <form className="part2-form" onSubmit={submit}>
         <label>
           Patient
@@ -109,8 +109,8 @@ export function ScheduleDialog({
             value={patient}
             onChange={(event) => setPatient(event.target.value)}
           >
-            <option value="">Example: Annual leave, travel...</option>
-            {[...new Set([...initialSessions.map((item) => item.name), 'Mark lory'])].map(
+            <option value="">مثال: إجازة سنوية، سفر...</option>
+            {[...new Set([...initialSessions.map((item) => item.name), 'مارك لوري'])].map(
               (name) => (
                 <option key={name}>{name}</option>
               ),
@@ -126,7 +126,7 @@ export function ScheduleDialog({
               value={time}
               onChange={(event) => setTime(event.target.value)}
             >
-              <option value="">date here</option>
+              <option value="">التاريخ هنا</option>
               {['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00'].map((value) => (
                 <option key={value}>{value}</option>
               ))}
@@ -151,8 +151,8 @@ export function ScheduleDialog({
             value={duration}
             onChange={(event) => setDuration(event.target.value)}
           >
-            <option value="">date here</option>
-            {['30 minutes', '45 minutes', '60 minutes', '90 minutes'].map((value) => (
+            <option value="">التاريخ هنا</option>
+            {['30 دقيقة', '45 دقيقة', '60 دقيقة', '90 دقيقة'].map((value) => (
               <option key={value}>{value}</option>
             ))}
           </select>
@@ -193,7 +193,7 @@ function DemoSessions({ navigate }: { navigate: (path: string) => void }) {
   return (
     <Workspace title="Sessions" active="Sessions" navigate={navigate} onSearch={setQuery}>
       <div className="sessions-toolbar demo-sessions-toolbar">
-        <div className="session-tabs" role="tablist" aria-label="Session filters">
+        <div className="session-tabs" role="tablist" aria-label="مرشّحات الجلسات">
           {['All', 'Previous', 'Upcoming', 'Today'].map((label) => (
             <button
               role="tab"
@@ -215,10 +215,10 @@ function DemoSessions({ navigate }: { navigate: (path: string) => void }) {
       </div>
       <section
         className="all-sessions demo-all-sessions final-session-list"
-        aria-label="All Sessions"
+        aria-label="كل الجلسات"
       >
         <header>
-          <h2>{tab === 'All' ? 'All Sessions' : `${tab} Sessions`}</h2>
+          <h2>{tab === 'All' ? 'كل الجلسات' : `${tab} Sessions`}</h2>
           <button
             onClick={() => {
               setTab('All')
@@ -238,7 +238,7 @@ function DemoSessions({ navigate }: { navigate: (path: string) => void }) {
           <table className="all-sessions-table">
             <thead>
               <tr>
-                <th>Patient Name</th>
+                <th>اسم المريض</th>
                 <th>Date</th>
                 <th>Status</th>
               </tr>
@@ -266,16 +266,16 @@ function DemoSessions({ navigate }: { navigate: (path: string) => void }) {
                   <td>
                     <button
                       className={`session-status ${item.status}`}
-                      aria-label={`Open session for ${item.name}`}
+                      aria-label={`فتح جلسة ${item.name}`}
                       onClick={() =>
                         navigate(`/sessions/upcoming?patient=${encodeURIComponent(item.name)}`)
                       }
                     >
                       {item.status === 'ready'
-                        ? 'Is ready'
+                        ? 'جاهز'
                         : item.status === 'canceled'
                           ? 'Canceled'
-                          : 'Not sure'}
+                          : 'غير مؤكد'}
                       <img
                         src={asset(
                           item.status === 'ready'
@@ -318,12 +318,12 @@ function DemoSessions({ navigate }: { navigate: (path: string) => void }) {
                 category: 'Upcoming',
                 status: 'ready',
                 image: 'part2-07-imgContainer6.png',
-                type: `Private Session · ${item.duration}`,
+                type: `جلسة خاصة · ${item.duration}`,
               },
             ])
             setSchedule(false)
             setTab('All')
-            setFeedback('Demo session scheduled locally. No calendar or patient API is connected.')
+            setFeedback('جُدولت جلسة تجريبية محلياً. لا يوجد تقويم أو API مرضى متصل.')
           }}
         />
       )}

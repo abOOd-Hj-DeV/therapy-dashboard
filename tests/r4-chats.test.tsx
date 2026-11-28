@@ -52,9 +52,9 @@ describe('r4 chats icon parity', () => {
     window.history.replaceState({}, '', '/chats?state=thread')
     setViewport(370)
     const { container } = render(<Chats navigate={() => {}} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Back to conversations' }))
+    fireEvent.click(screen.getByRole('button', { name: 'عودة إلى المحادثات' }))
     expectAssetsExist(iconSources(container))
-    fireEvent.click(screen.getByRole('button', { name: /Ahmed Mohamed/ }))
+    fireEvent.click(screen.getByRole('button', { name: /أحمد محمد/ }))
     expectAssetsExist(iconSources(container))
   })
 
@@ -92,7 +92,7 @@ describe('r4 chats normal-zoom fit', () => {
     const history = document.querySelector('.message-history') as HTMLElement
     expect(history.scrollTop).toBe(550)
     act(() => {
-      fireEvent.click(screen.getByRole('button', { name: /Jack watson/ }))
+      fireEvent.click(screen.getByRole('button', { name: /جاك واطسون/ }))
     })
     expect((document.querySelector('.message-history') as HTMLElement).scrollTop).toBe(550)
     expect(scrollHeight).toHaveBeenCalled()

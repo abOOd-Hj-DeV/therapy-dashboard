@@ -132,7 +132,7 @@ describe('live routing boundaries', () => {
     expect(fetch.mock.calls.some(([url]) => String(url).includes('/me/sessions'))).toBe(false)
     review = profileReview({ lifecycle_state: 'approved' })
     fireEvent(window, new Event('focus'))
-    expect(await screen.findByRole('heading', { name: 'All Sessions' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'كل الجلسات' })).toBeInTheDocument()
   })
 
   it('releases the native profile dialog during an approval retry without losing edits', async () => {
@@ -180,9 +180,9 @@ describe('live routing boundaries', () => {
       expect(screen.getByText(validProfile.job_title)).toBeInTheDocument()
       expect(screen.getByText(validProfile.email)).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'تعديل الطلب' })).toBeInTheDocument()
-      expect(fetch.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual([
+      await waitFor(() => expect(fetch.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual([
         '/api/v1/therapists/me/profile', '/api/v1/therapists/me/documents', '/api/v1/meta/therapist-options',
-      ])
+      ]))
       expect(screen.queryByRole('link', { name: 'المستندات المطلوبة' })).not.toBeInTheDocument()
       expect(screen.queryByRole('button', { name: 'التحقق من حالة المراجعة' })).not.toBeInTheDocument()
     },
@@ -208,10 +208,10 @@ describe('live routing boundaries', () => {
     vi.stubGlobal('fetch', fetch)
     render(<App />)
     expect(await screen.findByRole('alert')).toHaveTextContent('تعذّر التحقق من حالة الموافقة')
-    expect(screen.queryByLabelText('WhatsApp number')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('رقم واتساب')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'تسجيل الخروج' }))
-    expect(await screen.findByLabelText('WhatsApp number')).toBeInTheDocument()
+    expect(await screen.findByLabelText('رقم واتساب')).toBeInTheDocument()
     expect(api.getUser()).toBeNull()
     expect(fetch).toHaveBeenCalledWith(expect.stringMatching(/\/auth\/logout$/), expect.objectContaining({ method: 'POST' }))
   })
@@ -228,14 +228,14 @@ describe('live routing boundaries', () => {
     ))
     render(<App />)
     fireEvent.click(await screen.findByRole('button', { name: 'تسجيل الخروج' }))
-    const phone = await screen.findByLabelText('WhatsApp number')
+    const phone = await screen.findByLabelText('رقم واتساب')
     expect(api.getUser()).toBeNull()
-    expect(screen.queryByText(/Server revocation could not be confirmed/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/سُجّل خروجك محلياً\. تعذّر تأكيد إلغاء الجلسة على الخادم؛ سجّل الدخول واستخدم «تسجيل الخروج من جميع الأجهزة» قبل ترك جهاز مشترك\./)).not.toBeInTheDocument()
 
     await act(async () => finishLogout(json({}, 503)))
     expect(window.location.search).toBe('?logout=revocation-unknown')
-    expect(screen.getByText(/Server revocation could not be confirmed/)).toBeInTheDocument()
-    expect(screen.getByLabelText('WhatsApp number')).toBe(phone)
+    expect(screen.getByText(/سُجّل خروجك محلياً\. تعذّر تأكيد إلغاء الجلسة على الخادم؛ سجّل الدخول واستخدم «تسجيل الخروج من جميع الأجهزة» قبل ترك جهاز مشترك\./)).toBeInTheDocument()
+    expect(screen.getByLabelText('رقم واتساب')).toBe(phone)
   })
 
   it('submits the initial profile without the read-only number or a requested licence', async () => {
@@ -350,7 +350,7 @@ describe('live routing boundaries', () => {
       .mockResolvedValueOnce(json({}, 404)))
     render(<App />)
     expect(screen.getByText('جارٍ استعادة جلستك…')).toBeInTheDocument()
-    expect(screen.queryByLabelText('WhatsApp number')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('رقم واتساب')).not.toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'بانتظار الموافقة' })).toBeInTheDocument()
   })
 
@@ -373,9 +373,9 @@ describe('live routing boundaries', () => {
     expect(await screen.findByRole('heading', { name: 'بانتظار الموافقة' })).toBeInTheDocument()
     approved = true
     fireEvent(window, new Event('focus'))
-    expect(await screen.findByRole('heading', { name: 'Upcoming Sessions' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'الجلسات القادمة' })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/dashboard')
-    expect(screen.queryByLabelText('WhatsApp number')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('رقم واتساب')).not.toBeInTheDocument()
   })
 
   it('keeps the focused draft through rejection and approval arriving during editing', async () => {
@@ -417,7 +417,7 @@ describe('live routing boundaries', () => {
     expect(screen.getByRole('checkbox', { name: 'الفرنسية' })).toBeChecked()
     expect(screen.getByRole('button', { name: 'إرسال التعديلات للمراجعة' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'إلغاء' }))
-    expect(await screen.findByRole('heading', { name: 'Upcoming Sessions' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'الجلسات القادمة' })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/dashboard')
   })
 
@@ -429,7 +429,7 @@ describe('live routing boundaries', () => {
         : json({ data: [], pagination: { last_page: 1 } }),
     ))
     render(<App />)
-    expect(await screen.findByRole('heading', { name: 'All Sessions' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'كل الجلسات' })).toBeInTheDocument()
   })
 
   it.each([503, 403])('handles a self-profile refresh returning %s on the approved sessions page', async (status) => {
@@ -444,16 +444,16 @@ describe('live routing boundaries', () => {
         : {}, status)
     }))
     render(<App />)
-    const heading = await screen.findByRole('heading', { name: 'All Sessions' })
+    const heading = await screen.findByRole('heading', { name: 'كل الجلسات' })
 
     await act(async () => { fireEvent(window, new Event('focus')) })
     expect(profileRequests).toBe(2)
 
     if (status === 503) {
-      expect(screen.getByRole('heading', { name: 'All Sessions' })).toBe(heading)
+      expect(screen.getByRole('heading', { name: 'كل الجلسات' })).toBe(heading)
       expect(screen.queryByText(/تعذّر التحقق من حالة الموافقة/)).not.toBeInTheDocument()
     } else {
-      expect(screen.queryByRole('heading', { name: 'All Sessions' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('heading', { name: 'كل الجلسات' })).not.toBeInTheDocument()
       expect(screen.getByRole('alert')).toHaveTextContent('تعذّر التحقق من حالة الموافقة')
     }
   })
@@ -529,8 +529,8 @@ describe('live routing boundaries', () => {
       window.history.replaceState({}, '', path + '?state=withdraw&demo=true')
       const request = vi.spyOn(api, 'request')
       render(<App />)
-      expect(screen.getByLabelText('WhatsApp number')).toBeInTheDocument()
-      expect(screen.queryByText('Lifetime net earnings')).not.toBeInTheDocument()
+      expect(screen.getByLabelText('رقم واتساب')).toBeInTheDocument()
+      expect(screen.queryByText('إجمالي صافي الأرباح')).not.toBeInTheDocument()
       expect(request).not.toHaveBeenCalled()
     },
   )
@@ -539,6 +539,6 @@ describe('live routing boundaries', () => {
     vi.stubEnv('VITE_DEMO_MODE', 'true')
     window.history.replaceState({}, '', '/dashboard')
     render(<App />)
-    expect(screen.getByLabelText('WhatsApp number')).toBeInTheDocument()
+    expect(screen.getByLabelText('رقم واتساب')).toBeInTheDocument()
   })
 })

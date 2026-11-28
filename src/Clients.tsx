@@ -19,7 +19,7 @@ export function Clients({ api, navigate }: { api: ApiClient; navigate: (path: st
   return user ? (
     <ClientList key={api.getSessionKey()} api={api} navigate={navigate} />
   ) : (
-    <p role="alert">Your session has ended. Please sign in again.</p>
+    <p role="alert">انتهت جلستك. يرجى تسجيل الدخول مجدداً.</p>
   )
 }
 
@@ -37,7 +37,7 @@ function ClientList({ api, navigate }: { api: ApiClient; navigate: (path: string
   return (
     <Workspace
       api={api}
-      title="Manage Clients"
+      title="إدارة العملاء"
       active="Clients"
       navigate={navigate}
       onSearch={(value) => {
@@ -47,16 +47,16 @@ function ClientList({ api, navigate }: { api: ApiClient; navigate: (path: string
         setPage(1)
       }}
     >
-      <section className="clients-page" aria-label="Manage clients">
+      <section className="clients-page" aria-label="إدارة العملاء">
         <div className="clients-toolbar">
-          <div className="clients-filters" role="group" aria-label="Filter clients">
+          <div className="clients-filters" role="group" aria-label="تصفية العملاء">
             {([['all', 'All'], ['active', 'Active'], ['past', 'Past']] as const).map(([value, label]) => (
               <button key={value} className={status === value ? 'selected' : ''} aria-pressed={status === value} onClick={() => { setStatus(value); setPage(1) }}>
                 {label}{status === value && resource.data ? ` (${resource.data.pagination.total})` : ''}
               </button>
             ))}
           </div>
-          <button className="clients-filter-toggle" aria-label="Client filter options" aria-expanded={filtersOpen} aria-controls="client-filter-options" onClick={() => setFiltersOpen(!filtersOpen)}>
+          <button className="clients-filter-toggle" aria-label="خيارات تصفية العملاء" aria-expanded={filtersOpen} aria-controls="client-filter-options" onClick={() => setFiltersOpen(!filtersOpen)}>
             <DesignIcon name="client-6934-imgIcon1.svg" />
           </button>
         </div>
@@ -81,7 +81,7 @@ function ClientList({ api, navigate }: { api: ApiClient; navigate: (path: string
           <label>Sort clients<select value={sort} onChange={(event) => { setSort(event.target.value as 'name' | 'recent'); setPage(1) }}><option value="name">Name</option><option value="recent">Recent activity</option></select></label>
         </form>
         </div>
-        {resource.loading && <p role="status">Loading clients…</p>}
+        {resource.loading && <p role="status">جارٍ تحميل العملاء…</p>}
         {resource.error && (
           <p role="alert">
             {resource.error.message}
@@ -122,7 +122,7 @@ function ClientList({ api, navigate }: { api: ApiClient; navigate: (path: string
                     )
                   })}
             </div>
-            <nav aria-label="Client pages">
+            <nav aria-label="صفحات العملاء">
               <button disabled={page <= 1 || resource.loading} onClick={() => setPage(page - 1)}>
                 Previous
               </button>

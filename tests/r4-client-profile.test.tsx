@@ -28,21 +28,21 @@ describe('r4 client profile icon parity and normal-zoom fit', () => {
     const { container } = render(<DemoClientProfile navigate={vi.fn()} />)
     const seen = new Set(imageSources(container))
     const tabs = within(screen.getByRole('tablist', { name: 'Client profile sections' }))
-    for (const name of ['Sessions', 'Notes', 'Custom Content', 'Overview']) {
+    for (const name of ['Sessions', 'Notes', 'محتوى مخصص', 'Overview']) {
       fireEvent.click(tabs.getByRole('tab', { name }))
       imageSources(container).forEach((src) => seen.add(src))
       if (name === 'Sessions') {
-        for (const filter of ['Upcoming', 'Completed', 'Missed', 'All (6)']) {
+        for (const filter of ['Upcoming', 'Completed', 'Missed', 'الكل (6)']) {
           fireEvent.click(screen.getByRole('button', { name: filter }))
           imageSources(container).forEach((src) => seen.add(src))
         }
-        fireEvent.click(screen.getByRole('button', { name: 'Reschedule Follow-up Session' }))
-        expect(screen.getByRole('status')).toHaveTextContent('Demo only')
+        fireEvent.click(screen.getByRole('button', { name: 'Reschedule جلسة متابعة' }))
+        expect(screen.getByRole('status')).toHaveTextContent('عرض تجريبي فقط')
         imageSources(container).forEach((src) => seen.add(src))
       }
       if (name === 'Notes') {
-        fireEvent.click(screen.getByRole('button', { name: 'Collapse Comprehensive Summary of Therapy Session' }))
-        fireEvent.change(screen.getByLabelText('New Note'), { target: { value: 'Local icon parity note' } })
+        fireEvent.click(screen.getByRole('button', { name: 'Collapse ملخص شامل لجلسة العلاج' }))
+        fireEvent.change(screen.getByLabelText('ملاحظة جديدة'), { target: { value: 'Local icon parity note' } })
         fireEvent.click(screen.getByRole('button', { name: 'Add Note' }))
         imageSources(container).forEach((src) => seen.add(src))
       }

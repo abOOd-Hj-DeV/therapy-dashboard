@@ -1320,17 +1320,17 @@
   .message-history {
     padding-top: 16px;
   }
-  .chat-workspace .nav-item[aria-label='Patients'] {
+  .chat-workspace .nav-item[aria-label='المرضى'] {
     background: #f2f3f4;
     box-shadow: none;
   }
-  .chat-workspace .nav-item[aria-label='Messages'] {
+  .chat-workspace .nav-item[aria-label='الرسائل'] {
     background: #1d919e1a;
   }
-  .chat-workspace .nav-item[aria-label='Messages'] .design-icon {
+  .chat-workspace .nav-item[aria-label='الرسائل'] .design-icon {
     content: url('/assets/part2-10-imgMessageCircleLinesAlt.svg');
   }
-  .chat-workspace .nav-item[aria-label='Dashboard'] .design-icon {
+  .chat-workspace .nav-item[aria-label='لوحة التحكم'] .design-icon {
     content: url('/assets/part2-10-imgDashboardIcon.svg');
   }
   .secondary-workspace .sidebar-header .brand-symbol {

@@ -185,14 +185,14 @@ describe('live Laravel chat integration', () => {
     fireEvent.change(screen.getByLabelText('Message', { exact: true }), {
       target: { value: 'Keep this draft' },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Send message' }))
+    fireEvent.click(screen.getByRole('button', { name: 'إرسال الرسالة' }))
     await screen.findByText(/Your draft is retained/)
     expect(screen.getByLabelText('Message', { exact: true })).toHaveValue('Keep this draft')
     expect(screen.queryByText(/SQL password/)).not.toBeInTheDocument()
     expect(
       screen.queryByText('Keep this draft', { selector: '.message-bubble' }),
     ).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Retry sending message' }))
+    fireEvent.click(screen.getByRole('button', { name: 'إعادة إرسال الرسالة' }))
     await waitFor(() => expect(screen.getByLabelText('Message', { exact: true })).toHaveValue(''))
     const sends = transport.mock.calls.filter(
       ([url, init]) => String(url).endsWith(`/chat/${patientA}`) && init?.method === 'POST',
@@ -222,13 +222,13 @@ describe('live Laravel chat integration', () => {
     selectClient()
     await screen.findByText('History A')
     expect(screen.getByLabelText('Message', { exact: true })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Send message' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'إرسال الرسالة' })).toBeDisabled()
     expect(screen.getByText(/This conversation is closed/)).toBeInTheDocument()
     selectClient('Client B')
-    await screen.findByText('This action is not permitted for your account.')
+    await screen.findByText('هذا الإجراء غير مسموح لحسابك.')
     expect(screen.queryByText('History A')).not.toBeInTheDocument()
     expect(screen.queryByText(/private internal denial/)).not.toBeInTheDocument()
-    expect(screen.queryByText('Sara Khaled')).not.toBeInTheDocument()
+    expect(screen.queryByText('سارة خالد')).not.toBeInTheDocument()
     expect(screen.getByLabelText('Message', { exact: true })).toBeDisabled()
   })
 
@@ -254,10 +254,10 @@ describe('live Laravel chat integration', () => {
     fireEvent.change(screen.getByLabelText('Message', { exact: true }), {
       target: { value: 'Unsent' },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Send message' }))
+    fireEvent.click(screen.getByRole('button', { name: 'إرسال الرسالة' }))
     await screen.findByText(/This conversation is closed/)
     expect(screen.getByLabelText('Message', { exact: true })).toHaveValue('Unsent')
-    expect(screen.getByRole('button', { name: 'Retry sending message' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'إعادة إرسال الرسالة' })).toBeDisabled()
   })
 
   it('aborts switched-thread GETs and never renders stale clinical content or posts read to an undisplayed thread', async () => {
@@ -363,11 +363,11 @@ describe('live Laravel chat integration', () => {
     expect(screen.queryByText('Past client')).not.toBeInTheDocument()
     await screen.findByText('No messages yet.')
     const file = new File(['plain bytes'], 'care.txt', { type: 'text/plain' })
-    fireEvent.change(screen.getByLabelText('Message attachment'), { target: { files: [file] } })
-    fireEvent.click(screen.getByRole('button', { name: 'Send message' }))
+    fireEvent.change(screen.getByLabelText('مرفق رسالة'), { target: { files: [file] } })
+    fireEvent.click(screen.getByRole('button', { name: 'إرسال الرسالة' }))
     await screen.findByText(/Your draft is retained/)
-    fireEvent.click(screen.getByRole('button', { name: 'Retry sending message' }))
-    await screen.findByText(/Message accepted by the server/)
+    fireEvent.click(screen.getByRole('button', { name: 'إعادة إرسال الرسالة' }))
+    await screen.findByText(/قبل الخادم الرسالة\. جارٍ تحديث المحادثة…/)
     const sends = transport.mock.calls.filter(
       ([url, init]) => String(url).endsWith(`/chat/${patientA}`) && init?.method === 'POST',
     )
@@ -440,7 +440,7 @@ describe('live Laravel chat integration', () => {
     expect(screen.queryByText('History A')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Message', { exact: true })).not.toBeInTheDocument()
     act(() => api.clear())
-    expect(screen.getByText(/Your session has ended/)).toBeInTheDocument()
+    expect(screen.getByText(/انتهت جلستك\. يرجى تسجيل الدخول مجدداً\./)).toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Conversations' })).not.toBeInTheDocument()
   })
 
@@ -480,7 +480,7 @@ describe('live Laravel chat integration', () => {
     render(<Chats api={api} navigate={vi.fn()} />)
     await screen.findByRole('button', { name: /^Client A/ })
     selectClient()
-    fireEvent.click(await screen.findByRole('button', { name: 'Load earlier messages' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'تحميل الرسائل الأقدم' }))
     await screen.findByText('Earlier history')
     expect(screen.getAllByText('History A')).toHaveLength(1)
     expect(
@@ -490,7 +490,7 @@ describe('live Laravel chat integration', () => {
       transport.mock.calls.some(([url]) => String(url).includes(`/${patientA}?page=2&per_page=30`)),
     ).toBe(true)
     fireEvent.click(
-      within(screen.getByRole('navigation', { name: 'Conversation pages' })).getByRole('button', {
+      within(screen.getByRole('navigation', { name: 'صفحات المحادثات' })).getByRole('button', {
         name: 'Next',
       }),
     )
@@ -505,15 +505,15 @@ describe('live Laravel chat integration', () => {
     await screen.findByRole('button', { name: /^Client A/ })
     selectClient()
     await screen.findByText('History A')
-    fireEvent.change(screen.getByLabelText('Message attachment'), {
+    fireEvent.change(screen.getByLabelText('مرفق رسالة'), {
       target: { files: [new File(['<svg/>'], 'unsafe.svg', { type: 'image/svg+xml' })] },
     })
-    expect(screen.getByText(/Choose an allowed image/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Send message' })).toBeDisabled()
+    expect(screen.getByText(/اختر صورة مسموحة \(حتى 5 م\.ب\) أو ملف صوت أو PDF\/نص\/Word \(حتى 10 م\.ب\)\. تحقق الخادم من الملفات هو المرجع النهائي\./)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'إرسال الرسالة' })).toBeDisabled()
     const large = new File(['x'], 'large.png', { type: 'image/png' })
     Object.defineProperty(large, 'size', { value: 5 * 1024 * 1024 + 1 })
-    fireEvent.change(screen.getByLabelText('Message attachment'), { target: { files: [large] } })
-    expect(screen.getByRole('button', { name: 'Send message' })).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('مرفق رسالة'), { target: { files: [large] } })
+    expect(screen.getByRole('button', { name: 'إرسال الرسالة' })).toBeDisabled()
     expect(transport.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false)
   })
 
@@ -533,7 +533,7 @@ describe('live Laravel chat integration', () => {
     fireEvent.change(screen.getByLabelText('Message', { exact: true }), {
       target: { value: 'A-only draft' },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Send message' }))
+    fireEvent.click(screen.getByRole('button', { name: 'إرسال الرسالة' }))
     selectClient('Client B')
     await screen.findByText('History B')
     const send = transport.mock.calls.find(
@@ -549,7 +549,7 @@ describe('live Laravel chat integration', () => {
       ),
     )
     expect(screen.queryByText('A-only draft')).not.toBeInTheDocument()
-    expect(screen.queryByText(/Message accepted by the server/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/قبل الخادم الرسالة\. جارٍ تحديث المحادثة…/)).not.toBeInTheDocument()
     expect(screen.getByLabelText('Message', { exact: true })).toHaveValue('')
     expect(screen.getByText('History B')).toBeInTheDocument()
   })
@@ -662,17 +662,17 @@ describe('live notification component for the shared Workspace', () => {
       return json({}, 404)
     })
     render(<LiveNotifications api={api} navigate={navigate} />)
-    await screen.findByText('New care message')
+    await screen.findByText('رسالة رعاية جديدة')
     expect(screen.getByText('30 Sept 2026, 22:15')).toHaveAttribute('datetime', '2026-10-01T00:15:00+02:00')
-    expect(screen.getByText('Account update')).toBeInTheDocument()
+    expect(screen.getByText('تحديث الحساب')).toBeInTheDocument()
     expect(screen.queryByText('Sensitive preview')).not.toBeInTheDocument()
     expect(screen.queryByText('Not trusted title')).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Open conversation' }))
+    fireEvent.click(screen.getByRole('button', { name: 'فتح المحادثة' }))
     expect(navigate).toHaveBeenCalledWith(`/chats?client=${patientA}`)
-    const article = screen.getByText('New care message').closest('article')!
-    fireEvent.click(within(article).getByRole('button', { name: 'Mark read' }))
+    const article = screen.getByText('رسالة رعاية جديدة').closest('article')!
+    fireEvent.click(within(article).getByRole('button', { name: 'وضع كمقروء' }))
     await screen.findByText('1 unread notifications')
-    expect(screen.getByText('New care message')).toBeInTheDocument()
+    expect(screen.getByText('رسالة رعاية جديدة')).toBeInTheDocument()
     expect(
       transport.mock.calls.some(([url]) =>
         String(url).includes(`/notifications/${notificationId}/read`),

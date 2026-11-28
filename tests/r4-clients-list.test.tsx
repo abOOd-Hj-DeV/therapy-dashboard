@@ -24,7 +24,7 @@ describe('r4 clients-list normal-zoom fit and icon parity', () => {
       window.history.replaceState({}, '', `/clients${query}`)
       const user = userEvent.setup()
       const { container } = render(<DemoClients navigate={vi.fn()} />)
-      await user.click(screen.getByRole('button', { name: 'Filter by Compliance' }))
+      await user.click(screen.getByRole('button', { name: 'تصفية حسب الالتزام' }))
       const sources = renderedIconSources(container)
       expect(sources.length).toBeGreaterThan(10)
       for (const src of sources) {
@@ -49,7 +49,7 @@ describe('r4 clients-list normal-zoom fit and icon parity', () => {
     expect(desktop).toMatch(/\.secondary-workspace:not\(\.is-collapsed\) \.demo-client-list-card-footer,\s*\.demo-client-list \.secondary-workspace\.is-collapsed \.demo-client-list-card-footer \{\s*flex-direction: column;/)
     expect(css).not.toMatch(/zoom:|transform:\s*scale/)
     const { container } = render(<DemoClients navigate={vi.fn()} />)
-    expect(within(screen.getByRole('region', { name: 'Demo clients' })).getAllByRole('button')).toHaveLength(6)
+    expect(within(screen.getByRole('region', { name: 'عملاء العرض' })).getAllByRole('button')).toHaveLength(6)
     expect(container.querySelectorAll('.demo-client-list-next-session')).toHaveLength(6)
   })
 })

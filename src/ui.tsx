@@ -38,7 +38,7 @@ export function Modal({
   closeIcon,
   lang,
   dir,
-  closeLabel = 'Close dialog',
+  closeLabel = 'إغلاق الحوار',
   suspended = false,
 }: {
   title: string

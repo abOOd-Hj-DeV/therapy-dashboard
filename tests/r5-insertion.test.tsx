@@ -37,9 +37,9 @@ describe('r5 care plan insertion point (refs r5-102..r5-112)', () => {
     expect(screen.getByText('مواجهة الانسحاب الاجتماعي')).toBeInTheDocument()
     expect(screen.getByText('التعامل مع النكسات')).toBeInTheDocument()
     expect(screen.getByText('بناء روتين طويل المدى')).toBeInTheDocument()
-    expect(screen.getAllByText(/Completed · responses preserved/)).toHaveLength(2)
-    expect(screen.getByText('Current · in progress')).toBeInTheDocument()
-    expect(screen.getByText('Locked · completes after stage 3')).toBeInTheDocument()
+    expect(screen.getAllByText(/مكتمل · الاستجابات محفوظة/)).toHaveLength(2)
+    expect(screen.getByText('الحالي · قيد التنفيذ')).toBeInTheDocument()
+    expect(screen.getByText('مقفل · يكتمل بعد المرحلة 3')).toBeInTheDocument()
     expect(screen.getByText('Stable identity · ba-assess')).toBeInTheDocument()
     expect(screen.getByText('Stable identity · ba-ladder')).toBeInTheDocument()
     expect(screen.getByText('Stable identity · ba-week')).toBeInTheDocument()
@@ -47,11 +47,11 @@ describe('r5 care plan insertion point (refs r5-102..r5-112)', () => {
 
   it('shows the target-gap callout after current stage 3 with the pending proposal', () => {
     renderPage()
-    const callout = screen.getByRole('listitem', { name: /Target gap · after current stage 3/ })
-    expect(within(callout).getByRole('heading', { name: 'Target gap · after current stage 3' })).toBeInTheDocument()
-    expect(within(callout).getByText(/Before “سلّم النشاط” · proposed new stage 4 of 10/)).toBeInTheDocument()
+    const callout = screen.getByRole('listitem', { name: /الفجوة المستهدفة · بعد المرحلة الحالية 3/ })
+    expect(within(callout).getByRole('heading', { name: 'الفجوة المستهدفة · بعد المرحلة الحالية 3' })).toBeInTheDocument()
+    expect(within(callout).getByText(/قبل «سلّم النشاط» · مرحلة جديدة مقترحة 4 من 10/)).toBeInTheDocument()
     expect(within(callout).getByText('Thought record · سجل الأفكار')).toBeInTheDocument()
-    expect(within(callout).getByText(/Published v2 · 4 long-text fields · Not inserted yet/)).toBeInTheDocument()
+    expect(within(callout).getByText(/منشور v2 · 4 حقول نص طويل · لم يُدرج بعد/)).toBeInTheDocument()
     expect(within(callout).getByRole('button', { name: /Choose content/ })).toBeInTheDocument()
     expect(within(callout).getByRole('button', { name: 'Reposition' })).toBeInTheDocument()
   })
@@ -62,20 +62,20 @@ describe('r5 care plan insertion point (refs r5-102..r5-112)', () => {
     expect(within(card).getByRole('button', { name: 'Contact patient' })).toBeInTheDocument()
     expect(within(card).getByRole('button', { name: 'Schedule' })).toBeInTheDocument()
     expect(within(card).getByRole('button', { name: 'Call' })).toBeInTheDocument()
-    expect(within(card).getByText('Contact Information')).toBeInTheDocument()
+    expect(within(card).getByText('معلومات التواصل')).toBeInTheDocument()
     expect(within(card).getByText('+966 50 123 4567')).toBeInTheDocument()
     expect(within(card).getByText('ahmed@example.com')).toBeInTheDocument()
-    expect(within(card).getByText('8-Week Package')).toBeInTheDocument()
+    expect(within(card).getByText('باقة 8 أسابيع')).toBeInTheDocument()
     expect(within(card).getByText('15 Jan 2024')).toBeInTheDocument()
-    expect(within(card).getByText('Today 10:00 AM')).toBeInTheDocument()
+    expect(within(card).getByText('اليوم 10:00 ص')).toBeInTheDocument()
   })
 
   it('moves the proposed gap when a different insert slot is chosen', async () => {
     renderPage()
-    const slot = screen.getByRole('button', { name: /Insert between stages: after جدولة الأنشطة الأسبوعية, before مواجهة الانسحاب الاجتماعي/ })
+    const slot = screen.getByRole('button', { name: /إدراج بين المراحل: بعد جدولة الأنشطة الأسبوعية، قبل مواجهة الانسحاب الاجتماعي/ })
     await userEvent.click(slot)
-    expect(screen.getByRole('listitem', { name: /Target gap · after stage 5/ })).toBeInTheDocument()
-    expect(screen.getByText(/proposed new stage 6 of 10/)).toBeInTheDocument()
+    expect(screen.getByRole('listitem', { name: /الفجوة المستهدفة · بعد المرحلة 5/ })).toBeInTheDocument()
+    expect(screen.getByText(/مرحلة جديدة مقترحة 6 من 10/)).toBeInTheDocument()
   })
 
   it('keeps Choose content and Reposition honest demo notices', async () => {
@@ -84,12 +84,12 @@ describe('r5 care plan insertion point (refs r5-102..r5-112)', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Demo only')
     await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
     await userEvent.click(screen.getByRole('button', { name: 'Reposition' }))
-    expect(screen.getByRole('status')).toHaveTextContent('Demo only')
+    expect(screen.getByRole('status')).toHaveTextContent('عرض تجريبي فقط')
   })
 
   it('exposes every insert slot as a labelled button', () => {
     renderPage()
-    const slots = screen.getAllByRole('button', { name: /Insert between stages/ })
+    const slots = screen.getAllByRole('button', { name: /إدراج بين المراحل/ })
     expect(slots).toHaveLength(8)
   })
 
@@ -106,10 +106,10 @@ describe('r5 care plan insertion point (refs r5-102..r5-112)', () => {
       vi.stubEnv(key, value)
       renderPage()
       expect(screen.queryByText('سلّم النشاط')).not.toBeInTheDocument()
-      expect(screen.getByText(/not connected/i)).toBeInTheDocument()
+      expect(screen.getByText(/غير متصل/)).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Why is this empty?' })).toBeInTheDocument()
       fireEvent.click(screen.getByRole('button', { name: 'Why is this empty?' }))
-      expect(screen.getByRole('status')).toHaveTextContent(/not available/)
+      expect(screen.getByRole('status')).toHaveTextContent(/غير متاح/)
     },
   )
 

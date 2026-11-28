@@ -30,24 +30,24 @@ type Day = (typeof days)[number]
 const titles = {
   edit: 'تعديل الملف الشخصي',
   withdrawProfile: 'سحب تعديلات الملف المهني',
-  hours: 'Work Hours Management',
-  holidays: 'Vacations and Breaks',
-  password: 'Change Password',
-  preferences: 'Notification Settings',
-  logout: 'Log out',
-  faq: 'Frequently Asked Questions',
-  contact: 'Contact support',
+  hours: 'إدارة ساعات العمل',
+  holidays: 'الإجازات والاستراحات',
+  password: 'تغيير كلمة المرور',
+  preferences: 'إعدادات الإشعارات',
+  logout: 'تسجيل الخروج',
+  faq: 'الأسئلة الشائعة',
+  contact: 'التواصل مع الدعم',
 }
 type Dialog = keyof typeof titles | ''
 const fieldLabels: Record<string, string> = {
-  availability: 'Working hours',
-  current_password: 'Current password',
-  password: 'New password',
-  password_confirmation: 'Password confirmation',
-  start_date: 'Start date',
-  end_date: 'End date',
+  availability: 'ساعات العمل',
+  current_password: 'كلمة المرور الحالية',
+  password: 'كلمة المرور الجديدة',
+  password_confirmation: 'تأكيد كلمة المرور',
+  start_date: 'تاريخ البدء',
+  end_date: 'تاريخ الانتهاء',
   reason: 'Reason',
-  therapist: 'Therapist profile',
+  therapist: 'ملف المعالج',
 }
 
 function Failure({ error }: { error: unknown }) {
@@ -67,7 +67,7 @@ function Failure({ error }: { error: unknown }) {
       <p>
         {apiErrorMessage(error)}
         {error instanceof ApiError && error.retryAfter > 0
-          ? ` Retry after ${error.retryAfter} seconds.`
+          ? ` أعد المحاولة بعد ${error.retryAfter} ثانية.`
           : ''}
       </p>
       {labels.map((label) => (
@@ -80,7 +80,7 @@ function Failure({ error }: { error: unknown }) {
 function Actions({
   pending,
   close,
-  label = 'Save Changes',
+  label = 'حفظ التغييرات',
 }: {
   pending: boolean
   close: () => void
@@ -102,7 +102,7 @@ export function LiveProfile({ api, ...props }: Props) {
   return api ? (
     <ProfileBoundary api={api} {...props} />
   ) : (
-    <p role="alert">A live API session is required.</p>
+    <p role="alert">يلزم جلسة API مباشرة.</p>
   )
 }
 function ProfileBoundary({ api, ...props }: Omit<Props, 'api'> & { api: ApiClient }) {
@@ -110,7 +110,7 @@ function ProfileBoundary({ api, ...props }: Omit<Props, 'api'> & { api: ApiClien
   return user ? (
     <ProfileActor key={api.getSessionKey()} api={api} user={user} {...props} />
   ) : (
-    <p role="status">You are signed out. Private profile data has been cleared.</p>
+    <p role="status">تم تسجيل خروجك. محُويت بيانات الملف الخاصة.</p>
   )
 }
 
@@ -163,7 +163,7 @@ function ProfileActor({
   return (
     <Workspace title={settings ? 'إعدادات الملف المهني' : 'Profile'} active="Profile" navigate={navigate} api={api}>
       <div className={`profile-layout profile-${page}`} lang={settings ? 'ar' : undefined} dir={settings ? 'rtl' : undefined}>
-        <aside className="profile-summary" aria-label={settings ? 'نبذة عن الملف المهني' : 'Profile overview'}>
+        <aside className="profile-summary" aria-label={settings ? 'نبذة عن الملف المهني' : 'نظرة الملف'}>
           <div className="profile-identity">
             <span className="profile-avatar profile-avatar-initials" aria-label="Profile initials">
               {name
@@ -189,7 +189,7 @@ function ProfileActor({
           <div className="profile-description">
             <h3>{settings ? 'التخصص' : 'Description'}</h3>
             <p>{published?.specialty ? optionName(options.specialties, published.specialty) :
-              settings ? 'بيانات الملف المهني غير متاحة الآن.' : 'Professional profile unavailable.'}</p>
+              settings ? 'بيانات الملف المهني غير متاحة الآن.' : 'الملف المهني غير متاح.'}</p>
           </div>
           {dashboard.data && (
             <div className="profile-counts">
@@ -199,13 +199,13 @@ function ProfileActor({
               </div>
               <div>
                 <strong>{dashboard.data.stats.completed}</strong>
-                <span>{settings ? 'الجلسات المكتملة' : 'Completed sessions'}</span>
+                <span>{settings ? 'الجلسات المكتملة' : 'الجلسات المكتملة'}</span>
               </div>
             </div>
           )}
         </aside>
-        <section className="profile-panel" aria-label={settings ? 'تفاصيل الملف المهني' : 'Profile details'}>
-          <nav className="profile-tabs" aria-label={settings ? 'أقسام الملف المهني' : 'Profile sections'}>
+        <section className="profile-panel" aria-label={settings ? 'تفاصيل الملف المهني' : 'تفاصيل الملف'}>
+          <nav className="profile-tabs" aria-label={settings ? 'أقسام الملف المهني' : 'أقسام الملف'}>
             {(['profile', 'settings', 'help'] as const).map((tab) => (
               <button
                 key={tab}
@@ -220,7 +220,7 @@ function ProfileActor({
               </button>
             ))}
           </nav>
-          {(identity.loading || dashboard.loading || profile.loading) && <p role="status">{settings ? 'جارٍ تحميل الملف المهني…' : 'Loading profile…'}</p>}
+          {(identity.loading || dashboard.loading || profile.loading) && <p role="status">{settings ? 'جارٍ تحميل الملف المهني…' : 'جارٍ تحميل الملف…'}</p>}
           <Failure error={identity.error || dashboard.error} />
           {(identity.error || dashboard.error || profile.error) && (
             <>
@@ -233,7 +233,7 @@ function ProfileActor({
                   profile.reload()
                 }}
               >
-                {settings ? 'إعادة محاولة تحميل الملف المهني' : 'Retry profile'}
+                {settings ? 'إعادة محاولة تحميل الملف المهني' : 'إعادة تحميل الملف'}
               </button>
             </>
           )}
@@ -268,16 +268,16 @@ function ProfileActor({
           {page === 'profile' && (
             <div className="profile-information">
               <section className="profile-about">
-                <h3>About Me</h3>
+                <h3>نبذة عني</h3>
                 <p>
                   {published
-                    ? published.bio || 'No bio provided.'
-                    : 'Professional profile unavailable.'}
+                    ? published.bio || 'لا توجد نبذة.'
+                    : 'الملف المهني غير متاح.'}
                 </p>
               </section>
               <div className="profile-information-grid">
                 <section>
-                  <h3>Professional Information</h3>
+                  <h3>المعلومات المهنية</h3>
                   <div className="profile-info-rows">
                     <Info icon="briefcase" label="المسمى الوظيفي" value={published?.job_title} arabic />
                     <Info icon="briefcase" label="التخصص" value={published?.specialty && optionName(options.specialties, published.specialty)} arabic />
@@ -304,11 +304,11 @@ function ProfileActor({
                   </div>
                 </section>
                 <section>
-                  <h3>Account Information</h3>
+                  <h3>معلومات الحساب</h3>
                   <div className="profile-info-rows">
                     <Info
                       icon="user"
-                      label="Account name"
+                      label="اسم الحساب"
                       value={identity.data?.user.name || user.name}
                     />
                     <Info icon="mail" label="البريد الإلكتروني" value={published?.email} arabic />
@@ -318,7 +318,7 @@ function ProfileActor({
                       value={review?.account.whatsapp_number ?? user.whatsapp_number}
                       arabic
                     />
-                    <Info icon="clock" label="Scheduling timezone" value={timezone} />
+                    <Info icon="clock" label="المنطقة الزمنية للجدولة" value={timezone} />
                   </div>
                 </section>
               </div>
@@ -366,7 +366,7 @@ function ProfileActor({
             <div className="profile-help-grid">
               <section className="help-live">
                 <div>
-                  <h3>Support availability</h3>
+                  <h3>توفر الدعم</h3>
                   <p>
                     Therapist support requests, live chat and callbacks are not supported by the
                     current API. Contact your platform management through your established support
@@ -382,13 +382,13 @@ function ProfileActor({
                 <SettingRow
                   icon="faq"
                   title="FAQs"
-                  detail="Published answers from the platform"
+                  detail="إجابات منشورة من المنصة"
                   onClick={() => setDialog('faq')}
                 />
                 <SettingRow
                   icon="mail"
                   title="Contact support"
-                  detail="Therapist ticket submission unavailable"
+                  detail="إرسال طلب المعالج غير متاح"
                   onClick={() => setDialog('contact')}
                 />
               </section>
@@ -404,7 +404,7 @@ function ProfileActor({
       {notice && (
         <p className="remaining-notice" role="status">
           {notice}
-          <button aria-label="Dismiss notice" onClick={() => setNotice('')}>
+          <button aria-label="إغلاق التنبيه" onClick={() => setNotice('')}>
             ×
           </button>
         </p>
@@ -477,7 +477,7 @@ function ProfileActor({
                 saved={(value) => {
                   if (dashboard.data) dashboard.replace({ ...dashboard.data, therapist: value })
                   close()
-                  setNotice('Working hours updated on the server. Existing appointments have not been cancelled.')
+                  setNotice('حُدّثت ساعات العمل على الخادم. المواعيد الحالية لم تُلغَ.')
                 }}
               />
             ) : (
@@ -499,7 +499,7 @@ function ProfileActor({
               saved={() => {
                 close()
                 setNotice(
-                  'Password changed. Other devices have been signed out. Your current session remains active.',
+                  'غُيّرت كلمة المرور. سُجّل خروج الأجهزة الأخرى، بينما تبقى جلستك الحالية نشطة.',
                 )
               }}
             />
@@ -513,11 +513,11 @@ function ProfileActor({
               </p>
               <fieldset disabled className="preferences-list">
                 {[
-                  'New client messages',
-                  'Client progress updates',
-                  'Payment and withdrawal notifications',
-                  'Platform news and offers',
-                  'Session reminders',
+                  'رسائل جديدة من العملاء',
+                  'تحديثات تقدّم العملاء',
+                  'إشعارات الدفع والسحب',
+                  'أخبار المنصة والعروض',
+                  'تذكيرات الجلسات',
                 ].map((label) => (
                   <label key={label}>
                     {label}
@@ -539,14 +539,14 @@ function ProfileActor({
               </p>
               <fieldset disabled className="live-contact-fields">
                 <Field label="Subject">
-                  <input placeholder="Subject (unavailable)" />
+                  <input placeholder="الموضوع (غير متاح)" />
                 </Field>
                 <Field label="Message">
-                  <textarea placeholder="Message (unavailable)" />
+                  <textarea placeholder="الرسالة (غير متاح)" />
                 </Field>
               </fieldset>
               <button className="remaining-primary" disabled>
-                Send Message (unavailable)
+                إرسال الرسالة (غير متاح)
               </button>
             </>
           )}
@@ -604,7 +604,7 @@ function Info({
       <RemainingIcon name={icon} />
       <div>
         <small>{label}</small>
-        <p dir={arabic ? 'auto' : undefined}>{value || (arabic ? 'غير متوفرة' : 'Not provided')}</p>
+        <p dir={arabic ? 'auto' : undefined}>{value || (arabic ? 'غير متوفرة' : 'غير متوفر')}</p>
       </div>
     </div>
   )
@@ -817,7 +817,7 @@ function BlockedPeriods({
       span > 90
     ) {
       setValidation(
-        'Use current or future dates in your scheduling timezone, with an inclusive range of at most 90 days.',
+        'استخدم تواريخ حالية أو مستقبلية بمنطقتك الزمنية للجدولة، بنطاق شامل لا يتجاوز 90 يوماً.',
       )
       return
     }
@@ -844,7 +844,7 @@ function BlockedPeriods({
         keys.delete(signature)
         setLocked(false)
         setDraft({ start_date: '', end_date: '', reason: '' })
-        setNotice('Blocked period added on the server.')
+        setNotice('أُضيفت فترة الحظر على الخادم.')
         periods.reload()
       },
       (error) => {
@@ -876,11 +876,11 @@ function BlockedPeriods({
         if (matching) {
           setDraft({ start_date: '', end_date: '', reason: '' })
           setNotice(
-            'A matching blocked period is present on the server. Review the list before submitting another.',
+            'توجد فترة حظر مطابقة على الخادم. راجع القائمة قبل إرسال أخرى.',
           )
         } else
           setNotice(
-            'Server list refreshed. An identical retry retains its original idempotency key.',
+            'حُدّثت قائمة الخادم. إعادة الإرسال المتطابقة تحتفظ بمفتاح عدم التكرار نفسه.',
           )
         periods.reload()
       },
@@ -890,7 +890,7 @@ function BlockedPeriods({
     void mutation.run(
       (signal) => api.request(`/therapists/me/blocked-periods/${apiId(id)}`, 'DELETE', { signal }),
       () => {
-        setNotice('Blocked period removed on the server.')
+        setNotice('أُزيلت فترة الحظر على الخادم.')
         periods.reload()
       },
     )
@@ -899,11 +899,11 @@ function BlockedPeriods({
   return (
     <div>
       <p>
-        Whole-day inclusive blocks in {timezone || 'your server timezone'}. Overlapping blocks or
+        Whole-day inclusive blocks in {timezone || 'منطقتك الزمنية على الخادم'}. Overlapping blocks or
         pending/confirmed appointments may prevent a new block. Existing appointments must be
         cancelled or rescheduled first.
       </p>
-      {periods.loading && <p role="status">Loading blocked periods…</p>}
+      {periods.loading && <p role="status">جارٍ تحميل فترات الحظر…</p>}
       <Failure error={periods.error} />
       <button
         type="button"
@@ -914,15 +914,15 @@ function BlockedPeriods({
         Refresh blocked periods
       </button>
       {!periods.loading && !periods.error && periods.data?.data.length === 0 && (
-        <p>No blocked periods.</p>
+        <p>لا توجد فترات حظر.</p>
       )}
       <div className="holiday-list">
         {periods.data?.data.map((period) => (
           <article key={period.id}>
             <span className="holiday-clock"><RemainingIcon name="pendingMobile" /></span>
             <div className="holiday-copy">
-              <strong>{period.reason || 'No reason provided'}</strong>
-              <p>{formatCalendarDate(period.start_date) || 'Date unavailable'} – {formatCalendarDate(period.end_date) || 'Date unavailable'}</p>
+              <strong>{period.reason || 'لم يُذكر سبب'}</strong>
+              <p>{formatCalendarDate(period.start_date) || 'التاريخ غير متاح'} – {formatCalendarDate(period.end_date) || 'التاريخ غير متاح'}</p>
             </div>
             <button
               className="icon-button holiday-remove"
@@ -953,7 +953,7 @@ function BlockedPeriods({
                 onChange={(event) => setDraft({ ...draft, start_date: event.target.value })}
               />
             </Field>
-            <Field label="End date (optional)">
+            <Field label="تاريخ الانتهاء (اختياري)">
               <input
                 type="date"
                 min={draft.start_date || today}
@@ -962,7 +962,7 @@ function BlockedPeriods({
               />
             </Field>
           </div>
-          <Field label="Reason (optional)">
+          <Field label="السبب (اختياري)">
             <input
               maxLength={200}
               value={draft.reason ?? ''}
@@ -980,7 +980,7 @@ function BlockedPeriods({
         <Actions
           pending={busy || !!periods.error || periods.loading || !today}
           close={close}
-          label={locked ? 'Retry identical submission' : 'Add blocked period'}
+          label={locked ? 'إعادة الإرسال نفسه' : 'إضافة فترة حظر'}
         />
       </form>
     </div>
@@ -1013,11 +1013,11 @@ function ChangePassword({
       return
     }
     if (body.password === body.current_password) {
-      setValidation('The new password must be different from your current password.')
+      setValidation('يجب أن تختلف كلمة المرور الجديدة عن الحالية.')
       return
     }
     if (body.password !== body.password_confirmation) {
-      setValidation('The new password and confirmation must match.')
+      setValidation('يجب أن تتطابق كلمة المرور الجديدة مع تأكيدها.')
       return
     }
     setValidation('')
@@ -1039,9 +1039,9 @@ function ChangePassword({
       <fieldset disabled={mutation.pending}>
         {(
           [
-            ['Current Password', 'current_password'],
-            ['New Password', 'password'],
-            ['Confirm New Password', 'password_confirmation'],
+            ['كلمة المرور الحالية', 'current_password'],
+            ['كلمة المرور الجديدة', 'password'],
+            ['تأكيد كلمة المرور الجديدة', 'password_confirmation'],
           ] as const
         ).map(([label, name]) => (
           <Field label={label} key={name}>
@@ -1058,7 +1058,7 @@ function ChangePassword({
             />
             {name === 'password' && (validation || reused) && (
               <span className="remaining-error" role="alert">
-                {validation || 'The new password must be different from your current password.'}
+                {validation || 'يجب أن تختلف كلمة المرور الجديدة عن الحالية.'}
               </span>
             )}
           </Field>
@@ -1102,7 +1102,7 @@ function Logout({
   // Stage the explanation before local clearing can unmount this dialog.
   return (
     <>
-      <p>Log out of this device and revoke its server session?</p>
+      <p>تسجيل الخروج من هذا الجهاز وإلغاء جلسته على الخادم؟</p>
       <p role={started ? 'status' : undefined}>
         If the server cannot confirm revocation, you will still be signed out locally, but remote
         revocation is unknown and the session may remain active on the server.
@@ -1118,7 +1118,7 @@ function Logout({
             void logout()
           }}
         >
-          {pending ? 'Logging out…' : 'Log out'}
+          {pending ? 'جارٍ تسجيل الخروج…' : 'تسجيل الخروج'}
         </button>
       </footer>
     </>
@@ -1163,7 +1163,7 @@ function Faqs({ api }: { api: ApiClient }) {
   }, [api, page, revision])
   return (
     <div className="faq-list">
-      {loading && <p role="status">Loading FAQs…</p>}
+      {loading && <p role="status">جارٍ تحميل الأسئلة الشائعة…</p>}
       <Failure error={error} />
       {!!error && (
         <button className="remaining-cancel" onClick={() => setRevision((value) => value + 1)}>

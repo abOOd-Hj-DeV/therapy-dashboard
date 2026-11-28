@@ -46,8 +46,8 @@ describe('r4 profile settings icon parity and normal-zoom fit', () => {
   it('uses the muted bare Figma cross for removing a holiday while keeping the accessible button', () => {
     window.history.replaceState({}, '', '/profile/settings?state=holidays')
     render(<Profile page="settings" navigate={vi.fn()} />)
-    const dialog = within(screen.getByRole('dialog', { name: 'Work Hours Management' }))
-    const remove = dialog.getByRole('button', { name: 'Remove Annual Leave' })
+    const dialog = within(screen.getByRole('dialog', { name: 'إدارة ساعات العمل' }))
+    const remove = dialog.getByRole('button', { name: 'إزالة إجازة سنوية' })
     expect(remove.querySelector('img')).toHaveAttribute(
       'src',
       '/assets/r4-profile-settings-holiday-remove.svg',
@@ -63,7 +63,7 @@ describe('r4 profile settings icon parity and normal-zoom fit', () => {
     )
     expect(existsSync('public/assets/r4-profile-settings-plus.svg')).toBe(true)
     fireEvent.click(remove)
-    expect(dialog.queryByText('Annual Leave')).not.toBeInTheDocument()
+    expect(dialog.queryByText('إجازة سنوية')).not.toBeInTheDocument()
   })
 
   it('does not hide profile content with height/width media queries or scale hacks', () => {

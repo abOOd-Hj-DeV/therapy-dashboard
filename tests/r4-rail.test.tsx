@@ -59,25 +59,25 @@ describe('R4 collapsed rail', () => {
       { container: mountRoot() },
     )
     expect(container.querySelector('.workspace')).toHaveClass('is-collapsed')
-    const rail = within(screen.getByRole('complementary', { name: 'Main navigation' }))
-    expect(rail.getByRole('button', { name: 'Expand sidebar' })).toBeInTheDocument()
-    for (const label of ['Dashboard', 'Patients', 'Sessions', 'Messages', 'Additional Content', 'Wallet'])
+    const rail = within(screen.getByRole('complementary', { name: 'التنقل الرئيسي' }))
+    expect(rail.getByRole('button', { name: 'توسيع الشريط الجانبي' })).toBeInTheDocument()
+    for (const label of ['لوحة التحكم', 'المرضى', 'الجلسات', 'الرسائل', 'المحتوى الإضافي', 'المحفظة'])
       expect(rail.getByRole('button', { name: label })).toHaveAttribute('title', label)
-    expect(rail.getByRole('button', { name: 'Sessions' })).toHaveAttribute('aria-current', 'page')
-    expect(container.querySelector('.compact-reminder[aria-label="Client review"] img')).toHaveAttribute(
+    expect(rail.getByRole('button', { name: 'الجلسات' })).toHaveAttribute('aria-current', 'page')
+    expect(container.querySelector('.compact-reminder[aria-label="مراجعة العميل"] img')).toHaveAttribute(
       'src',
       expect.stringContaining('part2-10-imgMaterialSymbolsLightEmergencyHome.svg'),
     )
-    expect(rail.getByRole('button', { name: 'Open profile' })).toBeInTheDocument()
+    expect(rail.getByRole('button', { name: 'فتح الملف الشخصي' })).toBeInTheDocument()
   })
 
   it('keeps the Dashboard rail reminder dot element and accessible names', () => {
     window.history.replaceState({}, '', '/dashboard?state=collapsed')
     const { container } = render(<Dashboard navigate={vi.fn()} />, { container: mountRoot() })
     expect(container.querySelector('.workspace')).toHaveClass('is-collapsed')
-    const rail = within(screen.getByRole('complementary', { name: 'Main navigation' }))
-    expect(rail.getByRole('button', { name: 'Expand sidebar' })).toBeInTheDocument()
-    expect(rail.getByRole('button', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page')
-    expect(container.querySelector('.compact-reminder[aria-label="Client review"] > i')).toBeInTheDocument()
+    const rail = within(screen.getByRole('complementary', { name: 'التنقل الرئيسي' }))
+    expect(rail.getByRole('button', { name: 'توسيع الشريط الجانبي' })).toBeInTheDocument()
+    expect(rail.getByRole('button', { name: 'لوحة التحكم' })).toHaveAttribute('aria-current', 'page')
+    expect(container.querySelector('.compact-reminder[aria-label="مراجعة العميل"] > i')).toBeInTheDocument()
   })
 })

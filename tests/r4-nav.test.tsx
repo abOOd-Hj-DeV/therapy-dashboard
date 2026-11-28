@@ -27,24 +27,24 @@ beforeEach(() => {
 describe('r4 responsive navigation popup', () => {
   it('opens as a popup with the minimize glyph, scroll lock and focus inside', async () => {
     const { container } = renderShell()
-    const opener = screen.getByRole('button', { name: 'Open navigation' })
+    const opener = screen.getByRole('button', { name: 'فتح التنقل' })
     await userEvent.click(opener)
     expect(container.querySelector('.workspace')).toHaveClass('is-expanded')
     expect(document.body.style.overflow).toBe('hidden')
-    const sidebar = screen.getByRole('complementary', { name: 'Main navigation' })
+    const sidebar = screen.getByRole('complementary', { name: 'التنقل الرئيسي' })
     expect(sidebar).toHaveFocus()
     const toggle = sidebar.querySelector('.collapse-button img')
     expect(toggle).toHaveAttribute('src', expect.stringContaining('r4-nav-popup-minimize.svg'))
-    expect(container.querySelector('.sidebar-backdrop')).toHaveAccessibleName('Close navigation')
+    expect(container.querySelector('.sidebar-backdrop')).toHaveAccessibleName('إغلاق التنقل')
   })
 
   it('traps Tab inside the popup and returns focus on Escape', async () => {
     renderShell()
-    const opener = screen.getByRole('button', { name: 'Open navigation' })
+    const opener = screen.getByRole('button', { name: 'فتح التنقل' })
     opener.focus()
     await userEvent.click(opener)
-    const sidebar = screen.getByRole('complementary', { name: 'Main navigation' })
-    const profile = screen.getByRole('button', { name: 'Open profile' })
+    const sidebar = screen.getByRole('complementary', { name: 'التنقل الرئيسي' })
+    const profile = screen.getByRole('button', { name: 'فتح الملف الشخصي' })
     profile.focus()
     await userEvent.tab()
     expect(sidebar.contains(document.activeElement)).toBe(true)
@@ -57,7 +57,7 @@ describe('r4 responsive navigation popup', () => {
 
   it('closes from the backdrop and releases the scroll lock', async () => {
     const { container } = renderShell()
-    await userEvent.click(screen.getByRole('button', { name: 'Open navigation' }))
+    await userEvent.click(screen.getByRole('button', { name: 'فتح التنقل' }))
     await userEvent.click(container.querySelector('.sidebar-backdrop')!)
     expect(container.querySelector('.workspace')).not.toHaveClass('is-expanded')
     expect(document.body.style.overflow).toBe('')
